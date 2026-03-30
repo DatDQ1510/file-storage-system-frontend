@@ -1,21 +1,22 @@
-# React + TypeScript + Vite + shadcn/ui
+# React + TypeScript + Vite Starter
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+Project setup includes:
 
-## Adding components
+- Zustand for state management
+- Axios for API calls with global interceptors
+- shadcn/ui + Tailwind CSS for reusable UI
 
-To add components to your app, run the following command:
+## Run
+
+```bash
+npm install
+npm run dev
+```
+
+## Structure
+
+## Add shadcn components
 
 ```bash
 npx shadcn@latest add button
-```
-
-This will place the ui components in the `src/components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
 ```
