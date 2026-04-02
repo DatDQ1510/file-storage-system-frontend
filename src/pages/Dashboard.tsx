@@ -2,7 +2,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickAccessSection } from "@/components/common/QuickAccessSection";
 import { RecentActivitySection } from "@/components/common/RecentActivitySection";
-import { StorageSummaryCard } from "@/components/common/StorageSummaryCard";
+// import { StorageSummaryCard } from "@/components/common/StorageSummaryCard";
 import { SuggestedProjectsSection } from "@/components/common/SuggestedProjectsSection";
 import type { IDashboardData } from "@/types/dashboard";
 
@@ -138,18 +138,18 @@ export const Dashboard = () => {
       {/* Quick Access Section */}
       <QuickAccessSection files={data.quickAccessFiles} />
 
-      {/* Recent Activity and Storage Summary Grid */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      {/* Recent Activity and Suggested Projects Grid */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="h-full">
           <RecentActivitySection activities={data.recentActivities} />
         </div>
-        <div className="lg:col-span-1">
-          <StorageSummaryCard storage={data.storage} />
+        <div className="h-full">
+          <SuggestedProjectsSection projects={data.suggestedProjects} />
         </div>
+        {/* <div className="lg:col-span-1">
+          <StorageSummaryCard storage={data.storage} />
+        </div> */}
       </div>
-
-      {/* Suggested Projects Section */}
-      <SuggestedProjectsSection projects={data.suggestedProjects} />
     </div>
   );
 };

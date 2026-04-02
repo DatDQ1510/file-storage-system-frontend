@@ -1,255 +1,124 @@
-import {
-  Plus,
-  Filter,
-  Grid3X3,
-  List,
-  MoreVertical,
-  FolderTree,
-  ChartLine,
-  Archive,
-  ShieldCheck,
-  Megaphone,
-  CirclePlus,
-  FileText,
-} from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
+import { Folder, FolderOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { IProjectsPageData, TProjectStatus } from "@/types/projects";
-
-const MOCK_PROJECTS_DATA: IProjectsPageData = {
-  projects: [
-    {
-      id: "1",
-      name: "Titan Infrastructure",
-      category: "Internal Development",
-      projectLead: { id: "m1", name: "Sarah Chen", initials: "SC" },
-      collaborator: { id: "m2", name: "James Lee", initials: "JL" },
-      modifiedLabel: "2 h ago",
-      filesCount: 428,
-      status: "active",
-      iconType: "infrastructure",
-      isOnline: true,
-    },
-    {
-      id: "2",
-      name: "Market Sentinel",
-      category: "Analytics and Research",
-      projectLead: { id: "m3", name: "James Wilson", initials: "JW" },
-      collaborator: { id: "m4", name: "Ella Frost", initials: "EF" },
-      modifiedLabel: "Yesterday",
-      filesCount: 1192,
-      status: "active",
-      iconType: "analytics",
-      isOnline: true,
-    },
-    {
-      id: "3",
-      name: "Project Orion (2023)",
-      category: "Legacy Migration",
-      projectLead: { id: "m5", name: "System Archive", initials: "SA" },
-      collaborator: { id: "m6", name: "System", initials: "SY" },
-      modifiedLabel: "3 mo ago",
-      filesCount: 2440,
-      status: "archived",
-      iconType: "legacy",
-      isOnline: false,
-    },
-    {
-      id: "4",
-      name: "Cyber Audit Q4",
-      category: "Security Compliance",
-      projectLead: { id: "m7", name: "Alex Morgen", initials: "AM" },
-      collaborator: { id: "m8", name: "Lex Morgan", initials: "LM" },
-      modifiedLabel: "5 min ago",
-      filesCount: 88,
-      status: "active",
-      iconType: "security",
-      isOnline: true,
-    },
-    {
-      id: "5",
-      name: "Brand Genesis",
-      category: "Marketing Assets",
-      projectLead: { id: "m9", name: "Leo Valdez", initials: "LV" },
-      collaborator: { id: "m10", name: "Ari Kim", initials: "AK" },
-      modifiedLabel: "3 days ago",
-      filesCount: 5200,
-      status: "active",
-      iconType: "marketing",
-      isOnline: true,
-    },
-  ],
-  activities: [
-    {
-      id: "a1",
-      message: "Security Audit permissions updated for Titan Infrastructure",
-      metadata: "8 minutes ago · system automation",
-    },
-    {
-      id: "a2",
-      message: "Sarah Chen uploaded 42 technical schematics to Titan Infrastructure",
-      metadata: "2 hours ago · mobile upload",
-    },
-  ],
-};
-
-const PROJECT_ICON_MAP = {
-  infrastructure: <FolderTree className="h-5 w-5 text-blue-600" />,
-  analytics: <ChartLine className="h-5 w-5 text-amber-600" />,
-  legacy: <Archive className="h-5 w-5 text-slate-500" />,
-  security: <ShieldCheck className="h-5 w-5 text-violet-600" />,
-  marketing: <Megaphone className="h-5 w-5 text-rose-600" />,
-} as const;
-
-const STATUS_BADGE_CLASS_MAP: Record<TProjectStatus, string> = {
-  active: "bg-emerald-100 text-emerald-700",
-  archived: "bg-slate-200 text-slate-600",
-};
+import { PROJECT_ITEMS } from "@/constants/projects";
+import { getProjectPath } from "@/constants/routes";
 
 export const Projects = () => {
-  const data = MOCK_PROJECTS_DATA;
+  const navigate = useNavigate();
+  const { projectId } = useParams();
+
+  const selectedProject = PROJECT_ITEMS.find((projectItem) => {
+    return projectItem.id === projectId;
+  });
+
+  useEffect(() => {
+    if (!projectId && PROJECT_ITEMS.length > 0) {
+      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
+      return;
+    }
+
+    if (projectId && !selectedProject && PROJECT_ITEMS.length > 0) {
+      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
+    }
+  }, [navigate, projectId, selectedProject]);
+
+  if (!selectedProject) {
+    return null;
+  }
 
   return (
-    <div className="space-y-8">
-      <section className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Enterprise · Projects
-          </p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-foreground">
-            Vault Directory
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Manage your organizational silos, project-specific security protocols, and
-            collaborative data environments.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-card p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Project Workspace
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold text-foreground">
+              {selectedProject.name}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {selectedProject.description}
+            </p>
+          </div>
 
-        <Button className="bg-blue-600 text-white hover:bg-blue-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Project
-        </Button>
-      </section>
-
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
-        <div className="flex items-center gap-1">
-          <Button size="sm" className="bg-slate-100 text-slate-700 hover:bg-slate-200">
-            <Filter className="mr-2 h-3.5 w-3.5" />
-            All Projects
-          </Button>
-          <Button variant="ghost" size="sm" className="text-slate-600">
-            Active
-          </Button>
-          <Button variant="ghost" size="sm" className="text-slate-600">
-            Archived
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Sort by:
-            <span className="ml-1 text-slate-600">Last Modified</span>
-          </p>
-          <div className="flex items-center gap-1 rounded border border-border bg-background p-1">
-            <Button variant="ghost" size="icon-xs" className="h-6 w-6">
-              <Grid3X3 className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon-xs" className="h-6 w-6">
-              <List className="h-3.5 w-3.5" />
-            </Button>
+          <div className="rounded-md border border-border bg-background px-4 py-3 text-right">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Last Updated</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{selectedProject.updatedLabel}</p>
+            <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
+              {selectedProject.totalFiles.toLocaleString()} files
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {data.projects.map((project) => (
-          <article
-            key={project.id}
-            className="rounded-md border border-border bg-card px-4 py-4 transition-colors hover:border-blue-200"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50">
-                {PROJECT_ICON_MAP[project.iconType]}
-              </div>
-              <div className="flex items-center gap-2">
-                {project.isOnline && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                <MoreVertical className="h-4 w-4 text-slate-400" />
-              </div>
-            </div>
+      <section className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Folders</h2>
+          <Button className="bg-blue-600 text-white hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            New Folder
+          </Button>
+        </div>
 
-            <h3 className="mt-4 text-3xl font-semibold leading-tight text-foreground">
-              {project.name}
-            </h3>
-            <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-              {project.category}
-            </p>
-
-            <div className="mt-4 space-y-2 text-xs text-slate-500">
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate">Project Lead: {project.projectLead.name}</p>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-semibold text-amber-700">
-                  {project.projectLead.initials}
-                </span>
+        <div className="space-y-3">
+          {selectedProject.folders.map((folderItem) => (
+            <article
+              key={folderItem.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-background px-4 py-3 transition-colors hover:border-blue-300"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="rounded-md bg-muted p-2">
+                  <FolderOpen className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">{folderItem.name}</p>
+                  <p className="text-xs text-muted-foreground">{folderItem.filesCount} files</p>
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <p>Modified</p>
-                <p className="text-[11px] font-semibold uppercase text-foreground/80">
-                  {project.modifiedLabel}
-                </p>
-              </div>
-            </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-700">
-                {project.filesCount.toLocaleString()} files
+              <p className="shrink-0 text-xs font-medium text-muted-foreground">{folderItem.updatedLabel}</p>
+            </article>
+          ))}
+
+          <article className="flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/15 px-4 py-6 text-center">
+            <div>
+              <Folder className="mx-auto h-5 w-5 text-muted-foreground" />
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Create a new folder in {selectedProject.name}
               </p>
-              <span
-                className={cn(
-                  "rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                  STATUS_BADGE_CLASS_MAP[project.status]
-                )}
-              >
-                {project.status}
-              </span>
             </div>
           </article>
-        ))}
-
-        <article className="flex min-h-80 items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-6 py-8 text-center">
-          <div>
-            <CirclePlus className="mx-auto h-7 w-7 text-slate-400" />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Initiate Project
-            </p>
-            <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-slate-400">
-              Define workspace, permissions, and initial repository structure.
-            </p>
-          </div>
-        </article>
+        </div>
       </section>
 
-      <section className="rounded-md border border-border bg-card px-4 py-4">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-          Recent Project Activity
-        </h2>
-
-        <div className="mt-4 space-y-2">
-          {data.activities.map((activity) => (
-            <div
-              key={activity.id}
-              className="flex items-start gap-3 rounded border border-border bg-background px-3 py-3"
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Project Info</h3>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-md border border-border bg-background p-3">
+            <p className="text-xs text-muted-foreground">Category</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{selectedProject.category}</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <p className="text-xs text-muted-foreground">Project Lead</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{selectedProject.projectLead}</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p
+              className={cn(
+                "mt-1 inline-flex rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide",
+                selectedProject.status === "active"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-slate-200 text-slate-600"
+              )}
             >
-              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-blue-50">
-                <FileText className="h-3.5 w-3.5 text-blue-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs text-foreground">{activity.message}</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-                  {activity.metadata}
-                </p>
-              </div>
-            </div>
-          ))}
+              {selectedProject.status}
+            </p>
+          </div>
         </div>
       </section>
     </div>

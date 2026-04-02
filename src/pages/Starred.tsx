@@ -7,7 +7,6 @@ import {
   Star,
   Filter,
   Plus,
-  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { IStarredPageData } from "@/types/starred";
@@ -166,7 +165,7 @@ export const Starred = () => {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_280px]">
+      {/* <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_280px]">
         <div className="flex min-h-40 items-center justify-center rounded-md border border-dashed border-border bg-muted/20">
           <div className="text-center">
             <Copy className="mx-auto h-7 w-7 text-slate-400" />
@@ -195,7 +194,7 @@ export const Starred = () => {
             ))}
           </div>
         </aside>
-      </section>
+      </section> */}
     </div>
   );
 };

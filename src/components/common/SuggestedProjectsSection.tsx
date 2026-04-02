@@ -17,7 +17,7 @@ export const SuggestedProjectsSection = ({
   projects,
 }: ISuggestedProjectsSectionProps) => {
   return (
-    <div>
+    <section className="h-full rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">
           SUGGESTED PROJECTS
@@ -27,11 +27,11 @@ export const SuggestedProjectsSection = ({
           <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4">
         {projects.map((project) => (
           <div
             key={project.id}
-            className="flex flex-col rounded-lg border border-border bg-card p-6 transition-all hover:border-blue-300 hover:shadow-md"
+            className="flex flex-col rounded-lg border border-border/80 bg-background p-5 transition-all hover:border-blue-300 hover:shadow-md"
           >
             <div className="mb-3 flex items-start justify-between">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg font-bold">
@@ -67,6 +67,6 @@ export const SuggestedProjectsSection = ({
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
