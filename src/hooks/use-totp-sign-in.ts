@@ -57,9 +57,8 @@ export const useTotpSignIn = (
     setIsLoading(true)
 
     try {
-      const result = await signInWithTotp(input)
+      await signInWithTotp(input)
       onSuccess?.()
-      console.log("TOTP sign in successful:", result)
       resetForm()
     } catch (caughtError) {
       setError(

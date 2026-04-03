@@ -20,7 +20,7 @@ export const SignUp = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate(ROUTES.HOME);
+    navigate(ROUTES.SIGN_IN);
   };
 
   return (

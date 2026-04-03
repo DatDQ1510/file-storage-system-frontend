@@ -8,12 +8,20 @@ export interface ISignInInput {
   password: string
 }
 
+export type TUserRole = "SYSTEM_ADMIN" | "TENANT_ADMIN" | "USER"
+
 export interface IAuthTokenResponse {
   accessToken: string
   tokenType: string
   accessTokenExpiresInMs: number
-  role: string
-  tenantId: string
+  role: TUserRole
+  tenantId: string | null
+  userId: string
+  username: string
+  email: string
+  permissions: string[]
+  redirectUrl: string
+  userDisplayName: string
 }
 
 export interface ISignUpInput {
@@ -28,7 +36,7 @@ export interface IAuthUser {
   name: string
   email: string
   avatar?: string
-  role: "admin" | "user"
+  role: TUserRole
 }
 
 export interface IAuthResponse {

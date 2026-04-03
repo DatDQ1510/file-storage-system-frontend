@@ -1,10 +1,10 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { signIn } from "@/lib/api/auth-service"
-import type { ISignInInput } from "@/types/auth"
+import type { IAuthTokenResponse, ISignInInput } from "@/types/auth"
 
 interface IUseSignInOptions {
-  onSuccess?: () => void
+  onSuccess?: (authData: IAuthTokenResponse) => void
 }
 
 interface IUseSignInReturn {
@@ -49,8 +49,7 @@ export const useSignIn = (options: IUseSignInOptions = {}): IUseSignInReturn => 
 
     try {
       const result = await signIn(input)
-      onSuccess?.()
-      console.log("Sign in successful:", result)
+      onSuccess?.(result)
       resetForm()
     } catch (caughtError) {
       setError(

@@ -28,6 +28,7 @@ import type {
 
 const TOKEN_KEY = "accessToken"
 const REFRESH_TOKEN_KEY = "refreshToken"
+const AUTH_DATA_KEY = "authData"
 
 /**
  * Store tokens in localStorage
@@ -39,6 +40,11 @@ const storeTokens = (token: string, refreshToken?: string) => {
   if (refreshToken) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
   }
+}
+
+const storeAuthData = (authData: IAuthTokenResponse) => {
+  localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(authData))
+  localStorage.setItem("role", authData.role)
 }
 
 /**
@@ -58,11 +64,32 @@ export const getStoredRefreshToken = (): string | null => {
 }
 
 /**
+ * Get stored auth payload
+ */
+export const getStoredAuthData = (): IAuthTokenResponse | null => {
+  if (typeof window === "undefined") return null
+
+  const authData = localStorage.getItem(AUTH_DATA_KEY)
+
+  if (!authData) {
+    return null
+  }
+
+  try {
+    return JSON.parse(authData) as IAuthTokenResponse
+  } catch {
+    return null
+  }
+}
+
+/**
  * Clear tokens from localStorage
  */
 const clearTokens = () => {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(AUTH_DATA_KEY)
+  localStorage.removeItem("role")
 }
 
 /**
@@ -97,6 +124,7 @@ export const signIn = async (
 
   // Store tokens in localStorage
   storeTokens(accessToken)
+  storeAuthData(response.data.data)
 
   return response.data.data
 }
@@ -123,6 +151,7 @@ export const signInWithTotp = async (
   const { accessToken } = response.data.data
 
   storeTokens(accessToken)
+  storeAuthData(response.data.data)
 
   return response.data.data
 }

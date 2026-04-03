@@ -1,20 +1,68 @@
+import type { TUserRole } from "@/types/auth"
+
 export const ROUTES = {
   HOME: "/",
   SIGN_IN: "/sign-in",
   TOTP_SIGN_IN: "/sign-in/totp",
   SIGN_UP: "/sign-up",
   FORGOT_PASSWORD: "/forgot-password",
+  FORBIDDEN: "/403",
   DASHBOARD: "/dashboard",
+   SYSTEM_ADMIN_DASHBOARD: "/dashboard/system-admin",
+  TENANT_ADMIN_DASHBOARD: "/dashboard/tenant-admin",
+  USER_DASHBOARD: "/dashboard/user",
   RECENT: "/recent",
   STARRED: "/starred",
   PROJECTS: "/projects",
   PROJECT_DETAIL: "/projects/:projectId",
   RECYCLE_BIN: "/recycle-bin",
   SUPPORT: "/support",
-} as const;
+} as const
 
 export type RouteKey = keyof typeof ROUTES;
 
+export const ROLE_DASHBOARD_ROUTES: Record<TUserRole, string> = {
+  SYSTEM_ADMIN: ROUTES.SYSTEM_ADMIN_DASHBOARD,
+  TENANT_ADMIN: ROUTES.TENANT_ADMIN_DASHBOARD,
+  USER: ROUTES.USER_DASHBOARD,
+}
+
+export const getDashboardRouteForRole = (role?: TUserRole | null) => {
+  if (!role) {
+    return ROUTES.SIGN_IN
+  }
+
+  return ROLE_DASHBOARD_ROUTES[role]
+}
+
+export const normalizeDashboardRoute = (
+  redirectUrl?: string | null,
+  role?: TUserRole | null
+) => {
+  if (
+    redirectUrl === ROUTES.SYSTEM_ADMIN_DASHBOARD ||
+    redirectUrl === ROUTES.TENANT_ADMIN_DASHBOARD ||
+    redirectUrl === ROUTES.USER_DASHBOARD
+  ) {
+    return redirectUrl
+  }
+
+  const knownRoutes: Record<string, string> = {
+    "/dashboard/system": ROUTES.SYSTEM_ADMIN_DASHBOARD,
+    "/dashboard/tenant": ROUTES.TENANT_ADMIN_DASHBOARD,
+    "/dashboard/user": ROUTES.USER_DASHBOARD,
+    "/system-admin": ROUTES.SYSTEM_ADMIN_DASHBOARD,
+    "/tenant-admin": ROUTES.TENANT_ADMIN_DASHBOARD,
+    "/user": ROUTES.USER_DASHBOARD,
+  }
+
+  if (redirectUrl && knownRoutes[redirectUrl]) {
+    return knownRoutes[redirectUrl]
+  }
+
+  return getDashboardRouteForRole(role)
+}
+
 export const getProjectPath = (projectId: string) => {
-  return `/projects/${projectId}`;
-};
+  return `/projects/${projectId}`
+}
