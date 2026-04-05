@@ -1,7 +1,11 @@
 import { Search, Bell, Settings, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { AccountDropdownMenu } from "@/components/common/AccountDropdownMenu";
 import { useTheme } from "@/components/theme-provider";
+import { ROUTES } from "@/constants/routes";
+import { signOut } from "@/lib/api/auth-service";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { SettingsPanel } from "./SettingsPanel";
 
@@ -14,6 +18,7 @@ export const Header = ({ onMenuClick }: IHeaderProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const actionButtonClassName =
     "h-9 w-9 rounded-lg text-muted-foreground transition-all duration-200 hover:bg-primary/25 hover:text-primary hover:shadow-md dark:hover:bg-primary/45 dark:hover:text-primary-foreground dark:hover:ring-1 dark:hover:ring-primary/50";
 
@@ -50,6 +55,11 @@ export const Header = ({ onMenuClick }: IHeaderProps) => {
 
   const handleCloseSettings = () => {
     setShowSettings(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate(ROUTES.SIGN_IN, { replace: true });
   };
 
   return (
@@ -114,14 +124,13 @@ export const Header = ({ onMenuClick }: IHeaderProps) => {
               <Settings className="h-4.5 w-4.5" />
             </Button>
 
-            {/* User Profile Avatar */}
-            <button
-              className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-orange-400 to-orange-500 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:hover:brightness-115 dark:hover:shadow-orange-900/40"
-              title="Profile"
-              type="button"
-            >
-              AW
-            </button>
+            <AccountDropdownMenu
+              accountEmail="alexander.wright@vault.enterprise"
+              accountName="Alexander Wright"
+              accountRole="Pro Account"
+              accentClassName="bg-orange-100 text-orange-700"
+              onLogout={handleLogout}
+            />
           </div>
         </div>
       </header>

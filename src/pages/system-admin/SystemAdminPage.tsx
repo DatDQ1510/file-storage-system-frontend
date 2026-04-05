@@ -9,10 +9,13 @@ import {
   Globe,
   Menu,
   Search,
-  User,
   X,
 } from "lucide-react"
+import { useNavigate } from "react-router"
+import { AccountDropdownMenu } from "@/components/common/AccountDropdownMenu"
 import { Button } from "@/components/ui/button"
+import { ROUTES } from "@/constants/routes"
+import { signOut } from "@/lib/api/auth-service"
 import {
   getSectionDescription,
   getSectionTitle,
@@ -28,6 +31,21 @@ import type { TSystemSection } from "@/pages/system-admin/types"
 export const SystemAdminPage = () => {
   const [activeSection, setActiveSection] = useState<TSystemSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate(ROUTES.SIGN_IN, { replace: true })
+  }
+
+  const handleOpenRegisterTenant = () => {
+    setIsRegisterTenantOpen(true)
+  }
+
+  const handleCloseRegisterTenant = () => {
+    setIsRegisterTenantOpen(false)
+  }
 
   return (
     <div
@@ -102,15 +120,12 @@ export const SystemAdminPage = () => {
                   <Globe className="h-4 w-4" />
                 </Button>
 
-                <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:flex">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-blue-100 text-blue-700">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <div className="leading-tight">
-                    <p className="text-xs font-semibold text-slate-900">Admin User</p>
-                    <p className="text-[11px] text-slate-500">System Architect</p>
-                  </div>
-                </div>
+                <AccountDropdownMenu
+                  accountEmail="admin@sovereign.arch"
+                  accountName="Admin User"
+                  accountRole="System Architect"
+                  onLogout={handleLogout}
+                />
               </div>
             </div>
           </header>
@@ -125,7 +140,7 @@ export const SystemAdminPage = () => {
                     <Button variant="outline" className="border-slate-300 bg-white">
                       Export List
                     </Button>
-                    <Button className="bg-blue-700 text-white hover:bg-blue-800">+ Register New Tenant</Button>
+                    <Button className="bg-blue-700 text-white hover:bg-blue-800" onClick={handleOpenRegisterTenant}>+ Register New Tenant</Button>
                   </>
                 )}
 
@@ -143,7 +158,13 @@ export const SystemAdminPage = () => {
             </div>
 
             {activeSection === "dashboard" && <DashboardSection />}
-            {activeSection === "tenants" && <TenantsSection />}
+            {activeSection === "tenants" && (
+              <TenantsSection
+                isRegisterTenantOpen={isRegisterTenantOpen}
+                onCloseRegisterTenant={handleCloseRegisterTenant}
+                onOpenRegisterTenant={handleOpenRegisterTenant}
+              />
+            )}
             {activeSection === "quota" && <QuotaSection />}
             {activeSection === "billing" && <BillingSection />}
             {[

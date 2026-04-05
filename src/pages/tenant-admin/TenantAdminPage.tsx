@@ -9,10 +9,13 @@ import {
   Globe,
   Menu,
   Search,
-  User,
   X,
 } from "lucide-react"
+import { useNavigate } from "react-router"
+import { AccountDropdownMenu } from "@/components/common/AccountDropdownMenu"
 import { Button } from "@/components/ui/button"
+import { ROUTES } from "@/constants/routes"
+import { signOut } from "@/lib/api/auth-service"
 import { DashboardSection } from "@/pages/tenant-admin/components/sections/DashboardSection"
 import { OrganizationSection } from "@/pages/tenant-admin/components/sections/OrganizationSection"
 import { ProjectsSection } from "@/pages/tenant-admin/components/sections/ProjectsSection"
@@ -27,6 +30,12 @@ import type { TTenantAdminSection } from "@/pages/tenant-admin/types"
 export const TenantAdminPage = () => {
   const [activeSection, setActiveSection] = useState<TTenantAdminSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate(ROUTES.SIGN_IN, { replace: true })
+  }
 
   return (
     <div
@@ -103,15 +112,13 @@ export const TenantAdminPage = () => {
                   <Globe className="h-4 w-4" />
                 </Button>
 
-                <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:flex">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-cyan-100 text-cyan-700">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <div className="leading-tight">
-                    <p className="text-xs font-semibold text-slate-900">Tenant Owner</p>
-                    <p className="text-[11px] text-slate-500">Workspace Administrator</p>
-                  </div>
-                </div>
+                <AccountDropdownMenu
+                  accountEmail="owner@workspace.arch"
+                  accountName="Tenant Owner"
+                  accountRole="Workspace Administrator"
+                  accentClassName="bg-cyan-100 text-cyan-700"
+                  onLogout={handleLogout}
+                />
               </div>
             </div>
           </header>

@@ -13,7 +13,6 @@ import { Starred } from "@/pages/Starred"
 import { TotpSignIn } from "@/pages/TotpSignIn"
 import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
 import { TenantAdminPage } from "@/pages/tenant-admin/TenantAdminPage"
-import { UserPage } from "@/pages/user/UserPage"
 
 interface IRouteConfig {
   path: string
@@ -62,7 +61,7 @@ const LEGACY_REDIRECT_ROUTES: IRouteConfig[] = [
 const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
   { path: ROUTES.SYSTEM_ADMIN_DASHBOARD, element: <SystemAdminPage /> },
   { path: ROUTES.TENANT_ADMIN_DASHBOARD, element: <TenantAdminPage /> },
-  { path: ROUTES.USER_DASHBOARD, element: <UserPage /> },
+  { path: ROUTES.USER_DASHBOARD, element: <Navigate replace to={ROUTES.RECENT} /> },
 ]
 
 const APP_ROUTES: IRouteConfig[] = [
