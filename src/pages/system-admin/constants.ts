@@ -48,6 +48,9 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     quotaUsed: "8.2 TB",
     quotaPercent: 82,
     createdDate: "Oct 24, 2023",
+    region: "Asia-Pacific (Singapore)",
+    adminName: "Minh Nguyen",
+    adminEmail: "minh.nguyen@vintech.vn",
   },
   {
     businessName: "Aether Media",
@@ -57,6 +60,9 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     quotaUsed: "0.4 TB",
     quotaPercent: 8,
     createdDate: "Jan 12, 2024",
+    region: "Asia-Pacific (Tokyo)",
+    adminName: "Linh Tran",
+    adminEmail: "linh.tran@aether.media",
   },
   {
     businessName: "Global Dynamics",
@@ -66,6 +72,9 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     quotaUsed: "5.1 TB",
     quotaPercent: 51,
     createdDate: "Aug 05, 2022",
+    region: "Europe (Frankfurt)",
+    adminName: "David Hoang",
+    adminEmail: "david.hoang@globaldynamics.io",
   },
 ]
 
@@ -117,7 +126,7 @@ export const getSectionTitle = (section: TSystemSection) => {
     case "dashboard":
       return "Dashboard"
     case "tenants":
-      return "Danh sách Doanh nghiệp"
+      return "Tenant Management"
     case "quota":
       return "Cấp phát Quota"
     case "billing":
@@ -141,7 +150,7 @@ export const getSectionDescription = (section: TSystemSection) => {
   }
 
   if (section === "tenants") {
-    return "Manage enterprise-level tenants, provision resources, and inspect quota utilization trends."
+    return "Manage enterprise tenants, register new workspaces, and inspect quota utilization trends."
   }
 
   if (section === "quota") {

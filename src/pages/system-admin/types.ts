@@ -32,6 +32,9 @@ export interface ITenantRecord {
   quotaUsed: string
   quotaPercent: number
   createdDate: string
+  region: string
+  adminName: string
+  adminEmail: string
 }
 
 export interface IPlanCard {
