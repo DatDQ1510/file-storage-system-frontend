@@ -36,6 +36,8 @@ export interface IAuthUser {
   name: string
   email: string
   avatar?: string
+  jobTitle?: string
+  department?: string
   role: TUserRole
 }
 
@@ -44,6 +46,12 @@ export interface IAuthResponse {
   token: string
   refreshToken?: string
   expiresIn?: number
+}
+
+export interface IUpdatePasswordInput {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
 }
 
 export interface ISignInResponse {

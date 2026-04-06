@@ -24,6 +24,7 @@ import type {
   IForgotPasswordResetPasswordInput,
   IApiResponse,
   ISignInWithTotpInput,
+  IUpdatePasswordInput,
 } from "@/types/auth"
 
 const TOKEN_KEY = "accessToken"
@@ -266,6 +267,40 @@ export const updateProfile = async (
 
   const response = await api.put<{ user: IAuthUser }>("/auth/profile", request)
   return response.data.user
+}
+
+/**
+ * PATCH - Update profile avatar
+ */
+export const updateAvatar = async (avatarFile: File): Promise<IAuthUser> => {
+  const formData = new FormData()
+  formData.append("avatar", avatarFile)
+
+  const response = await api.patch<{ user: IAuthUser }>("/auth/profile/avatar", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  })
+
+  return response.data.user
+}
+
+/**
+ * PATCH - Change current password
+ */
+export const changePassword = async (
+  input: IUpdatePasswordInput
+): Promise<string> => {
+  if (input.newPassword !== input.confirmPassword) {
+    throw new Error("Passwords do not match")
+  }
+
+  const response = await api.patch<IApiResponse<string>>("/auth/change-password", {
+    currentPassword: input.currentPassword,
+    newPassword: input.newPassword,
+  })
+
+  return response.data.message
 }
 
 /**
