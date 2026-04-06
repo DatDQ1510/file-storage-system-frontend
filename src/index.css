@@ -189,3 +189,68 @@
   line-height: 1;
   font-size: 20px;
 }
+
+/* Admin shell scoped theme harmonization for tenant/system pages */
+.admin-shell-ambient {
+  background: radial-gradient(circle at 12% 8%, rgba(29, 78, 216, 0.14), transparent 42%),
+    radial-gradient(circle at 88% 92%, rgba(30, 64, 175, 0.12), transparent 38%);
+}
+
+.admin-shell-gradient {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(245, 248, 255, 0.82) 35%,
+    rgba(238, 243, 252, 0.8) 100%
+  );
+}
+
+.dark .admin-shell-ambient {
+  background: radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.12), transparent 45%),
+    radial-gradient(circle at 88% 92%, rgba(34, 211, 238, 0.08), transparent 40%);
+}
+
+.dark .admin-shell-gradient {
+  background: linear-gradient(
+    120deg,
+    rgba(15, 23, 42, 0.45) 0%,
+    rgba(2, 6, 23, 0.7) 35%,
+    rgba(17, 24, 39, 0.62) 100%
+  );
+}
+
+.dark .admin-shell .bg-white,
+.dark .admin-shell .bg-white\/90,
+.dark .admin-shell .bg-white\/85,
+.dark .admin-shell .bg-white\/5,
+.dark .admin-shell .hover\:bg-white:hover {
+  background-color: var(--card) !important;
+}
+
+.dark .admin-shell .bg-slate-50,
+.dark .admin-shell .bg-slate-50\/95,
+.dark .admin-shell .hover\:bg-slate-50:hover,
+.dark .admin-shell .hover\:bg-slate-100:hover {
+  background-color: var(--muted) !important;
+}
+
+.dark .admin-shell .border-slate-200,
+.dark .admin-shell .border-slate-200\/90,
+.dark .admin-shell .border-slate-100,
+.dark .admin-shell .border-slate-300,
+.dark .admin-shell .border-white\/10 {
+  border-color: var(--border) !important;
+}
+
+.dark .admin-shell .text-slate-900,
+.dark .admin-shell .text-slate-950,
+.dark .admin-shell .text-slate-700,
+.dark .admin-shell .text-slate-600,
+.dark .admin-shell .text-slate-500,
+.dark .admin-shell .text-slate-400 {
+  color: var(--foreground) !important;
+}
+
+.dark .admin-shell input::placeholder {
+  color: var(--muted-foreground) !important;
+}

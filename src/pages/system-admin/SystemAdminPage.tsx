@@ -1,25 +1,18 @@
 import { useState } from "react"
 import {
-  Bell,
   Check,
   ChevronLeft,
   ChevronRight,
-  CircleGauge,
   Clock3,
-  Globe,
-  Menu,
-  Search,
   X,
 } from "lucide-react"
-import { useNavigate } from "react-router"
-import { AccountDropdownMenu } from "@/components/common/AccountDropdownMenu"
+import { Header } from "@/components/common/Header"
 import { Button } from "@/components/ui/button"
-import { ROUTES } from "@/constants/routes"
-import { signOut } from "@/lib/api/auth-service"
 import {
   getSectionDescription,
   getSectionTitle,
 } from "@/pages/system-admin/constants"
+import { AccountManagementSection } from "@/pages/system-admin/components/sections/AccountManagementSection"
 import { SidebarNavigation } from "@/pages/system-admin/components/SidebarNavigation"
 import { BillingSection } from "@/pages/system-admin/components/sections/BillingSection"
 import { DashboardSection } from "@/pages/system-admin/components/sections/DashboardSection"
@@ -32,12 +25,6 @@ export const SystemAdminPage = () => {
   const [activeSection, setActiveSection] = useState<TSystemSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
-  const navigate = useNavigate()
-
-  const handleLogout = async () => {
-    await signOut()
-    navigate(ROUTES.SIGN_IN, { replace: true })
-  }
 
   const handleOpenRegisterTenant = () => {
     setIsRegisterTenantOpen(true)
@@ -49,10 +36,10 @@ export const SystemAdminPage = () => {
 
   return (
     <div
-      className="relative min-h-screen overflow-hidden bg-[#eef2f7] text-slate-900"
+      className="admin-shell relative min-h-screen overflow-hidden bg-background text-foreground"
       style={{ fontFamily: '"Geist Variable", "IBM Plex Sans", "Segoe UI", sans-serif' }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(29,78,216,0.14),transparent_42%),radial-gradient(circle_at_88%_92%,rgba(30,64,175,0.12),transparent_38%)]" />
+      <div className="admin-shell-ambient pointer-events-none absolute inset-0" />
 
       <div className="relative flex min-h-screen">
         <div className="hidden xl:block">
@@ -80,8 +67,14 @@ export const SystemAdminPage = () => {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/85 backdrop-blur">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6 xl:px-8">
+          <Header
+            accountAccentClassName="bg-blue-100 text-blue-700"
+            accountEmail="admin@sovereign.arch"
+            accountName="Admin User"
+            accountRole="System Architect"
+            containerClassName="sticky top-0 z-30 border-b border-border/80 bg-card/85 backdrop-blur"
+            innerClassName="px-4 py-3 md:px-6 xl:px-8"
+            leadingContent={
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <span>Sovereign Architect</span>
@@ -90,45 +83,13 @@ export const SystemAdminPage = () => {
                 </div>
                 <h1 className="truncate text-3xl font-bold tracking-tight text-slate-950">{getSectionTitle(activeSection)}</h1>
               </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Button
-                  className="xl:hidden"
-                  onClick={() => setIsSidebarOpen(true)}
-                  size="icon"
-                  variant="outline"
-                >
-                  <Menu className="h-4 w-4" />
-                </Button>
-
-                <label className="hidden h-10 w-64 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 md:flex">
-                  <Search className="h-4 w-4 text-slate-500" />
-                  <input
-                    className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                    placeholder="Search resources..."
-                    type="text"
-                  />
-                </label>
-
-                <Button size="icon" variant="ghost">
-                  <Bell className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost">
-                  <CircleGauge className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost">
-                  <Globe className="h-4 w-4" />
-                </Button>
-
-                <AccountDropdownMenu
-                  accountEmail="admin@sovereign.arch"
-                  accountName="Admin User"
-                  accountRole="System Architect"
-                  onLogout={handleLogout}
-                />
-              </div>
-            </div>
-          </header>
+            }
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onOpenAccount={() => setActiveSection("account-management")}
+            onOpenSettings={() => setActiveSection("account-management")}
+            searchPlaceholder="Search resources..."
+            showAccountAction={true}
+          />
 
           <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 xl:px-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -158,6 +119,7 @@ export const SystemAdminPage = () => {
             </div>
 
             {activeSection === "dashboard" && <DashboardSection />}
+            {activeSection === "account-management" && <AccountManagementSection />}
             {activeSection === "tenants" && (
               <TenantsSection
                 isRegisterTenantOpen={isRegisterTenantOpen}
@@ -239,7 +201,7 @@ export const SystemAdminPage = () => {
         </div>
       )}
 
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(120deg,rgba(255,255,255,0.62)_0%,rgba(245,248,255,0.82)_35%,rgba(238,243,252,0.8)_100%)]" />
+      <div className="admin-shell-gradient pointer-events-none fixed inset-0 -z-10" />
     </div>
   )
 }

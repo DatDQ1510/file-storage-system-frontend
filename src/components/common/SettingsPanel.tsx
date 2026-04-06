@@ -3,9 +3,10 @@ import { X } from "lucide-react";
 interface ISettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onSignOut?: () => void | Promise<void>;
 }
 
-export const SettingsPanel = ({ isOpen, onClose }: ISettingsPanelProps) => {
+export const SettingsPanel = ({ isOpen, onClose, onSignOut }: ISettingsPanelProps) => {
   if (!isOpen) return null;
 
   const settingsOptions = [
@@ -42,7 +43,7 @@ export const SettingsPanel = ({ isOpen, onClose }: ISettingsPanelProps) => {
         <hr className="my-2 border-border/50" />
         <button
           className="w-full rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/20"
-          onClick={() => console.log("Sign out")}
+          onClick={onSignOut}
           type="button"
         >
           Sign Out

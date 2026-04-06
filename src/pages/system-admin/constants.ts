@@ -7,6 +7,7 @@ import {
   Network,
   Shield,
   ShieldBan,
+  UserCog,
   SlidersHorizontal,
 } from "lucide-react"
 import type {
@@ -26,6 +27,10 @@ export const SYSTEM_NAV_GROUPS: ISystemNavGroup[] = [
       { label: "Quota Allocation", icon: SlidersHorizontal, section: "quota" },
       { label: "Billing & Plans", icon: CreditCard, section: "billing" },
     ],
+  },
+  {
+    title: "Settings",
+    items: [{ label: "Account Management", icon: UserCog, section: "account-management" }],
   },
   {
     title: "Infrastructure",
@@ -131,6 +136,8 @@ export const getSectionTitle = (section: TSystemSection) => {
       return "Cấp phát Quota"
     case "billing":
       return "Quản lý Gói cước"
+    case "account-management":
+      return "Account Management"
     case "redis-status":
       return "Trạng thái Redis"
     case "rabbitmq-queue":
@@ -175,6 +182,10 @@ export const getSectionDescription = (section: TSystemSection) => {
 
   if (section === "blocked-ips") {
     return "Manage denied IP addresses and investigate traffic anomalies or repeated abuse patterns."
+  }
+
+  if (section === "account-management") {
+    return "Update personal details, avatar, and password with a dedicated admin settings screen."
   }
 
   return "Define pricing tiers, billing safeguards, and platform-wide revenue control settings."

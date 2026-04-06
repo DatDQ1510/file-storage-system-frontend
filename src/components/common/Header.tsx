@@ -1,4 +1,5 @@
-import { Search, Bell, Settings, Menu, Moon, Sun } from "lucide-react";
+import type { ReactNode } from "react";
+import { Search, Bell, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -11,12 +12,46 @@ import { SettingsPanel } from "./SettingsPanel";
 
 interface IHeaderProps {
   onMenuClick?: () => void;
+  leadingContent?: ReactNode;
+  searchPlaceholder?: string;
+  showSearch?: boolean;
+  showThemeToggle?: boolean;
+  showNotificationButton?: boolean;
+  rightActions?: ReactNode;
+  containerClassName?: string;
+  innerClassName?: string;
+  accountName?: string;
+  accountRole?: string;
+  accountEmail?: string;
+  accountAccentClassName?: string;
+  onOpenAccount?: () => void;
+  onOpenSettings?: () => void;
+  showAccountAction?: boolean;
+  showSettingsAction?: boolean;
 }
 
-export const Header = ({ onMenuClick }: IHeaderProps) => {
+export const Header = ({
+  onMenuClick,
+  leadingContent,
+  searchPlaceholder = "Search files, folders, and projects...",
+  showSearch = true,
+  showThemeToggle = true,
+  showNotificationButton = true,
+  rightActions,
+  containerClassName = "sticky top-0 z-50 border-b border-border bg-background",
+  innerClassName = "px-8 py-4",
+  accountName = "Alexander Wright",
+  accountRole = "Pro Account",
+  accountEmail = "alexander.wright@vault.enterprise",
+  accountAccentClassName = "bg-orange-100 text-orange-700",
+  onOpenAccount,
+  onOpenSettings,
+  showAccountAction = false,
+  showSettingsAction = true,
+}: IHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const actionButtonClassName =
@@ -40,21 +75,19 @@ export const Header = ({ onMenuClick }: IHeaderProps) => {
   };
 
   const handleNotificationsClick = () => {
-    setShowNotifications(!showNotifications);
-    setShowSettings(false);
+    setIsNotificationsPanelOpen(!isNotificationsPanelOpen);
   };
 
   const handleSettingsClick = () => {
-    setShowSettings(!showSettings);
-    setShowNotifications(false);
+    setIsSettingsPanelOpen(true);
   };
 
   const handleCloseNotifications = () => {
-    setShowNotifications(false);
+    setIsNotificationsPanelOpen(false);
   };
 
   const handleCloseSettings = () => {
-    setShowSettings(false);
+    setIsSettingsPanelOpen(false);
   };
 
   const handleLogout = async () => {
@@ -64,79 +97,83 @@ export const Header = ({ onMenuClick }: IHeaderProps) => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background">
-        <div className="flex items-center justify-between gap-4 px-8 py-4">
+      <header className={containerClassName}>
+        <div className={`flex items-center gap-4 ${innerClassName}`}>
           {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={onMenuClick}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {onMenuClick && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={onMenuClick}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearchSubmit} className="min-w-0 flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search files, folders, and projects..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-full rounded-lg border border-border bg-muted px-4 py-2 pl-10 text-sm placeholder-muted-foreground transition-all focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
-          </form>
+          {leadingContent && <div className="min-w-0 flex-1">{leadingContent}</div>}
+
+          {showSearch && (
+            <form onSubmit={handleSearchSubmit} className="min-w-0 flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="w-full rounded-lg border border-border bg-muted px-4 py-2 pl-10 text-sm placeholder-muted-foreground transition-all focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </form>
+          )}
 
           {/* Right Actions */}
           <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border/70 bg-card/70 p-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={actionButtonClassName}
-              title={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
-              onClick={handleThemeToggle}
-            >
-              {isDarkTheme ? (
-                <Sun className="h-4.5 w-4.5" />
-              ) : (
-                <Moon className="h-4.5 w-4.5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={actionButtonClassName}
-              title="Notifications"
-              onClick={handleNotificationsClick}
-            >
-              <Bell className="h-4.5 w-4.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={actionButtonClassName}
-              title="Settings"
-              onClick={handleSettingsClick}
-            >
-              <Settings className="h-4.5 w-4.5" />
-            </Button>
-
+            {showThemeToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={actionButtonClassName}
+                title={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
+                onClick={handleThemeToggle}
+              >
+                {isDarkTheme ? (
+                  <Sun className="h-4.5 w-4.5" />
+                ) : (
+                  <Moon className="h-4.5 w-4.5" />
+                )}
+              </Button>
+            )}
+            {showNotificationButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={actionButtonClassName}
+                title="Notifications"
+                onClick={handleNotificationsClick}
+              >
+                <Bell className="h-4.5 w-4.5" />
+              </Button>
+            )}
+            {rightActions}
             <AccountDropdownMenu
-              accountEmail="alexander.wright@vault.enterprise"
-              accountName="Alexander Wright"
-              accountRole="Pro Account"
-              accentClassName="bg-orange-100 text-orange-700"
+              accountEmail={accountEmail}
+              accountName={accountName}
+              accountRole={accountRole}
+              accentClassName={accountAccentClassName}
+              onOpenAccount={onOpenAccount}
+              onOpenSettings={onOpenSettings ?? handleSettingsClick}
+              showAccountAction={showAccountAction}
+              showSettingsAction={showSettingsAction}
               onLogout={handleLogout}
             />
           </div>
         </div>
       </header>
 
-      <NotificationsPanel isOpen={showNotifications} onClose={handleCloseNotifications} />
-      <SettingsPanel isOpen={showSettings} onClose={handleCloseSettings} />
+      <NotificationsPanel isOpen={isNotificationsPanelOpen} onClose={handleCloseNotifications} />
+      <SettingsPanel isOpen={isSettingsPanelOpen} onClose={handleCloseSettings} onSignOut={handleLogout} />
     </>
   );
 };

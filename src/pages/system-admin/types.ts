@@ -5,6 +5,7 @@ export type TSystemSection =
   | "tenants"
   | "quota"
   | "billing"
+  | "account-management"
   | "redis-status"
   | "rabbitmq-queue"
   | "storage-nodes"
