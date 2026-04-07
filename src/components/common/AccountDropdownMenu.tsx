@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react"
-import { ChevronRight, LogOut, Settings, User } from "lucide-react"
+import { ChevronRight, LogOut, User } from "lucide-react"
 
 export interface IAccountDropdownMenuProps {
   accountName: string
@@ -10,7 +10,6 @@ export interface IAccountDropdownMenuProps {
   onOpenAccount?: () => void
   onOpenSettings?: () => void
   showAccountAction?: boolean
-  showSettingsAction?: boolean
 }
 
 export const AccountDropdownMenu = ({
@@ -22,7 +21,6 @@ export const AccountDropdownMenu = ({
   onOpenAccount,
   onOpenSettings,
   showAccountAction = true,
-  showSettingsAction = true,
 }: IAccountDropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -136,19 +134,7 @@ export const AccountDropdownMenu = ({
             </button>
           )}
 
-          {showSettingsAction && (
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
-              onClick={handleOpenSettings}
-              role="menuitem"
-              type="button"
-            >
-              <Settings className="h-4 w-4" />
-              Cài đặt
-            </button>
-          )}
-
-          {(showAccountAction || showSettingsAction) && <div className="my-2 border-t border-border" />}
+          {(showAccountAction ) && <div className="my-2 border-t border-border" />}
 
           <button
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"

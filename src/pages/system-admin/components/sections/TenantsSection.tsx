@@ -20,6 +20,9 @@ interface ITenantsSectionProps {
 interface IRegisterTenantFormState {
   businessName: string
   nodeCode: string
+  status: TTenantStatus
+  extraStorageSize: string
+  storageUnit: "GB" | "TB"
   plan: string
   region: string
   adminName: string
@@ -33,10 +36,14 @@ const TENANT_REGION_OPTIONS = [
   "Europe (Frankfurt)",
   "US-East (Virginia)",
 ]
+const TENANT_STORAGE_UNITS = ["GB", "TB"] as const
 
 const INITIAL_FORM_STATE: IRegisterTenantFormState = {
   businessName: "",
   nodeCode: "",
+  status: "Trial",
+  extraStorageSize: "",
+  storageUnit: "GB",
   plan: "Professional",
   region: "Asia-Pacific (Tokyo)",
   adminName: "",
@@ -91,10 +98,10 @@ export const TenantsSection = ({
     })
   }, [searchTerm, selectedStatus, tenants])
 
-  const handleInputChange = (field: keyof IRegisterTenantFormState) => (
+  const handleInputChange = <K extends keyof IRegisterTenantFormState>(field: K) => (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const value = event.target.value
+    const value = event.target.value as IRegisterTenantFormState[K]
     setFormState((current) => ({
       ...current,
       [field]: value,
@@ -109,7 +116,7 @@ export const TenantsSection = ({
     const adminName = formState.adminName.trim()
     const adminEmail = formState.adminEmail.trim()
 
-    if (!businessName || !nodeCode || !adminName || !adminEmail) {
+    if (!businessName || !nodeCode || !adminName || !adminEmail || !formState.extraStorageSize.trim()) {
       toast.error("Please fill in all required tenant details.")
       return
     }
@@ -119,13 +126,19 @@ export const TenantsSection = ({
       return
     }
 
+    const storageNumber = Number(formState.extraStorageSize)
+    if (Number.isNaN(storageNumber) || storageNumber < 0) {
+      toast.error("Please enter a valid storage amount.")
+      return
+    }
+
     const newTenant: ITenantRecord = {
       businessName,
       nodeCode,
-      status: "Trial",
+      status: formState.status,
       plan: formState.plan,
-      quotaUsed: "0 GB",
-      quotaPercent: 0,
+      quotaUsed: `${storageNumber} ${formState.storageUnit}`,
+      quotaPercent: Math.min(Math.round((storageNumber / 100) * 100), 100),
       createdDate: formatToday(),
       region: formState.region,
       adminName,
@@ -262,7 +275,7 @@ export const TenantsSection = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <button
             aria-label="Close register tenant modal"
-            className="absolute inset-0 bg-slate-950/40"
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
             onClick={onCloseRegisterTenant}
             type="button"
           />
@@ -280,23 +293,64 @@ export const TenantsSection = ({
 
             <form className="grid gap-4 px-6 py-5 md:grid-cols-2" onSubmit={handleRegisterTenant}>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Business Name</span>
+                <span className="text-sm font-medium text-slate-700">Tenant Name</span>
                 <input
                   className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
-                  placeholder="e.g. Nova Logistics"
+                  placeholder="e.g. Acme Corporation"
                   value={formState.businessName}
                   onChange={handleInputChange("businessName")}
                 />
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Node Code</span>
-                <input
+                <span className="text-sm font-medium text-slate-700">Tenant Domain</span>
+                <div className="relative">
+                  <input
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-32 text-sm outline-none focus:border-blue-600"
+                    placeholder="acme-corp"
+                    value={formState.nodeCode}
+                    onChange={handleInputChange("nodeCode")}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">.sovereign.io</span>
+                </div>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Storage Allocation</span>
+                <div className="flex gap-2">
+                  <input
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
+                    placeholder="0"
+                    type="number"
+                    min={0}
+                    value={formState.extraStorageSize}
+                    onChange={handleInputChange("extraStorageSize")}
+                  />
+                  <select
+                    className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
+                    value={formState.storageUnit}
+                    onChange={handleInputChange("storageUnit")}
+                  >
+                    {TENANT_STORAGE_UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Tenant Status</span>
+                <select
                   className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
-                  placeholder="e.g. vn-south-east-3"
-                  value={formState.nodeCode}
-                  onChange={handleInputChange("nodeCode")}
-                />
+                  value={formState.status}
+                  onChange={handleInputChange("status")}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Trial">Trial</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
               </label>
 
               <label className="space-y-2">

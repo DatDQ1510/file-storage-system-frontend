@@ -9,6 +9,7 @@ import {
   updateProfile,
 } from "@/lib/api/auth-service"
 import { PasswordChangeForm } from "@/pages/system-admin/components/sections/account-management/PasswordChangeForm"
+import type { IUpdatePasswordInput } from "@/types/auth"
 import { ProfileAvatarUploader } from "@/pages/system-admin/components/sections/account-management/ProfileAvatarUploader"
 import { ProfileDetailsForm } from "@/pages/system-admin/components/sections/account-management/ProfileDetailsForm"
 import { TwoFactorAuthenticationSection } from "@/pages/system-admin/components/sections/TwoFactorAuthenticationSection"
@@ -19,13 +20,13 @@ interface IAccountManagementSectionProps {
 }
 
 export const AccountManagementSection = ({ initialUser }: IAccountManagementSectionProps) => {
-  const [fullName, setFullName] = useState(initialUser?.name ?? "Inter Admin")
+  const [username, setUsername] = useState(initialUser?.username ?? "Inter Admin")
   const [emailAddress, setEmailAddress] = useState(initialUser?.email ?? "admin@sovereign.arch")
-  const [jobTitle, setJobTitle] = useState(initialUser?.jobTitle ?? "System Architect")
-  const [department, setDepartment] = useState(initialUser?.department ?? "Infrastructure")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false)
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(initialUser?.avatar ?? "")
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
@@ -37,10 +38,8 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
       try {
         const currentUser = initialUser ?? (await getCurrentUser())
 
-        setFullName(currentUser.name)
+        setUsername(currentUser.username)
         setEmailAddress(currentUser.email)
-        setJobTitle(currentUser.jobTitle ?? "System Architect")
-        setDepartment(currentUser.department ?? "Infrastructure")
         setAvatarPreview(currentUser.avatar ?? "")
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load account information")
@@ -51,13 +50,13 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
   }, [initialUser])
 
   const initials = useMemo(() => {
-    const sourceName = fullName.trim() || "Admin User"
+    const sourceName = username.trim() || "Admin User"
     return sourceName
       .split(" ")
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
       .join("")
-  }, [fullName])
+  }, [username])
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -76,10 +75,8 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
 
     try {
       await updateProfile({
-        name: fullName.trim(),
+        username: username.trim(),
         email: emailAddress.trim(),
-        jobTitle: jobTitle.trim(),
-        department: department.trim(),
       })
       toast.success("Profile updated successfully")
     } catch (error) {
@@ -108,16 +105,18 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
     }
   }
 
-  const handleChangePassword = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsChangingPassword(true)
 
     try {
-      await changePassword({
+      const passwordInput: IUpdatePasswordInput = {
         currentPassword,
         newPassword,
         confirmPassword,
-      })
+      }
+
+      await changePassword(passwordInput)
       toast.success("Password updated successfully")
       setCurrentPassword("")
       setNewPassword("")
@@ -146,15 +145,11 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
             />
 
             <ProfileDetailsForm
-              fullName={fullName}
+              username={username}
               emailAddress={emailAddress}
-              jobTitle={jobTitle}
-              department={department}
               isSavingProfile={isSavingProfile}
-              onFullNameChange={setFullName}
+              onUsernameChange={setUsername}
               onEmailAddressChange={setEmailAddress}
-              onJobTitleChange={setJobTitle}
-              onDepartmentChange={setDepartment}
               onSubmit={handleSaveProfile}
             />
           </div>
@@ -176,6 +171,10 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
               onNewPasswordChange={setNewPassword}
               onConfirmPasswordChange={setConfirmPassword}
               onSubmit={handleChangePassword}
+              isNewPasswordVisible={isNewPasswordVisible}
+              setIsNewPasswordVisible={setIsNewPasswordVisible}
+              isConfirmPasswordVisible={isConfirmPasswordVisible}
+              setIsConfirmPasswordVisible={setIsConfirmPasswordVisible}
             />
           </CardContent>
         </Card>

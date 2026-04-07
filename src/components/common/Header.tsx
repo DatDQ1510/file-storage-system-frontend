@@ -27,7 +27,6 @@ interface IHeaderProps {
   onOpenAccount?: () => void;
   onOpenSettings?: () => void;
   showAccountAction?: boolean;
-  showSettingsAction?: boolean;
 }
 
 export const Header = ({
@@ -47,7 +46,6 @@ export const Header = ({
   onOpenAccount,
   onOpenSettings,
   showAccountAction = false,
-  showSettingsAction = true,
 }: IHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
@@ -165,7 +163,6 @@ export const Header = ({
               onOpenAccount={onOpenAccount}
               onOpenSettings={onOpenSettings ?? handleSettingsClick}
               showAccountAction={showAccountAction}
-              showSettingsAction={showSettingsAction}
               onLogout={handleLogout}
             />
           </div>
