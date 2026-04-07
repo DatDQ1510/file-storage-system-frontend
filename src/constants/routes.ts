@@ -15,6 +15,8 @@ export const ROUTES = {
   STARRED: "/starred",
   PROJECTS: "/projects",
   PROJECT_DETAIL: "/projects/:projectId",
+  PROJECT_FOLDER_DETAIL: "/projects/:projectId/folders/:folderId",
+  PROJECT_FILE_DETAIL: "/projects/:projectId/files/:fileId",
   RECYCLE_BIN: "/recycle-bin",
   SUPPORT: "/support",
 } as const
@@ -65,4 +67,12 @@ export const normalizeDashboardRoute = (
 
 export const getProjectPath = (projectId: string) => {
   return `/projects/${projectId}`
+}
+
+export const getProjectFolderPath = (projectId: string, folderId: string) => {
+  return `/projects/${projectId}/folders/${folderId}`
+}
+
+export const getProjectFilePath = (projectId: string, fileId: string) => {
+  return `/projects/${projectId}/files/${fileId}`
 }

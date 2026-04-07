@@ -4,8 +4,6 @@ import {
   Sheet,
   Clapperboard,
   Folder,
-  Filter,
-  Upload,
   FileBadge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -105,19 +103,6 @@ export const Recent = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="rounded-md border-border bg-muted/20 text-foreground"
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-          <Button className="bg-blue-600 text-white hover:bg-blue-700">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload
-          </Button>
-        </div>
       </section>
 
       {data.groups.map((group) => (
