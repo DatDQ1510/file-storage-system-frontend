@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
-  Heart,
   Home,
   Star,
   FolderOpen,
@@ -21,7 +20,6 @@ export const Sidebar = () => {
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 
   const navItems = [
-    { label: "For You", icon: Heart, path: ROUTES.HOME },
     { label: "Recent", icon: Home, path: ROUTES.RECENT },
     { label: "Starred", icon: Star, path: ROUTES.STARRED },
   ];
@@ -107,7 +105,9 @@ export const Sidebar = () => {
             <div className="mt-1 space-y-1 pl-8">
               {PROJECT_ITEMS.map((projectItem) => {
                 const projectPath = getProjectPath(projectItem.id);
-                const activeProject = location.pathname === projectPath;
+                const activeProject =
+                  location.pathname === projectPath ||
+                  location.pathname.startsWith(`${projectPath}/`);
 
                 return (
                   <button

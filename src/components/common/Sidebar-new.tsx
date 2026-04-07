@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
-  Heart,
   Home,
   Star,
   Trash2,
@@ -19,7 +18,6 @@ export const Sidebar = () => {
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 
   const navItems = [
-    { label: "For You", icon: Heart, path: ROUTES.HOME },
     { label: "Recent", icon: Home, path: ROUTES.RECENT },
     { label: "Starred", icon: Star, path: ROUTES.STARRED },
   ];

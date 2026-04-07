@@ -4,11 +4,8 @@ import {
   Image,
   Presentation,
   Folder,
-  Star,
-  Filter,
-  Plus,
+  Star
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { IStarredPageData } from "@/types/starred";
 
 const MOCK_STARRED_DATA: IStarredPageData = {
@@ -84,19 +81,6 @@ export const Starred = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="rounded-md border-border bg-muted/20 text-foreground"
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-          <Button className="bg-blue-600 text-white hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New
-          </Button>
-        </div>
       </section>
 
       <section className="space-y-3">
