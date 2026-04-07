@@ -33,21 +33,21 @@ export const PasswordChangeForm = ({
 }: IPasswordChangeFormProps) => {
 
   return (
-    <form className="grid max-w-2xl gap-4" onSubmit={onSubmit}>
-      <label className="space-y-2">
-        <span className="text-sm font-semibold text-slate-700">Current Password</span>
+    <form className="grid max-w-2xl gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+      <label className="space-y-2 md:col-span-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Current Password</span>
         <input
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
           type="password"
           value={currentPassword}
           onChange={(event) => onCurrentPasswordChange(event.target.value)}
         />
       </label>
       <label className="space-y-2">
-        <span className="text-sm font-semibold text-slate-700">New Password</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">New Password</span>
         <div className="relative">
           <input
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-10 text-sm outline-none focus:border-blue-600"
             type={isNewPasswordVisible ? "text" : "password"}
             value={newPassword}
             onChange={(event) => onNewPasswordChange(event.target.value)}
@@ -64,10 +64,10 @@ export const PasswordChangeForm = ({
         </div>
       </label>
       <label className="space-y-2">
-        <span className="text-sm font-semibold text-slate-700">Confirm New Password</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Confirm New Password</span>
         <div className="relative">
           <input
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-10 text-sm outline-none focus:border-blue-600"
             type={isConfirmPasswordVisible ? "text" : "password"}
             value={confirmPassword}
             onChange={(event) => onConfirmPasswordChange(event.target.value)}
@@ -83,8 +83,8 @@ export const PasswordChangeForm = ({
           </Button>
         </div>
       </label>
-      <div className="pt-2">
-        <Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800" disabled={isChangingPassword}>
+      <div className="pt-1 md:col-span-2">
+        <Button type="submit" className="h-9 bg-blue-700 text-white hover:bg-blue-800" disabled={isChangingPassword}>
           {isChangingPassword ? (
             <>
               <LoaderCircle className="h-4 w-4 animate-spin" />

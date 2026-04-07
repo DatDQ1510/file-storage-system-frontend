@@ -2,13 +2,7 @@ import {
   Activity,
   Building2,
   CreditCard,
-  Database,
-  HardDrive,
-  Network,
-  Shield,
-  ShieldBan,
   UserCog,
-  SlidersHorizontal,
 } from "lucide-react"
 import type {
   IPlanCard,
@@ -24,23 +18,12 @@ export const SYSTEM_NAV_GROUPS: ISystemNavGroup[] = [
     items: [
       { label: "Dashboard", icon: Activity, section: "dashboard" },
       { label: "Tenant Management", icon: Building2, section: "tenants" },
-      { label: "Quota Allocation", icon: SlidersHorizontal, section: "quota" },
       { label: "Billing & Plans", icon: CreditCard, section: "billing" },
     ],
   },
   {
     title: "Settings",
     items: [{ label: "Account Management", icon: UserCog, section: "account-management" }],
-  },
-  {
-    title: "Infrastructure",
-    items: [
-      { label: "Redis Status", icon: Database, section: "redis-status" },
-      { label: "RabbitMQ Queue", icon: Network, section: "rabbitmq-queue" },
-      { label: "Storage Nodes", icon: HardDrive, section: "storage-nodes" },
-      { label: "Global Audit Logs", icon: Shield, section: "global-audit-logs" },
-      { label: "Blocked IPs", icon: ShieldBan, section: "blocked-ips" },
-    ],
   },
 ]
 
@@ -132,22 +115,10 @@ export const getSectionTitle = (section: TSystemSection) => {
       return "Dashboard"
     case "tenants":
       return "Tenant Management"
-    case "quota":
-      return "Cấp phát Quota"
     case "billing":
       return "Quản lý Gói cước"
     case "account-management":
       return "Account Management"
-    case "redis-status":
-      return "Trạng thái Redis"
-    case "rabbitmq-queue":
-      return "Hàng đợi RabbitMQ"
-    case "storage-nodes":
-      return "Storage Nodes"
-    case "global-audit-logs":
-      return "Global Audit Logs"
-    case "blocked-ips":
-      return "Blocked IPs"
   }
 }
 
@@ -157,31 +128,7 @@ export const getSectionDescription = (section: TSystemSection) => {
   }
 
   if (section === "tenants") {
-    return "Manage enterprise tenants, register new workspaces, and inspect quota utilization trends."
-  }
-
-  if (section === "quota") {
-    return "Configure CPU, RAM, and SSD allocation boundaries for high-performance tenant environments."
-  }
-
-  if (section === "redis-status") {
-    return "Track Redis cluster memory pressure, replication lag, and failover readiness by region."
-  }
-
-  if (section === "rabbitmq-queue") {
-    return "Observe queue depth, processing throughput, and retry spikes to prevent message backlogs."
-  }
-
-  if (section === "storage-nodes") {
-    return "Inspect storage node health, disk usage, and latency distribution across object clusters."
-  }
-
-  if (section === "global-audit-logs") {
-    return "Review system-wide audit trails for configuration changes and security-sensitive actions."
-  }
-
-  if (section === "blocked-ips") {
-    return "Manage denied IP addresses and investigate traffic anomalies or repeated abuse patterns."
+    return "Manage enterprise tenants, register new workspaces, and monitor workspace usage trends."
   }
 
   if (section === "account-management") {

@@ -20,26 +20,26 @@ export const ProfileDetailsForm = ({
   onSubmit,
 }: IProfileDetailsFormProps) => {
   return (
-    <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+    <form className="grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
       <label className="space-y-2">
-        <span className="text-sm font-semibold text-slate-700">Username</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Username</span>
         <input
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
           value={username}
           onChange={(event) => onUsernameChange(event.target.value)}
         />
       </label>
       <label className="space-y-2">
-        <span className="text-sm font-semibold text-slate-700">Email Address</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Email Address</span>
         <input
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600"
+          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
           value={emailAddress}
           onChange={(event) => onEmailAddressChange(event.target.value)}
         />
       </label>
 
-      <div className="md:col-span-2 flex justify-end pt-2">
-        <Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800" disabled={isSavingProfile}>
+      <div className="md:col-span-2 flex justify-end pt-1">
+        <Button type="submit" className="h-9 bg-blue-700 text-white hover:bg-blue-800" disabled={isSavingProfile}>
           {isSavingProfile ? (
             <>
               <LoaderCircle className="h-4 w-4 animate-spin" />

@@ -12,6 +12,7 @@ import { SignUp } from "@/pages/SignUp"
 import { Starred } from "@/pages/Starred"
 import { TotpSignIn } from "@/pages/TotpSignIn"
 import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
+import { CreatePlanPage } from "@/pages/system-admin/pages/CreatePlanPage"
 import { TenantAdminPage } from "@/pages/tenant-admin/TenantAdminPage"
 import { isAuthenticated } from "@/lib/api/auth-service"
 
@@ -100,6 +101,10 @@ const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.SYSTEM_ADMIN_DASHBOARD,
     element: <ProtectedRoute><SystemAdminPage /></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.SYSTEM_ADMIN_CREATE_PLAN,
+    element: <ProtectedRoute><CreatePlanPage /></ProtectedRoute>,
   },
   {
     path: ROUTES.TENANT_ADMIN_DASHBOARD,

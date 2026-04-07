@@ -6,7 +6,6 @@ import {
   X,
 } from "lucide-react"
 import { Header } from "@/components/common/Header"
-import { Button } from "@/components/ui/button"
 import {
   getSectionDescription,
   getSectionTitle,
@@ -14,16 +13,28 @@ import {
 import { AccountManagementSection } from "@/pages/system-admin/components/sections/AccountManagementSection"
 import { SidebarNavigation } from "@/pages/system-admin/components/SidebarNavigation"
 import { BillingSection } from "@/pages/system-admin/components/sections/BillingSection"
+import { CreatePlanModal } from "@/pages/system-admin/components/sections/billing/CreatePlanModal"
 import { DashboardSection } from "@/pages/system-admin/components/sections/DashboardSection"
-import { InfrastructureSection } from "@/pages/system-admin/components/sections/InfrastructureSection"
-import { QuotaSection } from "@/pages/system-admin/components/sections/QuotaSection"
 import { TenantsSection } from "@/pages/system-admin/components/sections/TenantsSection"
-import type { TSystemSection } from "@/pages/system-admin/types"
+import { SystemAdminSectionActions } from "@/pages/system-admin/components/SystemAdminSectionActions"
+import type { INewPlanInput, TSystemSection } from "@/pages/system-admin/types"
 
 export const SystemAdminPage = () => {
   const [activeSection, setActiveSection] = useState<TSystemSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
+  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false)
+  const [createPlanForm, setCreatePlanForm] = useState<INewPlanInput>({
+    name: "",
+    status: "Active",
+    description: "",
+    storageLimit: 0,
+    maxUsers: 0,
+    billingCycle: "Monthly",
+    price: 0,
+    features: [],
+  })
+  const [customFeature, setCustomFeature] = useState("")
 
   const handleOpenRegisterTenant = () => {
     setIsRegisterTenantOpen(true)
@@ -31,6 +42,25 @@ export const SystemAdminPage = () => {
 
   const handleCloseRegisterTenant = () => {
     setIsRegisterTenantOpen(false)
+  }
+
+  const handleOpenCreatePlan = () => {
+    setIsCreatePlanOpen(true)
+  }
+
+  const handleCloseCreatePlan = () => {
+    setIsCreatePlanOpen(false)
+    setCreatePlanForm({
+      name: "",
+      status: "Active",
+      description: "",
+      storageLimit: 0,
+      maxUsers: 0,
+      billingCycle: "Monthly",
+      price: 0,
+      features: [],
+    })
+    setCustomFeature("")
   }
 
   return (
@@ -93,28 +123,11 @@ export const SystemAdminPage = () => {
           <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 xl:px-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-4xl text-sm leading-relaxed text-slate-600">{getSectionDescription(activeSection)}</p>
-
-              <div className="flex items-center gap-2">
-                {activeSection === "tenants" && (
-                  <>
-                    <Button variant="outline" className="border-slate-300 bg-white">
-                      Export List
-                    </Button>
-                    <Button className="bg-blue-700 text-white hover:bg-blue-800" onClick={handleOpenRegisterTenant}>+ Register New Tenant</Button>
-                  </>
-                )}
-
-                {activeSection === "quota" && (
-                  <>
-                    <Button variant="ghost" className="text-slate-600">Hủy bỏ</Button>
-                    <Button className="bg-blue-700 text-white hover:bg-blue-800">Lưu cấu hình</Button>
-                  </>
-                )}
-
-                {activeSection === "billing" && (
-                  <Button className="bg-blue-700 text-white hover:bg-blue-800">+ Create New Plan</Button>
-                )}
-              </div>
+              <SystemAdminSectionActions
+                activeSection={activeSection}
+                onOpenRegisterTenant={handleOpenRegisterTenant}
+                onCreatePlan={handleOpenCreatePlan}
+              />
             </div>
 
             {activeSection === "dashboard" && <DashboardSection />}
@@ -126,15 +139,30 @@ export const SystemAdminPage = () => {
                 onOpenRegisterTenant={handleOpenRegisterTenant}
               />
             )}
-            {activeSection === "quota" && <QuotaSection />}
-            {activeSection === "billing" && <BillingSection />}
-            {[
-              "redis-status",
-              "rabbitmq-queue",
-              "storage-nodes",
-              "global-audit-logs",
-              "blocked-ips",
-            ].includes(activeSection) && <InfrastructureSection activeSection={activeSection} />}
+            {activeSection === "billing" && (
+              <BillingSection
+                isCreatePlanOpen={isCreatePlanOpen}
+                createPlanForm={createPlanForm}
+                customFeature={customFeature}
+                onCloseCreatePlan={handleCloseCreatePlan}
+                onChangeCreatePlanForm={(field) => (event) => {
+                  const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                  setCreatePlanForm((prev) => ({
+                    ...prev,
+                    [field]: target.type === "number" ? (target.value === "" ? 0 : Number(target.value)) : target.value,
+                  }))
+                }}
+                onToggleFeature={(feature) => {
+                  setCreatePlanForm((prev) => ({
+                    ...prev,
+                    features: prev.features.includes(feature)
+                      ? prev.features.filter((f) => f !== feature)
+                      : [...prev.features, feature],
+                  }))
+                }}
+                onChangeCustomFeature={setCustomFeature}
+              />
+            )}
 
           </main>
         </div>
@@ -174,13 +202,33 @@ export const SystemAdminPage = () => {
         </div>
       )}
 
-      {activeSection === "quota" && (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden max-w-sm rounded-xl border border-blue-200 bg-white px-4 py-3 shadow-lg shadow-slate-900/15 md:block">
-          <p className="text-sm font-semibold text-slate-900">Quota Usage Insight</p>
-          <p className="mt-1 text-xs text-slate-600">System storage is approaching 80% in 4 regions. Provision new nodes within 14 days.</p>
-          <div className="mt-2 text-xs text-blue-700">View capacity planning report</div>
-        </div>
-      )}
+      <CreatePlanModal
+        isOpen={isCreatePlanOpen}
+        formState={createPlanForm}
+        customFeature={customFeature}
+        onClose={handleCloseCreatePlan}
+        onChange={(field) => (event) => {
+          const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+          setCreatePlanForm((prev) => ({
+            ...prev,
+            [field]: target.type === "number" ? (target.value === "" ? 0 : Number(target.value)) : target.value,
+          }))
+        }}
+        onFeatureToggle={(feature) => {
+          setCreatePlanForm((prev) => ({
+            ...prev,
+            features: prev.features.includes(feature)
+              ? prev.features.filter((f) => f !== feature)
+              : [...prev.features, feature],
+          }))
+        }}
+        onCustomFeatureChange={setCustomFeature}
+        onSubmit={(event) => {
+          event.preventDefault()
+          console.log("Creating plan:", createPlanForm)
+          handleCloseCreatePlan()
+        }}
+      />
 
       <div className="admin-shell-gradient pointer-events-none fixed inset-0 -z-10" />
     </div>

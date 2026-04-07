@@ -129,13 +129,13 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="border-b border-slate-200/80 pb-4">
+        <CardHeader className="border-b border-slate-200/80 pb-3">
           <CardTitle className="text-lg font-semibold text-slate-900">Cập nhật thông tin cá nhân</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
+        <CardContent className="p-4 md:p-5">
+          <div className="grid gap-4 xl:grid-cols-[200px_minmax(0,1fr)]">
             <ProfileAvatarUploader
               avatarPreview={avatarPreview}
               initials={initials}
@@ -156,12 +156,12 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-slate-200/80 pb-4">
+          <CardHeader className="border-b border-slate-200/80 pb-3">
             <CardTitle className="text-lg font-semibold text-slate-900">Đổi mật khẩu</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-5">
             <PasswordChangeForm
               currentPassword={currentPassword}
               newPassword={newPassword}

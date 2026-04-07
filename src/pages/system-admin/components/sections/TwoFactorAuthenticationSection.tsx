@@ -36,7 +36,7 @@ export const TwoFactorAuthenticationSection = () => {
 
   return (
     <Card className="border-slate-200 bg-white shadow-sm">
-      <CardHeader className="border-b border-slate-200/80 pb-4">
+      <CardHeader className="border-b border-slate-200/80 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
             {isTwoFactorEnabled ? <ShieldCheck className="h-5 w-5 text-emerald-600" /> : <ShieldOff className="h-5 w-5 text-amber-600" />}
@@ -56,19 +56,19 @@ export const TwoFactorAuthenticationSection = () => {
           </button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 p-6">
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+      <CardContent className="space-y-4 p-4 md:p-5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           {isTwoFactorEnabled
             ? "2FA is currently enabled. You can disable it if needed."
             : "2FA is currently disabled. Turn it on and verify a one-time code to enable stronger account protection."}
         </div>
 
         {(setupData || isTwoFactorEnabled) && (
-          <div className="space-y-4">
-            <div className="grid gap-4 rounded-xl border border-slate-200 p-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="flex justify-center rounded-lg border border-slate-200 bg-white p-3">
+          <div className="space-y-3">
+            <div className="grid gap-3 rounded-xl border border-slate-200 p-3 lg:grid-cols-[180px_minmax(0,1fr)]">
+              <div className="flex justify-center rounded-lg border border-slate-200 bg-white p-2">
                 {qrCodeSrc ? (
-                  <img alt="2FA QR code" className="h-44 w-44 object-contain" src={qrCodeSrc} />
+                  <img alt="2FA QR code" className="h-36 w-36 object-contain" src={qrCodeSrc} />
                 ) : (
                   <p className="text-xs text-slate-500">No QR code available</p>
                 )}
