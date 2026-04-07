@@ -38,12 +38,9 @@ export interface ISignUpInput {
 
 export interface IAuthUser {
   id: string
-  name: string
+  username: string
   email: string
   avatar?: string
-  jobTitle?: string
-  department?: string
-  role: TUserRole
 }
 
 export interface IAuthResponse {

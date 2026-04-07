@@ -1,5 +1,5 @@
-import type { FormEvent } from "react"
-import { LoaderCircle } from "lucide-react"
+import type { Dispatch, FormEvent, SetStateAction } from "react"
+import { Eye, EyeOff, LoaderCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface IPasswordChangeFormProps {
@@ -11,6 +11,10 @@ interface IPasswordChangeFormProps {
   onNewPasswordChange: (value: string) => void
   onConfirmPasswordChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  isNewPasswordVisible: boolean
+  setIsNewPasswordVisible: Dispatch<SetStateAction<boolean>>
+  isConfirmPasswordVisible: boolean
+  setIsConfirmPasswordVisible: Dispatch<SetStateAction<boolean>>
 }
 
 export const PasswordChangeForm = ({
@@ -22,7 +26,12 @@ export const PasswordChangeForm = ({
   onNewPasswordChange,
   onConfirmPasswordChange,
   onSubmit,
+  isNewPasswordVisible,
+  setIsNewPasswordVisible,
+  isConfirmPasswordVisible,
+  setIsConfirmPasswordVisible,  
 }: IPasswordChangeFormProps) => {
+
   return (
     <form className="grid max-w-2xl gap-4" onSubmit={onSubmit}>
       <label className="space-y-2">
@@ -36,21 +45,43 @@ export const PasswordChangeForm = ({
       </label>
       <label className="space-y-2">
         <span className="text-sm font-semibold text-slate-700">New Password</span>
-        <input
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600"
-          type="password"
-          value={newPassword}
-          onChange={(event) => onNewPasswordChange(event.target.value)}
-        />
+        <div className="relative">
+          <input
+            className="h-10 w-full rounded-lg border border-slate-200 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            type={isNewPasswordVisible ? "text" : "password"}
+            value={newPassword}
+            onChange={(event) => onNewPasswordChange(event.target.value)}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1 h-8 w-8 text-slate-500"
+            onClick={() => setIsNewPasswordVisible((previous : boolean) => !previous)}
+          >
+            {isNewPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+        </div>
       </label>
       <label className="space-y-2">
         <span className="text-sm font-semibold text-slate-700">Confirm New Password</span>
-        <input
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600"
-          type="password"
-          value={confirmPassword}
-          onChange={(event) => onConfirmPasswordChange(event.target.value)}
-        />
+        <div className="relative">
+          <input
+            className="h-10 w-full rounded-lg border border-slate-200 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            type={isConfirmPasswordVisible ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(event) => onConfirmPasswordChange(event.target.value)}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1 h-8 w-8 text-slate-500"
+            onClick={() => setIsConfirmPasswordVisible((previous: boolean) => !previous)}
+          >
+            {isConfirmPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
+        </div>
       </label>
       <div className="pt-2">
         <Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800" disabled={isChangingPassword}>

@@ -229,7 +229,7 @@ export const signInWithTotp = async (
   }
 
   const response = await api.post<ISignInResponse>(
-    "/auth/login/totp",
+    "/2fa/verify",
     request,
     {
       withCredentials: true,
@@ -336,11 +336,18 @@ export const refreshAccessToken = async (): Promise<string> => {
 
 /**
  * GET - Get current user data
+ * @param userId Optional id of the user to load; if omitted, uses stored auth userId
  * @returns Current authenticated user
  */
-export const getCurrentUser = async (): Promise<IAuthUser> => {
-  const response = await api.get<{ user: IAuthUser }>("/auth/me")
-  return response.data.user
+export const getCurrentUser = async (userId?: string): Promise<IAuthUser> => {
+  const storedUserId = userId?.trim() || getStoredAuthData()?.userId
+
+  if (!storedUserId) {
+    throw new Error("User ID is required to fetch current user data")
+  }
+
+  const response = await api.get<IApiResponse<IAuthUser>>(`/auth/me/${storedUserId}`)
+  return response.data.data
 }
 
 /**
@@ -353,7 +360,7 @@ export const updateProfile = async (
     ...data,
   }
 
-  const response = await api.put<{ user: IAuthUser }>("/auth/profile", request)
+  const response = await api.patch<{ user: IAuthUser }>("/auth/profile", request)
   return response.data.user
 }
 
