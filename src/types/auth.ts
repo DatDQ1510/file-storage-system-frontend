@@ -24,6 +24,11 @@ export interface IAuthTokenResponse {
   userDisplayName: string
 }
 
+export interface ISignInResult extends Partial<IAuthTokenResponse> {
+  requiresTwoFactor?: boolean
+  pendingUsernameOrEmail?: string
+}
+
 export interface ISignUpInput {
   name: string
   usernameOrEmail: string
@@ -96,6 +101,6 @@ export interface IForgotPasswordResetPasswordInput
 }
 
 export interface ISignInWithTotpInput {
-  usernameOrEmail: string
+  email: string
   code: string
 }

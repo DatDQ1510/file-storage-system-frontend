@@ -13,7 +13,18 @@ export const SignIn = () => {
   const navigate = useNavigate();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const { usernameOrEmail, password, error, isLoading, setUsernameOrEmail, setPassword, handleSubmit } = useSignIn({
-    onSuccess: () => {
+    onSuccess: (authData) => {
+      if (authData.requiresTwoFactor) {
+        const pendingTotpEmail = (authData.email ?? usernameOrEmail).trim();
+
+        if (pendingTotpEmail) {
+          sessionStorage.setItem("pendingTotpEmail", pendingTotpEmail);
+          sessionStorage.setItem("pendingTotpIdentifier", pendingTotpEmail);
+        }
+        navigate(ROUTES.TOTP_SIGN_IN);
+        return;
+      }
+
       navigate(ROUTES.HOME);
     },
   });
@@ -77,17 +88,6 @@ export const SignIn = () => {
                 <span className="text-[#ea4335]">G</span>
               </span>
               Continue with Google
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-2 rounded-md border-border bg-muted/70 text-base font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent"
-              type="button"
-              onClick={() => navigate(ROUTES.TOTP_SIGN_IN)}
-            >
-              <Smartphone className="h-4 w-4 text-primary" />
-              Sign in with TOTP
             </Button>
 
             <div className="flex items-center gap-4">

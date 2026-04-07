@@ -1,7 +1,6 @@
 import { useState } from "react"
 import {
   Check,
-  ChevronLeft,
   ChevronRight,
   Clock3,
   X,
@@ -137,24 +136,6 @@ export const SystemAdminPage = () => {
               "blocked-ips",
             ].includes(activeSection) && <InfrastructureSection activeSection={activeSection} />}
 
-            <div className="mt-5 flex items-center justify-end gap-2 text-sm text-slate-500">
-              <button className="rounded-md border border-slate-300 bg-white p-1.5" type="button">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button className="rounded-md border border-blue-600 bg-blue-700 px-3 py-1 text-white" type="button">
-                1
-              </button>
-              <button className="rounded-md border border-slate-300 bg-white px-3 py-1" type="button">
-                2
-              </button>
-              <span>...</span>
-              <button className="rounded-md border border-slate-300 bg-white px-3 py-1" type="button">
-                12
-              </button>
-              <button className="rounded-md border border-slate-300 bg-white p-1.5" type="button">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
           </main>
         </div>
       </div>

@@ -14,11 +14,11 @@ export const TotpSignIn = () => {
   const [isCodeVisible, setIsCodeVisible] = useState(false)
 
   const {
-    usernameOrEmail,
+    email,
     code,
     error,
     isLoading,
-    setUsernameOrEmail,
+    setEmail,
     setCode,
     handleSubmit,
   } = useTotpSignIn({
@@ -96,16 +96,16 @@ export const TotpSignIn = () => {
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-foreground" htmlFor="totpUsernameOrEmail">
-                  Username or Email
+                <label className="block text-sm font-semibold text-foreground" htmlFor="totpEmail">
+                  Email
                 </label>
                 <input
                   className="h-10 w-full rounded-md border border-border bg-muted/60 px-3 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-200 focus:border-primary focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/35"
-                  id="totpUsernameOrEmail"
+                  id="totpEmail"
                   placeholder="name@company.com or username"
                   type="text"
-                  value={usernameOrEmail}
-                  onChange={(event) => setUsernameOrEmail(event.target.value)}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   disabled={isLoading}
                 />
               </div>

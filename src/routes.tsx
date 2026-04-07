@@ -13,6 +13,7 @@ import { Starred } from "@/pages/Starred"
 import { TotpSignIn } from "@/pages/TotpSignIn"
 import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
 import { TenantAdminPage } from "@/pages/tenant-admin/TenantAdminPage"
+import { isAuthenticated } from "@/lib/api/auth-service"
 
 interface IRouteConfig {
   path: string
@@ -25,52 +26,116 @@ const renderRouteConfigs = (routeConfigs: IRouteConfig[]) => {
   ))
 }
 
+const PublicOnlyRoute = ({ children }: { children: ReactNode }) => {
+  if (isAuthenticated()) {
+    return <Navigate replace to={ROUTES.HOME} />
+  }
+
+  return children
+}
+
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+  if (!isAuthenticated()) {
+    return <Navigate replace to={ROUTES.SIGN_IN} />
+  }
+
+  return children
+}
+
 const AUTH_ROUTES: IRouteConfig[] = [
-  { path: ROUTES.SIGN_IN, element: <SignIn /> },
-  { path: ROUTES.TOTP_SIGN_IN, element: <TotpSignIn /> },
-  { path: ROUTES.SIGN_UP, element: <SignUp /> },
-  { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPassword /> },
+  {
+    path: ROUTES.SIGN_IN,
+    element: <PublicOnlyRoute><SignIn /></PublicOnlyRoute>,
+  },
+  {
+    path: ROUTES.TOTP_SIGN_IN,
+    element: <PublicOnlyRoute><TotpSignIn /></PublicOnlyRoute>,
+  },
+  {
+    path: ROUTES.SIGN_UP,
+    element: <PublicOnlyRoute><SignUp /></PublicOnlyRoute>,
+  },
+  {
+    path: ROUTES.FORGOT_PASSWORD,
+    element: <PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>,
+  },
   { path: ROUTES.FORBIDDEN, element: <Forbidden /> },
 ]
 
 const DASHBOARD_ENTRY_ROUTES: IRouteConfig[] = [
-  { path: ROUTES.HOME, element: <Dashboard /> },
-  { path: ROUTES.DASHBOARD, element: <Dashboard /> },
+  {
+    path: ROUTES.HOME,
+    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.DASHBOARD,
+    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+  },
 ]
 
 const LEGACY_REDIRECT_ROUTES: IRouteConfig[] = [
   {
     path: "/system-admin",
-    element: <Navigate replace to={ROUTES.SYSTEM_ADMIN_DASHBOARD} />,
+    element: <ProtectedRoute><Navigate replace to={ROUTES.SYSTEM_ADMIN_DASHBOARD} /></ProtectedRoute>,
   },
   {
     path: "/tenant-admin",
-    element: <Navigate replace to={ROUTES.TENANT_ADMIN_DASHBOARD} />,
+    element: <ProtectedRoute><Navigate replace to={ROUTES.TENANT_ADMIN_DASHBOARD} /></ProtectedRoute>,
   },
-  { path: "/user", element: <Navigate replace to={ROUTES.USER_DASHBOARD} /> },
+  {
+    path: "/user",
+    element: <ProtectedRoute><Navigate replace to={ROUTES.USER_DASHBOARD} /></ProtectedRoute>,
+  },
   {
     path: "/dashboard/system",
-    element: <Navigate replace to={ROUTES.SYSTEM_ADMIN_DASHBOARD} />,
+    element: <ProtectedRoute><Navigate replace to={ROUTES.SYSTEM_ADMIN_DASHBOARD} /></ProtectedRoute>,
   },
   {
     path: "/dashboard/tenant",
-    element: <Navigate replace to={ROUTES.TENANT_ADMIN_DASHBOARD} />,
+    element: <ProtectedRoute><Navigate replace to={ROUTES.TENANT_ADMIN_DASHBOARD} /></ProtectedRoute>,
   },
 ]
 
 const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
-  { path: ROUTES.SYSTEM_ADMIN_DASHBOARD, element: <SystemAdminPage /> },
-  { path: ROUTES.TENANT_ADMIN_DASHBOARD, element: <TenantAdminPage /> },
-  { path: ROUTES.USER_DASHBOARD, element: <Navigate replace to={ROUTES.RECENT} /> },
+  {
+    path: ROUTES.SYSTEM_ADMIN_DASHBOARD,
+    element: <ProtectedRoute><SystemAdminPage /></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.TENANT_ADMIN_DASHBOARD,
+    element: <ProtectedRoute><TenantAdminPage /></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.USER_DASHBOARD,
+    element: <ProtectedRoute><Navigate replace to={ROUTES.RECENT} /></ProtectedRoute>,
+  },
 ]
 
 const APP_ROUTES: IRouteConfig[] = [
-  { path: ROUTES.RECENT, element: <Layout><Recent /></Layout> },
-  { path: ROUTES.STARRED, element: <Layout><Starred /></Layout> },
-  { path: ROUTES.PROJECTS, element: <Layout><Projects /></Layout> },
-  { path: ROUTES.PROJECT_DETAIL, element: <Layout><Projects /></Layout> },
-  { path: ROUTES.RECYCLE_BIN, element: <Layout><Dashboard /></Layout> },
-  { path: ROUTES.SUPPORT, element: <Layout><Dashboard /></Layout> },
+  {
+    path: ROUTES.RECENT,
+    element: <ProtectedRoute><Layout><Recent /></Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.STARRED,
+    element: <ProtectedRoute><Layout><Starred /></Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.PROJECTS,
+    element: <ProtectedRoute><Layout><Projects /></Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.PROJECT_DETAIL,
+    element: <ProtectedRoute><Layout><Projects /></Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.RECYCLE_BIN,
+    element: <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.SUPPORT,
+    element: <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>,
+  },
 ]
 
 export const AppRoutes = () => {

@@ -24,7 +24,13 @@ declare module "axios" {
 
 const API_TIMEOUT = 15000
 const ACCESS_TOKEN_KEY = "accessToken"
+const REFRESH_TOKEN_KEY = "refreshToken"
+const AUTH_DATA_KEY = "authData"
+const ROLE_KEY = "role"
+const REFRESH_ENDPOINT = "/auth/refresh"
 const FALLBACK_ERROR_MESSAGE = "Something went wrong while calling the API."
+
+let refreshTokenPromise: Promise<string | null> | null = null
 
 const ERROR_MESSAGE_BY_STATUS: Record<number, string> = {
   400: "Bad request.",
@@ -105,14 +111,109 @@ const normalizeMethod = (method?: string): TApiMethod => {
   }
 }
 
+const clearStoredAuth = () => {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(AUTH_DATA_KEY)
+  localStorage.removeItem(ROLE_KEY)
+}
+
+const getStoredAuthData = () => {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  const rawAuthData = localStorage.getItem(AUTH_DATA_KEY)
+
+  if (!rawAuthData) {
+    return null
+  }
+
+  try {
+    return JSON.parse(rawAuthData) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+const storeRefreshedAuth = (authData: Record<string, unknown>) => {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  const nextAccessToken =
+    typeof authData.accessToken === "string" ? authData.accessToken : ""
+
+  if (!nextAccessToken) {
+    return
+  }
+
+  const currentAuthData = getStoredAuthData()
+  const mergedAuthData = {
+    ...(currentAuthData ?? {}),
+    ...authData,
+  }
+
+  localStorage.setItem(ACCESS_TOKEN_KEY, nextAccessToken)
+  localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(mergedAuthData))
+
+  if (typeof mergedAuthData.role === "string") {
+    localStorage.setItem(ROLE_KEY, mergedAuthData.role)
+  }
+}
+
+const redirectToSignIn = () => {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  if (window.location.pathname !== "/sign-in") {
+    window.location.replace("/sign-in")
+  }
+}
+
 export const httpAxiosClient = axios.create({
   baseURL: getApiBaseUrl(),
   timeout: API_TIMEOUT,
+  withCredentials: true,
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
   },
 })
+
+const refreshHttpClient = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: API_TIMEOUT,
+  withCredentials: true,
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  },
+})
+
+const requestNewAccessToken = async (): Promise<string | null> => {
+  type TRefreshAuthData = Record<string, unknown> & { accessToken?: string }
+  type TRefreshResponse = {
+    data?: TRefreshAuthData
+  }
+
+  const response = await refreshHttpClient.post<TRefreshResponse>(
+    REFRESH_ENDPOINT,
+    {}
+  )
+
+  const refreshedAuthData = (response.data?.data ?? {}) as TRefreshAuthData
+  storeRefreshedAuth(refreshedAuthData)
+
+  return typeof refreshedAuthData.accessToken === "string"
+    ? refreshedAuthData.accessToken
+    : null
+}
 
 httpAxiosClient.interceptors.request.use((config) => {
   const requestConfig = config
@@ -134,10 +235,52 @@ httpAxiosClient.interceptors.request.use((config) => {
 
 httpAxiosClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<IApiErrorPayload>) => {
+  async (error: AxiosError<IApiErrorPayload>) => {
     const apiError = toApiError(error)
     const config = error.config as AxiosRequestConfig & {
       skipGlobalErrorHandler?: boolean
+      skipAuth?: boolean
+      _retry?: boolean
+    }
+
+    const isUnauthorized = error.response?.status === 401
+    const isRefreshRequest = config?.url?.includes(REFRESH_ENDPOINT)
+    const canRefresh = Boolean(config && !config.skipAuth && !config._retry && !isRefreshRequest)
+
+    if (isUnauthorized && canRefresh) {
+      config._retry = true
+
+      try {
+        if (!refreshTokenPromise) {
+          refreshTokenPromise = requestNewAccessToken().finally(() => {
+            refreshTokenPromise = null
+          })
+        }
+
+        const refreshedAccessToken = await refreshTokenPromise
+
+        if (refreshedAccessToken) {
+          config.headers = config.headers ?? {}
+
+          if (typeof (config.headers as { set?: unknown }).set === "function") {
+            (config.headers as { set: (name: string, value: string) => void }).set(
+              "Authorization",
+              `Bearer ${refreshedAccessToken}`
+            )
+          } else {
+            (config.headers as Record<string, string>).Authorization = `Bearer ${refreshedAccessToken}`
+          }
+
+          return httpAxiosClient(config)
+        }
+      } catch {
+        // Handled below by logout + redirect branch.
+      }
+    }
+
+    if (isUnauthorized) {
+      clearStoredAuth()
+      redirectToSignIn()
     }
 
     if (!config?.skipGlobalErrorHandler) {

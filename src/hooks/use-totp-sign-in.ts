@@ -1,6 +1,6 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
-import { signInWithTotp } from "@/lib/api/auth-service"
+import { getStoredEmail, signInWithTotp } from "@/lib/api/auth-service"
 import type { ISignInWithTotpInput } from "@/types/auth"
 
 interface IUseTotpSignInOptions {
@@ -8,29 +8,36 @@ interface IUseTotpSignInOptions {
 }
 
 interface IUseTotpSignInReturn {
-  usernameOrEmail: string
+  email: string
   code: string
   error: string | null
   isLoading: boolean
-  setUsernameOrEmail: (value: string) => void
+  setEmail: (value: string) => void
   setCode: (value: string) => void
   resetForm: () => void
   handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
 }
 
 const CODE_PATTERN = /^\d{6}$/
+const PENDING_TOTP_EMAIL_KEY = "pendingTotpEmail"
 
 export const useTotpSignIn = (
   options: IUseTotpSignInOptions = {}
 ): IUseTotpSignInReturn => {
   const { onSuccess } = options
-  const [usernameOrEmail, setUsernameOrEmail] = useState("")
+  const defaultIdentifier =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem(PENDING_TOTP_EMAIL_KEY)
+        ?? sessionStorage.getItem("pendingTotpIdentifier")
+        ?? getStoredEmail()
+      : ""
+
+  const [email, setEmail] = useState(defaultIdentifier)
   const [code, setCode] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const resetForm = () => {
-    setUsernameOrEmail("")
     setCode("")
     setError(null)
   }
@@ -39,25 +46,29 @@ export const useTotpSignIn = (
     event.preventDefault()
     setError(null)
 
-    if (!usernameOrEmail.trim()) {
-      setError("Username or email is required")
-      return
-    }
-
     if (!CODE_PATTERN.test(code.trim())) {
       setError("TOTP code must be exactly 6 digits")
       return
     }
 
+    if (!email.trim()) {
+      setError("Email or username is required")
+      return
+    }
+
     const input: ISignInWithTotpInput = {
-      usernameOrEmail: usernameOrEmail.trim(),
       code: code.trim(),
+      email: email.trim(),
     }
 
     setIsLoading(true)
 
     try {
       await signInWithTotp(input)
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(PENDING_TOTP_EMAIL_KEY)
+        sessionStorage.removeItem("pendingTotpIdentifier")
+      }
       onSuccess?.()
       resetForm()
     } catch (caughtError) {
@@ -72,11 +83,11 @@ export const useTotpSignIn = (
   }
 
   return {
-    usernameOrEmail,
+    email,
     code,
     error,
     isLoading,
-    setUsernameOrEmail,
+    setEmail,
     setCode,
     resetForm,
     handleSubmit,

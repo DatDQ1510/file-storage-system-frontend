@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { ChevronRight, LogOut, Settings, User } from "lucide-react"
 
 export interface IAccountDropdownMenuProps {
@@ -25,7 +25,9 @@ export const AccountDropdownMenu = ({
   showSettingsAction = true,
 }: IAccountDropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const menuContainerRef = useRef<HTMLDivElement | null>(null)
+  const menuId = useId()
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +47,24 @@ export const AccountDropdownMenu = ({
     }
   }, [])
 
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isOpen])
+
   const handleOpenAccount = () => {
     onOpenAccount?.()
     setIsOpen(false)
@@ -56,13 +76,24 @@ export const AccountDropdownMenu = ({
   }
 
   const handleLogout = async () => {
-    await onLogout()
-    setIsOpen(false)
+    if (isLoggingOut) {
+      return
+    }
+
+    setIsLoggingOut(true)
+
+    try {
+      await onLogout()
+      setIsOpen(false)
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
     <div className="relative" ref={menuContainerRef}>
       <button
+        aria-controls={menuId}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 transition-colors hover:bg-muted"
@@ -83,6 +114,7 @@ export const AccountDropdownMenu = ({
 
       {isOpen && (
         <div
+          id={menuId}
           className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 rounded-xl border border-border bg-card p-2 shadow-xl"
           role="menu"
         >
@@ -103,6 +135,7 @@ export const AccountDropdownMenu = ({
               Quản lý tài khoản
             </button>
           )}
+
           {showSettingsAction && (
             <button
               className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
@@ -122,9 +155,10 @@ export const AccountDropdownMenu = ({
             onClick={handleLogout}
             role="menuitem"
             type="button"
+            disabled={isLoggingOut}
           >
             <LogOut className="h-4 w-4" />
-            Đăng xuất
+            {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
           </button>
         </div>
       )}

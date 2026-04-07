@@ -24,12 +24,14 @@ import type {
   IForgotPasswordResetPasswordInput,
   IApiResponse,
   ISignInWithTotpInput,
+  ISignInResult,
   IUpdatePasswordInput,
 } from "@/types/auth"
 
 const TOKEN_KEY = "accessToken"
 const REFRESH_TOKEN_KEY = "refreshToken"
 const AUTH_DATA_KEY = "authData"
+const EMAIL_KEY = "email"
 
 /**
  * Store tokens in localStorage
@@ -46,6 +48,77 @@ const storeTokens = (token: string, refreshToken?: string) => {
 const storeAuthData = (authData: IAuthTokenResponse) => {
   localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(authData))
   localStorage.setItem("role", authData.role)
+  localStorage.setItem(EMAIL_KEY, authData.email)
+}
+
+const storeEmail = (email?: string) => {
+  if (!email) {
+    return
+  }
+
+  localStorage.setItem(EMAIL_KEY, email)
+}
+
+export const getStoredEmail = (): string => {
+  if (typeof window === "undefined") {
+    return ""
+  }
+
+  return localStorage.getItem(EMAIL_KEY) ?? ""
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null
+}
+
+const extractSignInPayload = (rawResponse: unknown): Record<string, unknown> => {
+  if (!isRecord(rawResponse)) {
+    return {}
+  }
+
+  const nestedData = rawResponse.data
+
+  if (isRecord(nestedData)) {
+    return nestedData
+  }
+
+  return rawResponse
+}
+
+const toBoolean = (value: unknown): boolean => {
+  return value === true
+}
+
+const toStringValue = (value: unknown): string | undefined => {
+  return typeof value === "string" && value.trim() ? value : undefined
+}
+
+const normalizeSignInResult = (
+  rawResponse: unknown,
+  usernameOrEmailInput: string
+): ISignInResult => {
+  const payload = extractSignInPayload(rawResponse)
+
+  const accessToken = toStringValue(payload.accessToken)
+  const requiresTwoFactor =
+    toBoolean(payload.requiresTwoFactor) ||
+    toBoolean(payload.twoFactorRequired) ||
+    toBoolean(payload.requireTwoFactor)
+
+  const payloadUser = isRecord(payload.user) ? payload.user : undefined
+  const payloadEmail =
+    toStringValue(payload.email) ?? toStringValue(payloadUser?.email)
+  const normalizedEmail = payloadEmail ?? usernameOrEmailInput
+
+  return {
+    ...(payload as Partial<IAuthTokenResponse>),
+    accessToken,
+    email: normalizedEmail,
+    requiresTwoFactor,
+    pendingUsernameOrEmail:
+      toStringValue(payload.pendingUsernameOrEmail) ??
+      normalizedEmail,
+  }
 }
 
 /**
@@ -91,6 +164,8 @@ const clearTokens = () => {
   localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(AUTH_DATA_KEY)
   localStorage.removeItem("role")
+  localStorage.removeItem(EMAIL_KEY)
+  localStorage.removeItem("tokenExpiry")
 }
 
 /**
@@ -107,13 +182,13 @@ export const isAuthenticated = (): boolean => {
  */
 export const signIn = async (
   input: ISignInInput
-): Promise<IAuthTokenResponse> => {
+): Promise<ISignInResult> => {
   const request: ISignInInput = {
     usernameOrEmail: input.usernameOrEmail,
     password: input.password,
   }
 
-  const response = await api.post<ISignInResponse>(
+  const response = await api.post<IApiResponse<unknown>>(
     "/auth/login",
     request,
     {
@@ -121,13 +196,22 @@ export const signIn = async (
     }
   )
 
-  const { accessToken } = response.data.data
+  const normalizedResult = normalizeSignInResult(
+    response.data,
+    input.usernameOrEmail.trim()
+  )
 
-  // Store tokens in localStorage
-  storeTokens(accessToken)
-  storeAuthData(response.data.data)
+  const { accessToken, requiresTwoFactor } = normalizedResult
 
-  return response.data.data
+  storeEmail(normalizedResult.email)
+
+  if (!requiresTwoFactor && accessToken) {
+    // Store tokens in localStorage when login is fully completed.
+    storeTokens(accessToken)
+    storeAuthData(normalizedResult as IAuthTokenResponse)
+  }
+
+  return normalizedResult
 }
 
 /**
@@ -136,9 +220,12 @@ export const signIn = async (
 export const signInWithTotp = async (
   input: ISignInWithTotpInput
 ): Promise<IAuthTokenResponse> => {
-  const request: ISignInWithTotpInput = {
-    usernameOrEmail: input.usernameOrEmail,
+  const request: Partial<ISignInWithTotpInput> = {
     code: input.code,
+  }
+
+  if (input.email?.trim()) {
+    request.email = input.email.trim()
   }
 
   const response = await api.post<ISignInResponse>(
@@ -185,6 +272,7 @@ export const signUp = async (input: ISignUpInput): Promise<IAuthResponse> => {
 
   // Store tokens in localStorage
   storeTokens(token, refreshToken)
+  storeEmail(response.data.data.user.email)
 
   return response.data.data
 }

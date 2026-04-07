@@ -1,10 +1,10 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { signIn } from "@/lib/api/auth-service"
-import type { IAuthTokenResponse, ISignInInput } from "@/types/auth"
+import type { ISignInInput, ISignInResult } from "@/types/auth"
 
 interface IUseSignInOptions {
-  onSuccess?: (authData: IAuthTokenResponse) => void
+  onSuccess?: (authData: ISignInResult) => void
 }
 
 interface IUseSignInReturn {

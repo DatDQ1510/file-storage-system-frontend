@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ChangeEvent, FormEvent } from "react"
-import { Camera, LoaderCircle } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   changePassword,
@@ -10,6 +8,10 @@ import {
   updateAvatar,
   updateProfile,
 } from "@/lib/api/auth-service"
+import { PasswordChangeForm } from "@/pages/system-admin/components/sections/account-management/PasswordChangeForm"
+import { ProfileAvatarUploader } from "@/pages/system-admin/components/sections/account-management/ProfileAvatarUploader"
+import { ProfileDetailsForm } from "@/pages/system-admin/components/sections/account-management/ProfileDetailsForm"
+import { TwoFactorAuthenticationSection } from "@/pages/system-admin/components/sections/TwoFactorAuthenticationSection"
 import type { IAuthUser } from "@/types/auth"
 
 interface IAccountManagementSectionProps {
@@ -134,104 +136,52 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
           <CardTitle className="text-lg font-semibold text-slate-900">Cập nhật thông tin cá nhân</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <form className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]" onSubmit={handleSaveProfile}>
-            <div className="flex flex-col items-center gap-3 xl:pt-2">
-              <div className="relative">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-2xl font-bold text-slate-700 ring-4 ring-white shadow-sm">
-                  {avatarPreview ? (
-                    <img alt="Avatar preview" className="h-full w-full object-cover" src={avatarPreview} />
-                  ) : (
-                    <span>{initials}</span>
-                  )}
-                </div>
-                <label className="absolute -bottom-1 -right-1 grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md">
-                  <Camera className="h-4 w-4" />
-                  <input className="hidden" type="file" accept="image/*" onChange={handleAvatarChange} />
-                </label>
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-blue-700">Change Avatar</p>
-                <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB</p>
-              </div>
-              <Button type="button" variant="outline" className="w-full" onClick={handleUpdateAvatar} disabled={isUpdatingAvatar}>
-                {isUpdatingAvatar ? (
-                  <>
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Updating Avatar
-                  </>
-                ) : (
-                  "Upload Avatar"
-                )}
-              </Button>
-            </div>
+          <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
+            <ProfileAvatarUploader
+              avatarPreview={avatarPreview}
+              initials={initials}
+              isUpdatingAvatar={isUpdatingAvatar}
+              onAvatarChange={handleAvatarChange}
+              onUpdateAvatar={handleUpdateAvatar}
+            />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Full Name</span>
-                <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" value={fullName} onChange={(event) => setFullName(event.target.value)} />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Email Address</span>
-                <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" value={emailAddress} onChange={(event) => setEmailAddress(event.target.value)} />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Job Title</span>
-                <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" value={jobTitle} onChange={(event) => setJobTitle(event.target.value)} />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Department</span>
-                <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" value={department} onChange={(event) => setDepartment(event.target.value)} />
-              </label>
-              <div className="md:col-span-2 flex justify-end pt-2">
-                <Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800" disabled={isSavingProfile}>
-                  {isSavingProfile ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Saving Changes
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </form>
+            <ProfileDetailsForm
+              fullName={fullName}
+              emailAddress={emailAddress}
+              jobTitle={jobTitle}
+              department={department}
+              isSavingProfile={isSavingProfile}
+              onFullNameChange={setFullName}
+              onEmailAddressChange={setEmailAddress}
+              onJobTitleChange={setJobTitle}
+              onDepartmentChange={setDepartment}
+              onSubmit={handleSaveProfile}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="border-b border-slate-200/80 pb-4">
-          <CardTitle className="text-lg font-semibold text-slate-900">Đổi mật khẩu</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <form className="grid max-w-2xl gap-4" onSubmit={handleChangePassword}>
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Current Password</span>
-              <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">New Password</span>
-              <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Confirm New Password</span>
-              <input className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-600" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
-            </label>
-            <div className="pt-2">
-              <Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800" disabled={isChangingPassword}>
-                {isChangingPassword ? (
-                  <>
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Updating Password
-                  </>
-                ) : (
-                  "Update Password"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="border-b border-slate-200/80 pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-900">Đổi mật khẩu</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <PasswordChangeForm
+              currentPassword={currentPassword}
+              newPassword={newPassword}
+              confirmPassword={confirmPassword}
+              isChangingPassword={isChangingPassword}
+              onCurrentPasswordChange={setCurrentPassword}
+              onNewPasswordChange={setNewPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              onSubmit={handleChangePassword}
+            />
+          </CardContent>
+        </Card>
+
+        <TwoFactorAuthenticationSection />
+      </div>
     </div>
   )
 }
