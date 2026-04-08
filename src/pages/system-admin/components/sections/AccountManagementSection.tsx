@@ -20,6 +20,7 @@ interface IAccountManagementSectionProps {
 }
 
 export const AccountManagementSection = ({ initialUser }: IAccountManagementSectionProps) => {
+  const [currentUser, setCurrentUser] = useState<IAuthUser | undefined>(initialUser)
   const [username, setUsername] = useState(initialUser?.username ?? "Inter Admin")
   const [emailAddress, setEmailAddress] = useState(initialUser?.email ?? "admin@sovereign.arch")
   const [currentPassword, setCurrentPassword] = useState("")
@@ -36,11 +37,12 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
   useEffect(() => {
     const loadCurrentUser = async () => {
       try {
-        const currentUser = initialUser ?? (await getCurrentUser())
+        const fetchedCurrentUser = initialUser ?? (await getCurrentUser())
 
-        setUsername(currentUser.username)
-        setEmailAddress(currentUser.email)
-        setAvatarPreview(currentUser.avatar ?? "")
+        setCurrentUser(fetchedCurrentUser)
+        setUsername(fetchedCurrentUser.username)
+        setEmailAddress(fetchedCurrentUser.email)
+        setAvatarPreview(fetchedCurrentUser.avatar ?? "")
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load account information")
       }
@@ -179,7 +181,10 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
           </CardContent>
         </Card>
 
-        <TwoFactorAuthenticationSection />
+        <TwoFactorAuthenticationSection
+          initialUser={currentUser}
+          shouldFetchCurrentUser={false}
+        />
       </div>
     </div>
   )

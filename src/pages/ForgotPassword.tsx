@@ -106,13 +106,13 @@ export const ForgotPassword = () => {
 
             <div className="space-y-1 text-center">
               <h1 className="text-3xl font-bold tracking-[-0.03em] text-foreground">Forgot Password</h1>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{stepLabel}</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[#44546F]">{stepLabel}</p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className={`h-1 rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"}`} />
-              <div className={`h-1 rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
-              <div className={`h-1 rounded-full ${step >= 3 ? "bg-primary" : "bg-muted"}`} />
+              <div className={`h-1 rounded-full ${step >= 1 ? "bg-[#0C66E4]" : "bg-[#DFE1E6]"}`} />
+              <div className={`h-1 rounded-full ${step >= 2 ? "bg-[#0C66E4]" : "bg-[#DFE1E6]"}`} />
+              <div className={`h-1 rounded-full ${step >= 3 ? "bg-[#0C66E4]" : "bg-[#DFE1E6]"}`} />
             </div>
 
             {error && (

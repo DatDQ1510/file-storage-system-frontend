@@ -2,15 +2,16 @@ import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
   disableTwoFactor,
-  getTwoFactorStatus,
   setupTwoFactor,
   verifyTwoFactor,
 } from "@/lib/api/two-fa-service"
+import { getCurrentUser } from "@/lib/api/auth-service"
 import type {
   ITwoFASetupResponse,
   ITwoFAStatusResponse,
   TTwoFAToggleAction,
 } from "@/types/two-factor-auth"
+import type { IAuthUser } from "@/types/auth"
 
 const DEFAULT_TWO_FA_STATUS: ITwoFAStatusResponse = {
   enabled: false,
@@ -36,7 +37,27 @@ interface IUseTwoFactorAuthReturn {
   verifyEnableAction: () => Promise<void>
 }
 
-export const useTwoFactorAuth = (): IUseTwoFactorAuthReturn => {
+interface IUseTwoFactorAuthOptions {
+  initialUser?: IAuthUser
+  shouldFetchCurrentUser?: boolean
+}
+
+const mapTwoFactorStatusFromUser = (user?: IAuthUser): ITwoFAStatusResponse => {
+  const hasSecretKey = user?.hasSecretKey === true
+  const isTwoFactorEnabled = user?.twoFactorEnabled === true
+
+  return {
+    enabled: hasSecretKey || isTwoFactorEnabled,
+  }
+}
+
+export const useTwoFactorAuth = (
+  options: IUseTwoFactorAuthOptions = {}
+): IUseTwoFactorAuthReturn => {
+  const {
+    initialUser,
+    shouldFetchCurrentUser = true,
+  } = options
   const [status, setStatus] = useState<ITwoFAStatusResponse>(DEFAULT_TWO_FA_STATUS)
   const [setupData, setSetupData] = useState<ITwoFASetupResponse | null>(null)
   const [verificationCode, setVerificationCode] = useState("")
@@ -60,8 +81,17 @@ export const useTwoFactorAuth = (): IUseTwoFactorAuthReturn => {
   useEffect(() => {
     const loadStatus = async () => {
       try {
-        const response = await getTwoFactorStatus()
-        setStatus(response)
+        if (initialUser) {
+          setStatus(mapTwoFactorStatusFromUser(initialUser))
+          return
+        }
+
+        if (!shouldFetchCurrentUser) {
+          return
+        }
+
+        const currentUser = await getCurrentUser()
+        setStatus(mapTwoFactorStatusFromUser(currentUser))
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load 2FA status")
       } finally {
@@ -70,7 +100,7 @@ export const useTwoFactorAuth = (): IUseTwoFactorAuthReturn => {
     }
 
     void loadStatus()
-  }, [])
+  }, [initialUser, shouldFetchCurrentUser])
 
   const handleSetup = async () => {
     setIsSettingUp(true)

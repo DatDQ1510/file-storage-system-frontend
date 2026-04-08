@@ -6,9 +6,37 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getTenantStatusClassName } from "@/pages/system-admin/constants"
 import { TenantRegisterModal } from "@/pages/system-admin/components/sections/tenant/TenantRegisterModal"
-import { loadTenantRecords, registerTenant } from "@/pages/system-admin/services/tenant-service"
-import type { ITenantCreateInput, ITenantRecord, TTenantStatus } from "@/pages/system-admin/types"
+import type {
+  ITenantProvisionFormState,
+  TTenantProvisionStep,
+} from "@/pages/system-admin/components/sections/tenant/types"
+import {
+  getNextTenantProvisionStep,
+  getPreviousTenantProvisionStep,
+  INITIAL_SUBDOMAIN_AVAILABILITY,
+  INITIAL_TENANT_PROVISION_FORM_STATE,
+} from "@/pages/system-admin/components/sections/tenant/tenant-admin"
+import {
+  checkAdminAvailability,
+  checkSubdomainAvailability,
+  loadTenantRecords,
+  submitTenantProvision,
+} from "@/pages/system-admin/services/tenant-service"
+import type {
+  ITenantAdminAvailabilityResult,
+  ITenantProvisionPayload,
+  ITenantProvisionPlan,
+  ITenantRecord,
+  ITenantSubdomainAvailabilityResult,
+  TTenantProvisionPlanName,
+  TTenantStatus,
+} from "@/pages/system-admin/types"
+import { TENANT_PROVISION_PLANS } from "@/pages/system-admin/constants"
 import { cn } from "@/lib/utils"
+import {
+  buildTenantProvisionPayload,
+  normalizeSubdomainValue,
+} from "@/helpers/validators/tenant-provision"
 
 interface ITenantsSectionProps {
   isRegisterTenantOpen: boolean
@@ -16,38 +44,27 @@ interface ITenantsSectionProps {
   onCloseRegisterTenant: () => void
 }
 
-interface IRegisterTenantFormState {
-  businessName: string
-  nodeCode: string
-  status: TTenantStatus
-  extraStorageSize: string
-  storageUnit: "GB" | "TB"
-  plan: string
-  region: string
-  adminName: string
-  adminEmail: string
-}
-
-const INITIAL_FORM_STATE: IRegisterTenantFormState = {
-  businessName: "",
-  nodeCode: "",
-  status: "Trial",
-  extraStorageSize: "",
-  storageUnit: "GB",
-  plan: "Professional",
-  region: "Asia-Pacific (Tokyo)",
-  adminName: "",
-  adminEmail: "",
-}
-
 export const TenantsSection = ({
   isRegisterTenantOpen,
+  onOpenRegisterTenant,
   onCloseRegisterTenant,
 }: ITenantsSectionProps) => {
+  void onOpenRegisterTenant
+
   const [tenants, setTenants] = useState<ITenantRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<TTenantStatus | "all">("all")
-  const [formState, setFormState] = useState<IRegisterTenantFormState>(INITIAL_FORM_STATE)
+  const [formState, setFormState] = useState<ITenantProvisionFormState>(INITIAL_TENANT_PROVISION_FORM_STATE)
+  const [currentStep, setCurrentStep] = useState<TTenantProvisionStep>(1)
+  const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(false)
+  const [subdomainAvailability, setSubdomainAvailability] =
+    useState<ITenantSubdomainAvailabilityResult | null>(INITIAL_SUBDOMAIN_AVAILABILITY)
+  const [adminAvailability, setAdminAvailability] =
+    useState<ITenantAdminAvailabilityResult | null>(null)
+  const [isCheckingAdminAvailability, setIsCheckingAdminAvailability] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isConfirmingProvision, setIsConfirmingProvision] = useState(false)
+  const [pendingProvisionInput, setPendingProvisionInput] = useState<ITenantProvisionPayload | null>(null)
 
   useEffect(() => {
     const loadTenants = async () => {
@@ -93,60 +110,214 @@ export const TenantsSection = ({
     })
   }, [searchTerm, selectedStatus, tenants])
 
-  const handleInputChange = <K extends keyof IRegisterTenantFormState>(field: K) => (
+  const selectedPlan = useMemo<ITenantProvisionPlan>(() => {
+    return TENANT_PROVISION_PLANS.find((plan) => plan.name === formState.selectedPlanName) ?? TENANT_PROVISION_PLANS[1]
+  }, [formState.selectedPlanName])
+
+  const handleInputChange = <K extends keyof ITenantProvisionFormState>(field: K) => (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const value = event.target.value as IRegisterTenantFormState[K]
+    const value = event.target.value as ITenantProvisionFormState[K]
+
+    if (field === "subdomain") {
+      setSubdomainAvailability(null)
+    }
+
+    if (field === "adminEmail" || field === "adminPhoneNumber") {
+      setAdminAvailability(null)
+    }
+
     setFormState((current) => ({
       ...current,
       [field]: value,
     }))
   }
 
+  const handleCloseProvisionModal = () => {
+    setCurrentStep(1)
+    setFormState(INITIAL_TENANT_PROVISION_FORM_STATE)
+    setSubdomainAvailability(null)
+    setAdminAvailability(null)
+    setIsCheckingSubdomain(false)
+    setIsCheckingAdminAvailability(false)
+    setIsSubmitting(false)
+    onCloseRegisterTenant()
+  }
+
+  const handleNextStep = async () => {
+    if (currentStep === 1) {
+      if (!formState.companyName.trim()) {
+        toast.error("Please enter company name.")
+        return
+      }
+
+      if (!formState.subdomain.trim()) {
+        toast.error("Please enter tenant domain.")
+        return
+      }
+
+      setIsCheckingSubdomain(true)
+
+      try {
+        const availability = await checkSubdomainAvailability(formState.subdomain)
+        setSubdomainAvailability(availability)
+
+        if (!availability.isAvailable) {
+          toast.error(availability.message || "Domain tenant already exists")
+          return
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to verify tenant domain."
+        setSubdomainAvailability({
+          subdomain: normalizeSubdomainValue(formState.subdomain),
+          isAvailable: false,
+          message,
+        })
+        toast.error(message)
+        return
+      } finally {
+        setIsCheckingSubdomain(false)
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!formState.adminFullName.trim() || !formState.adminEmail.trim() || !formState.adminPhoneNumber.trim()) {
+        toast.error("Please complete the admin information first.")
+        return
+      }
+
+      setIsCheckingAdminAvailability(true)
+
+      try {
+        const availability = await checkAdminAvailability({
+          username: formState.adminFullName,
+          email: formState.adminEmail,
+          sdt: formState.adminPhoneNumber,
+        })
+        setAdminAvailability(availability)
+
+        if (!availability.available) {
+          toast.error(availability.message || "Email or sdt already exists")
+          return
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to verify tenant admin."
+        setAdminAvailability({
+          available: false,
+          message,
+          isEmailAvailable: false,
+          isPhoneNumberAvailable: false,
+        })
+        toast.error(message)
+        return
+      } finally {
+        setIsCheckingAdminAvailability(false)
+      }
+    }
+
+    setCurrentStep(getNextTenantProvisionStep(currentStep))
+  }
+
+  const handlePreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(getPreviousTenantProvisionStep(currentStep))
+    }
+  }
+
+  const handleSelectPlan = (planName: TTenantProvisionPlanName) => {
+    setFormState((current) => ({
+      ...current,
+      selectedPlanName: planName,
+    }))
+  }
+
   const handleRegisterTenant = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const businessName = formState.businessName.trim()
-    const nodeCode = formState.nodeCode.trim()
-    const adminName = formState.adminName.trim()
-    const adminEmail = formState.adminEmail.trim()
-
-    if (!businessName || !nodeCode || !adminName || !adminEmail || !formState.extraStorageSize.trim()) {
-      toast.error("Please fill in all required tenant details.")
+    if (!formState.companyName.trim()) {
+      toast.error("Please enter company name.")
+      setCurrentStep(1)
       return
     }
 
-    if (!adminEmail.includes("@")) {
-      toast.error("Admin email is not valid.")
+    if (!formState.subdomain.trim()) {
+      toast.error("Please enter tenant domain.")
+      setCurrentStep(1)
       return
     }
 
-    const storageNumber = Number(formState.extraStorageSize)
-    if (Number.isNaN(storageNumber) || storageNumber < 0) {
-      toast.error("Please enter a valid storage amount.")
+    if (!formState.adminFullName.trim() || !formState.adminEmail.trim() || !formState.adminPhoneNumber.trim()) {
+      toast.error("Please complete the admin information first.")
+      setCurrentStep(2)
       return
     }
 
-    const tenantInput: ITenantCreateInput = {
-      businessName,
-      nodeCode,
-      status: formState.status,
-      plan: formState.plan,
-      extraStorageSize: storageNumber,
-      storageUnit: formState.storageUnit,
-      region: formState.region,
-      adminName,
-      adminEmail,
+    const tenantInput: ITenantProvisionPayload = buildTenantProvisionPayload(
+      formState.companyName,
+      formState.subdomain,
+      {
+        fullName: formState.adminFullName,
+        email: formState.adminEmail,
+        phoneNumber: formState.adminPhoneNumber,
+      },
+      selectedPlan
+    )
+
+    setPendingProvisionInput(tenantInput)
+    setIsConfirmingProvision(true)
+    return
+
+    // The actual provisioning request is handled when the user confirms the modal.
+  }
+
+  const handleCancelProvision = () => {
+    setIsConfirmingProvision(false)
+    setPendingProvisionInput(null)
+  }
+
+  const handleConfirmProvision = async () => {
+    if (!pendingProvisionInput) {
+      return
     }
+
+    setIsSubmitting(true)
+    setIsConfirmingProvision(false)
 
     try {
-      const newTenant = await registerTenant(tenantInput)
-      setTenants((current) => [newTenant, ...current])
-      setFormState(INITIAL_FORM_STATE)
+      const provisionResult = await submitTenantProvision(pendingProvisionInput)
+      setTenants((current) => [
+        {
+          businessName: provisionResult.companyName,
+          nodeCode: provisionResult.subdomain,
+          status: "Trial",
+          plan: provisionResult.plan.name,
+          quotaUsed: provisionResult.plan.storageQuota,
+          quotaPercent: 0,
+          createdDate: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "2-digit",
+            year: "numeric",
+          }),
+          region: "Provisioning",
+          adminName: pendingProvisionInput.admin.fullName,
+          adminEmail: pendingProvisionInput.admin.email,
+        },
+        ...current,
+      ])
+      toast.success("Tenant provisioned successfully.", {
+        description: provisionResult.activationLink,
+      })
+      toast.info("Activation email queued for the root admin.")
+      setFormState(INITIAL_TENANT_PROVISION_FORM_STATE)
+      setSubdomainAvailability(null)
+      setAdminAvailability(null)
+      setCurrentStep(1)
+      setPendingProvisionInput(null)
       onCloseRegisterTenant()
-      toast.success(`Tenant ${businessName} registered successfully.`)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to register tenant")
+      toast.error(error instanceof Error ? error.message : "Failed to provision tenant")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -209,6 +380,7 @@ export const TenantsSection = ({
               Reset
               <ChevronDown className="h-4 w-4" />
             </Button>
+
           </div>
         </CardHeader>
 
@@ -267,11 +439,77 @@ export const TenantsSection = ({
 
       <TenantRegisterModal
         isOpen={isRegisterTenantOpen}
+        currentStep={currentStep}
         formState={formState}
-        onClose={onCloseRegisterTenant}
+        selectedPlan={selectedPlan}
+        subdomainAvailability={subdomainAvailability}
+        adminAvailability={adminAvailability}
+        isCheckingSubdomain={isCheckingSubdomain}
+        isCheckingAdminAvailability={isCheckingAdminAvailability}
+        isSubmitting={isSubmitting}
+        onClose={handleCloseProvisionModal}
+        onBack={handlePreviousStep}
+        onNext={handleNextStep}
         onChange={handleInputChange}
+        onSelectPlan={handleSelectPlan}
         onSubmit={handleRegisterTenant}
       />
+
+      {isConfirmingProvision && pendingProvisionInput && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+              <h3 className="text-lg font-semibold text-slate-900">Xác nhận Provision Tenant</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Vui lòng kiểm tra lại thông tin tenant trước khi gửi yêu cầu provisioning.
+              </p>
+            </div>
+
+            <div className="space-y-4 p-6 text-sm text-slate-700">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tổ chức</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.companyName}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Domain tenant</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.subdomain}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Root admin</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.admin.fullName}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Email</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.admin.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Số điện thoại</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.admin.phoneNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Gói dịch vụ</p>
+                  <p className="font-medium text-slate-900">{pendingProvisionInput.plan.name} ({pendingProvisionInput.plan.storageQuota})</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+              <Button type="button" variant="ghost" onClick={handleCancelProvision} disabled={isSubmitting}>
+                Hủy
+              </Button>
+              <Button
+                type="button"
+                className="bg-blue-700 text-white hover:bg-blue-800"
+                onClick={handleConfirmProvision}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Provisioning..." : "Xác nhận & Provision"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,8 +2,17 @@ import { LoaderCircle, ShieldCheck, ShieldOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTwoFactorAuth } from "@/hooks/use-two-factor-auth"
+import type { IAuthUser } from "@/types/auth"
 
-export const TwoFactorAuthenticationSection = () => {
+interface ITwoFactorAuthenticationSectionProps {
+  initialUser?: IAuthUser
+  shouldFetchCurrentUser?: boolean
+}
+
+export const TwoFactorAuthenticationSection = ({
+  initialUser,
+  shouldFetchCurrentUser,
+}: ITwoFactorAuthenticationSectionProps) => {
   const {
     setupData,
     verificationCode,
@@ -21,7 +30,10 @@ export const TwoFactorAuthenticationSection = () => {
     closeToggleConfirmation,
     confirmToggleAction,
     verifyEnableAction,
-  } = useTwoFactorAuth()
+  } = useTwoFactorAuth({
+    initialUser,
+    shouldFetchCurrentUser,
+  })
 
   if (isLoadingStatus) {
     return (

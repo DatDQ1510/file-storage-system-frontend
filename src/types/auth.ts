@@ -41,6 +41,8 @@ export interface IAuthUser {
   username: string
   email: string
   avatar?: string
+  hasSecretKey?: boolean
+  twoFactorEnabled?: boolean
 }
 
 export interface IAuthResponse {

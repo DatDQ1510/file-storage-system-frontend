@@ -6,6 +6,7 @@ import {
 } from "lucide-react"
 import type {
   IPlanCard,
+  ITenantProvisionPlan,
   ISystemNavGroup,
   ITenantRecord,
   TSystemSection,
@@ -106,6 +107,27 @@ export const PLAN_CARDS: IPlanCard[] = [
       "Priority support (1h)",
     ],
     tenants: "142",
+  },
+]
+
+export const TENANT_PROVISION_PLANS: ITenantProvisionPlan[] = [
+  {
+    name: "Basic",
+    storageQuota: "100 GB",
+    maxUsers: 20,
+    description: "Entry plan for small internal teams and pilot tenant deployments.",
+  },
+  {
+    name: "Pro",
+    storageQuota: "1 TB",
+    maxUsers: 100,
+    description: "Balanced provisioning for growing organizations that need stronger throughput.",
+  },
+  {
+    name: "Enterprise",
+    storageQuota: "10 TB",
+    maxUsers: 500,
+    description: "Full-scale provisioning with dedicated capacity and advanced governance.",
   },
 ]
 

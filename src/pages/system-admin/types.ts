@@ -44,6 +44,67 @@ export interface ITenantCreateInput {
   adminEmail: string
 }
 
+export type TTenantProvisionPlanName = "Basic" | "Pro" | "Enterprise"
+
+export interface ITenantProvisionPlan {
+  name: TTenantProvisionPlanName
+  storageQuota: string
+  maxUsers: number
+  description: string
+}
+
+export interface ITenantProvisionAdminInput {
+  fullName: string
+  email: string
+  phoneNumber: string
+}
+
+export interface ITenantProvisionPayload {
+  companyName: string
+  subdomain: string
+  admin: ITenantProvisionAdminInput
+  plan: ITenantProvisionPlan
+}
+
+export interface ITenantSubdomainAvailabilityResult {
+  subdomain: string
+  isAvailable: boolean
+  message: string
+}
+
+export interface ITenantAdminAvailabilityResult {
+  available: boolean
+  message: string
+  isEmailAvailable?: boolean
+  isPhoneNumberAvailable?: boolean
+}
+
+export interface ITenantProvisionResponse {
+  tenantId: string
+  companyName: string
+  subdomain: string
+  activationToken: string
+  activationLink: string
+  plan: ITenantProvisionPlan
+  adminEmail: string
+  message: string
+}
+
+export interface ITenantActivationTokenInfo {
+  isValid: boolean
+  message: string
+  companyName?: string
+  subdomain?: string
+  adminEmail?: string
+  expiresAt?: string
+}
+
+export interface ITenantActivationPayload {
+  token: string
+  password: string
+  confirmPassword: string
+}
+
 export type TBillingStatus = "Active" | "Inactive"
 export type TBillingCycle = "Monthly" | "Quarterly" | "Yearly"
 
@@ -65,9 +126,9 @@ export interface INewPlanInput {
   name: string
   status: TBillingStatus
   description: string
-  storageLimit: DoubleRange
+  storageLimit: number
   maxUsers: number
   billingCycle: TBillingCycle
-  price: string
+  price: number
   features: string[]
 }

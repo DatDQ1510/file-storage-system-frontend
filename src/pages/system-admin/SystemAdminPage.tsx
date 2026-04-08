@@ -168,40 +168,6 @@ export const SystemAdminPage = () => {
         </div>
       </div>
 
-      {activeSection === "billing" && (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-40 max-w-sm rounded-xl border border-emerald-200 bg-white p-3 shadow-lg shadow-slate-900/15">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 grid h-6 w-6 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-              <Check className="h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-900">Plan Sync Successful</p>
-              <p className="text-xs text-slate-600">Configuration pushed to 14 production nodes.</p>
-            </div>
-            <X className="h-4 w-4 text-slate-400" />
-          </div>
-        </div>
-      )}
-
-      {activeSection === "dashboard" && (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-lg shadow-slate-900/15 md:block">
-          <p className="text-xs text-slate-500">Live audits updated</p>
-          <p className="text-sm font-semibold text-slate-900">Last event 3s ago by security_scan_bot</p>
-          <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
-            <Clock3 className="h-3.5 w-3.5" />
-            Monitoring mode enabled
-          </div>
-        </div>
-      )}
-
-      {activeSection === "tenants" && (
-        <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden max-w-sm rounded-xl border border-blue-200 bg-white px-4 py-3 shadow-lg shadow-slate-900/15 md:block">
-          <p className="text-sm font-semibold text-slate-900">Pending Requests</p>
-          <p className="mt-1 text-xs text-slate-600">3 businesses are waiting evaluation for Tier 4 custom enterprise plans.</p>
-          <div className="mt-2 text-xs text-blue-700">Review queue now</div>
-        </div>
-      )}
-
       <CreatePlanModal
         isOpen={isCreatePlanOpen}
         formState={createPlanForm}

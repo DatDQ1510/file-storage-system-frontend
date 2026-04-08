@@ -16,6 +16,11 @@ export interface IApiError extends Error {
 type TApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
 declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipAuth?: boolean
+    skipGlobalErrorHandler?: boolean
+  }
+
   export interface InternalAxiosRequestConfig {
     skipAuth?: boolean
     skipGlobalErrorHandler?: boolean

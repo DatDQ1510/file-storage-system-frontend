@@ -12,6 +12,7 @@ import { RecycleBin } from "@/pages/recycle-bin"
 import { Recent } from "@/pages/recent"
 import { SignIn } from "@/pages/SignIn"
 import { SignUp } from "@/pages/SignUp"
+import { SetupPassword } from "@/pages/SetupPassword"
 import { Starred } from "@/pages/starred"
 import { TotpSignIn } from "@/pages/TotpSignIn"
 import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
@@ -63,6 +64,10 @@ const AUTH_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.FORGOT_PASSWORD,
     element: <PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>,
+  },
+  {
+    path: ROUTES.SETUP_PASSWORD,
+    element: <SetupPassword />,
   },
   { path: ROUTES.FORBIDDEN, element: <Forbidden /> },
 ]

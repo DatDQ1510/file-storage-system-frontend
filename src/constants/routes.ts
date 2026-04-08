@@ -6,6 +6,7 @@ export const ROUTES = {
   TOTP_SIGN_IN: "/sign-in/totp",
   SIGN_UP: "/sign-up",
   FORGOT_PASSWORD: "/forgot-password",
+  SETUP_PASSWORD: "/setup-password",
   FORBIDDEN: "/403",
   DASHBOARD: "/dashboard",
   SYSTEM_ADMIN_DASHBOARD: "/dashboard/system-admin",

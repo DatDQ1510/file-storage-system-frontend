@@ -51,6 +51,22 @@ const storeAuthData = (authData: IAuthTokenResponse) => {
   localStorage.setItem(EMAIL_KEY, authData.email)
 }
 
+export const storeAuthSession = (
+  authData: Partial<IAuthTokenResponse> & { accessToken: string }
+) => {
+  localStorage.setItem(TOKEN_KEY, authData.accessToken)
+
+  if (authData.role) {
+    localStorage.setItem("role", authData.role)
+  }
+
+  localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(authData))
+
+  if (authData.email) {
+    localStorage.setItem(EMAIL_KEY, authData.email)
+  }
+}
+
 const storeEmail = (email?: string) => {
   if (!email) {
     return

@@ -1,15 +1,46 @@
-import type { ITenantCreateInput, ITenantRecord } from "@/pages/system-admin/types"
+import { api } from "@/lib/api/axios-client"
 import { TENANT_TABLE_DATA } from "@/pages/system-admin/constants"
+import type {
+  ITenantAdminAvailabilityResult,
+  ITenantActivationPayload,
+  ITenantActivationTokenInfo,
+  ITenantProvisionPayload,
+  ITenantProvisionResponse,
+  ITenantRecord,
+  ITenantSubdomainAvailabilityResult,
+} from "@/pages/system-admin/types"
+import type { IApiResponse } from "@/types/auth"
+import {
+  buildTenantProvisionPayload,
+  isStrongPassword,
+  normalizeSubdomainValue,
+} from "@/helpers/validators/tenant-provision"
 
-const formatTenantCreatedDate = (): string =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  }).format(new Date())
+interface ICheckTenantAdminResponse {
+  available: boolean
+  isEmailAvailable?: boolean
+  isPhoneNumberAvailable?: boolean
+}
 
-const resolveQuotaPercent = (extraStorageSize: number): number => {
-  return Math.min(Math.max(Math.round((extraStorageSize / 100) * 100), 0), 100)
+type TCheckTenantAdminApiData = boolean | ICheckTenantAdminResponse
+
+interface ICheckTenantAdminInput {
+  username: string
+  email: string
+  sdt: string
+}
+
+const unwrapApiData = <TData>(payload: unknown): TData | null => {
+  if (!payload || typeof payload !== "object") {
+    return null
+  }
+
+  if ("data" in payload) {
+    const wrappedData = (payload as { data?: unknown }).data
+    return (wrappedData as TData) ?? null
+  }
+
+  return payload as TData
 }
 
 export const fetchTenantRecords = async (): Promise<ITenantRecord[]> => {
@@ -17,21 +48,165 @@ export const fetchTenantRecords = async (): Promise<ITenantRecord[]> => {
   return Promise.resolve(TENANT_TABLE_DATA)
 }
 
-export const createTenantRecord = async (
-  input: ITenantCreateInput
-): Promise<ITenantRecord> => {
-  const quotaPercent = resolveQuotaPercent(input.extraStorageSize)
+export const checkTenantSubdomainAvailability = async (
+  subdomain: string
+): Promise<ITenantSubdomainAvailabilityResult> => {
+  const normalizedSubdomain = normalizeSubdomainValue(subdomain)
 
-  return Promise.resolve({
-    businessName: input.businessName,
-    nodeCode: input.nodeCode,
-    status: input.status,
-    plan: input.plan,
-    quotaUsed: `${input.extraStorageSize} ${input.storageUnit}`,
-    quotaPercent,
-    createdDate: formatTenantCreatedDate(),
-    region: input.region,
-    adminName: input.adminName,
-    adminEmail: input.adminEmail,
+  if (!normalizedSubdomain) {
+    return {
+      subdomain: "",
+      isAvailable: false,
+      message: "Subdomain is required.",
+    }
+  }
+
+  const response = await api.request<IApiResponse<boolean> | boolean>({
+    url: "/tenants/check-tenant",
+    method: "GET",
+    params: {
+      domainTenant: normalizedSubdomain,
+    },
+    skipGlobalErrorHandler: true,
   })
+
+  const payload = response.data
+  const maybeWrappedMessage =
+    typeof payload === "object" && payload && "message" in payload
+      ? String((payload as { message?: string }).message ?? "")
+      : ""
+  const exists = Boolean(unwrapApiData<boolean>(payload))
+
+  return {
+    subdomain: normalizedSubdomain,
+    isAvailable: !exists,
+    message:
+      maybeWrappedMessage ||
+      (exists ? "Domain tenant already exists" : "Domain tenant is available"),
+  }
+}
+
+export const checkTenantAdminAvailability = async (
+  input: ICheckTenantAdminInput
+): Promise<ITenantAdminAvailabilityResult> => {
+  const normalizedUsername = input.username.trim()
+  const normalizedEmail = input.email.trim().toLowerCase()
+  const normalizedSdt = input.sdt.trim()
+
+  if (!normalizedUsername || !normalizedEmail || !normalizedSdt) {
+    return {
+      available: false,
+      message: "Username, email and sdt are required.",
+      isEmailAvailable: false,
+      isPhoneNumberAvailable: false,
+    }
+  }
+
+  const response = await api.request<IApiResponse<ICheckTenantAdminResponse> | ICheckTenantAdminResponse>({
+    url: "/tenant-admins/check-tenantadmin",
+    method: "GET",
+    params: {
+      username: normalizedUsername,
+      email: normalizedEmail,
+      sdt: normalizedSdt,
+    },
+    skipGlobalErrorHandler: true,
+  })
+
+  const payload = response.data
+  const maybeWrappedMessage =
+    typeof payload === "object" && payload && "message" in payload
+      ? String((payload as { message?: string }).message ?? "")
+      : ""
+  const checkResult = unwrapApiData<TCheckTenantAdminApiData>(payload)
+
+  const isAvailable =
+    typeof checkResult === "boolean"
+      ? !checkResult
+      : Boolean(checkResult?.available)
+
+  const isEmailAvailable =
+    typeof checkResult === "boolean"
+      ? undefined
+      : checkResult?.isEmailAvailable
+
+  const isPhoneNumberAvailable =
+    typeof checkResult === "boolean"
+      ? undefined
+      : checkResult?.isPhoneNumberAvailable
+
+  return {
+    available: isAvailable,
+    message:
+      maybeWrappedMessage ||
+      (isAvailable
+        ? "Email and sdt are available"
+        : "Email or sdt already exists"),
+    isEmailAvailable,
+    isPhoneNumberAvailable,
+  }
+}
+
+export const provisionTenant = async (
+  input: ITenantProvisionPayload
+): Promise<ITenantProvisionResponse> => {
+  const payload = buildTenantProvisionPayload(
+    input.companyName,
+    input.subdomain,
+    input.admin,
+    input.plan
+  )
+
+  const response = await api.post<ITenantProvisionResponse>(
+    "/tenants/provision",
+    payload,
+    {
+      skipGlobalErrorHandler: true,
+    }
+  )
+
+  return response.data
+}
+
+export const validateTenantActivationToken = async (
+  token: string
+): Promise<ITenantActivationTokenInfo> => {
+  const normalizedToken = token.trim()
+
+  if (!normalizedToken) {
+    return {
+      isValid: false,
+      message: "Activation token is required.",
+    }
+  }
+
+  const response = await api.get<ITenantActivationTokenInfo>(
+    "/tenants/activation/validate",
+    {
+      params: {
+        token: normalizedToken,
+      },
+      skipGlobalErrorHandler: true,
+    }
+  )
+
+  return response.data
+}
+
+export const activateTenantAccount = async (input: ITenantActivationPayload) => {
+  const isPasswordStrong = isStrongPassword(input.password)
+
+  if (!isPasswordStrong) {
+    throw new Error("Password does not meet the security requirements.")
+  }
+
+  const response = await api.post<{ accessToken?: string; message?: string }>(
+    "/tenants/activation/complete",
+    input,
+    {
+      skipGlobalErrorHandler: true,
+    }
+  )
+
+  return response.data
 }
