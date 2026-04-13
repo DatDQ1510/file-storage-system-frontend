@@ -1,9 +1,9 @@
 import type {
+  IInitialTenantSetupResponse,
   ITenantAdminAvailabilityResult,
   ITenantActivationPayload,
   ITenantActivationTokenInfo,
   ITenantProvisionPayload,
-  ITenantProvisionResponse,
   ITenantRecord,
   ITenantSubdomainAvailabilityResult,
 } from "@/pages/system-admin/types"
@@ -29,14 +29,14 @@ export const checkSubdomainAvailability = async (
 export const checkAdminAvailability = async (input: {
   username: string
   email: string
-  sdt: string
+  phoneNumber: string
 }): Promise<ITenantAdminAvailabilityResult> => {
   return checkTenantAdminAvailability(input)
 }
 
 export const submitTenantProvision = async (
   input: ITenantProvisionPayload
-): Promise<ITenantProvisionResponse> => {
+): Promise<IInitialTenantSetupResponse> => {
   return provisionTenant(input)
 }
 

@@ -1,11 +1,11 @@
 import { api } from "@/lib/api/axios-client"
 import { TENANT_TABLE_DATA } from "@/pages/system-admin/constants"
 import type {
+  IInitialTenantSetupResponse,
   ITenantAdminAvailabilityResult,
   ITenantActivationPayload,
   ITenantActivationTokenInfo,
   ITenantProvisionPayload,
-  ITenantProvisionResponse,
   ITenantRecord,
   ITenantSubdomainAvailabilityResult,
 } from "@/pages/system-admin/types"
@@ -27,7 +27,16 @@ type TCheckTenantAdminApiData = boolean | ICheckTenantAdminResponse
 interface ICheckTenantAdminInput {
   username: string
   email: string
-  sdt: string
+  phoneNumber: string
+}
+
+interface ICreateInitialTenantSetupRequest {
+  nameTenant: string
+  subdomain: string
+  username: string
+  email: string
+  phoneNumber: string
+  planId: string
 }
 
 const unwrapApiData = <TData>(payload: unknown): TData | null => {
@@ -91,12 +100,12 @@ export const checkTenantAdminAvailability = async (
 ): Promise<ITenantAdminAvailabilityResult> => {
   const normalizedUsername = input.username.trim()
   const normalizedEmail = input.email.trim().toLowerCase()
-  const normalizedSdt = input.sdt.trim()
+  const normalizedPhoneNumber = input.phoneNumber.trim()
 
-  if (!normalizedUsername || !normalizedEmail || !normalizedSdt) {
+  if (!normalizedUsername || !normalizedEmail || !normalizedPhoneNumber) {
     return {
       available: false,
-      message: "Username, email and sdt are required.",
+      message: "Username, email and phone number are required.",
       isEmailAvailable: false,
       isPhoneNumberAvailable: false,
     }
@@ -108,7 +117,7 @@ export const checkTenantAdminAvailability = async (
     params: {
       username: normalizedUsername,
       email: normalizedEmail,
-      sdt: normalizedSdt,
+      phoneNumber: normalizedPhoneNumber,
     },
     skipGlobalErrorHandler: true,
   })
@@ -140,8 +149,8 @@ export const checkTenantAdminAvailability = async (
     message:
       maybeWrappedMessage ||
       (isAvailable
-        ? "Email and sdt are available"
-        : "Email or sdt already exists"),
+        ? "Email and phone number are available"
+        : "Email or phone number   already exists"),
     isEmailAvailable,
     isPhoneNumberAvailable,
   }
@@ -149,7 +158,7 @@ export const checkTenantAdminAvailability = async (
 
 export const provisionTenant = async (
   input: ITenantProvisionPayload
-): Promise<ITenantProvisionResponse> => {
+): Promise<IInitialTenantSetupResponse> => {
   const payload = buildTenantProvisionPayload(
     input.companyName,
     input.subdomain,
@@ -157,15 +166,24 @@ export const provisionTenant = async (
     input.plan
   )
 
-  const response = await api.post<ITenantProvisionResponse>(
-    "/tenants/provision",
-    payload,
+  const request: ICreateInitialTenantSetupRequest = {
+    nameTenant: payload.companyName,
+    subdomain: payload.subdomain,
+    username: payload.admin.fullName,
+    email: payload.admin.email,
+    phoneNumber: payload.admin.phoneNumber,
+    planId: payload.plan.id ?? "",
+  }
+
+  const response = await api.post<IApiResponse<IInitialTenantSetupResponse>>(
+    "/system-admins/create-initial",
+    request,
     {
       skipGlobalErrorHandler: true,
     }
   )
 
-  return response.data
+  return response.data.data
 }
 
 export const validateTenantActivationToken = async (

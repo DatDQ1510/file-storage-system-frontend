@@ -22,6 +22,8 @@ export interface ITenantRegisterModalProps {
   currentStep: TTenantProvisionStep
   formState: ITenantProvisionFormState
   selectedPlan: ITenantProvisionPlan
+  plans: ITenantProvisionPlan[]
+  isLoadingPlans: boolean
   subdomainAvailability: ITenantSubdomainAvailabilityResult | null
   adminAvailability: ITenantAdminAvailabilityResult | null
   isCheckingSubdomain: boolean

@@ -16,6 +16,8 @@ export const TenantRegisterModal = ({
   currentStep,
   formState,
   selectedPlan,
+  plans,
+  isLoadingPlans,
   subdomainAvailability,
   adminAvailability,
   isCheckingSubdomain,
@@ -104,8 +106,9 @@ export const TenantRegisterModal = ({
 
             {currentStep === 3 && (
               <PlanProvisionStep
-                formState={formState}
                 selectedPlan={selectedPlan}
+                plans={plans}
+                isLoadingPlans={isLoadingPlans}
                 onSelectPlan={onSelectPlan}
               />
             )}

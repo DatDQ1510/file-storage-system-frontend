@@ -1,10 +1,5 @@
 import { useState } from "react"
-import {
-  Check,
-  ChevronRight,
-  Clock3,
-  X,
-} from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Header } from "@/components/common/Header"
 import {
   getSectionDescription,
@@ -17,6 +12,7 @@ import { CreatePlanModal } from "@/pages/system-admin/components/sections/billin
 import { DashboardSection } from "@/pages/system-admin/components/sections/DashboardSection"
 import { TenantsSection } from "@/pages/system-admin/components/sections/TenantsSection"
 import { SystemAdminSectionActions } from "@/pages/system-admin/components/SystemAdminSectionActions"
+import { addPlanCard } from "@/pages/system-admin/services/billing-service"
 import type { INewPlanInput, TSystemSection } from "@/pages/system-admin/types"
 
 export const SystemAdminPage = () => {
@@ -139,30 +135,7 @@ export const SystemAdminPage = () => {
                 onOpenRegisterTenant={handleOpenRegisterTenant}
               />
             )}
-            {activeSection === "billing" && (
-              <BillingSection
-                isCreatePlanOpen={isCreatePlanOpen}
-                createPlanForm={createPlanForm}
-                customFeature={customFeature}
-                onCloseCreatePlan={handleCloseCreatePlan}
-                onChangeCreatePlanForm={(field) => (event) => {
-                  const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-                  setCreatePlanForm((prev) => ({
-                    ...prev,
-                    [field]: target.type === "number" ? (target.value === "" ? 0 : Number(target.value)) : target.value,
-                  }))
-                }}
-                onToggleFeature={(feature) => {
-                  setCreatePlanForm((prev) => ({
-                    ...prev,
-                    features: prev.features.includes(feature)
-                      ? prev.features.filter((f) => f !== feature)
-                      : [...prev.features, feature],
-                  }))
-                }}
-                onChangeCustomFeature={setCustomFeature}
-              />
-            )}
+            {activeSection === "billing" && <BillingSection />}
 
           </main>
         </div>
@@ -189,9 +162,9 @@ export const SystemAdminPage = () => {
           }))
         }}
         onCustomFeatureChange={setCustomFeature}
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault()
-          console.log("Creating plan:", createPlanForm)
+          await addPlanCard(createPlanForm)
           handleCloseCreatePlan()
         }}
       />

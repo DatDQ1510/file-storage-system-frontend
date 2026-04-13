@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react"
-import type { ChangeEvent } from "react"
 import { CreditCard, ReceiptText, ShieldCheck, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { loadArchivePlanCards, loadPlanCards } from "@/pages/system-admin/services/billing-service"
-import type { INewPlanInput, IPlanCard } from "@/pages/system-admin/types"
+import type { IPlanCard } from "@/pages/system-admin/types"
 
 const BILLING_SUMMARY = [
   { label: "Revenue Run Rate", value: "$2.4M", note: "Annualized growth +24%", icon: TrendingUp },
@@ -15,6 +14,13 @@ const BILLING_SUMMARY = [
 ]
 
 const getStorageLimit = (plan: IPlanCard) => {
+  if (plan.storageLimit !== undefined) {
+    if (typeof plan.storageLimit === "number") {
+      return `${plan.storageLimit} GB`
+    }
+    return plan.storageLimit
+  }
+
   const name = plan.name.toLowerCase()
   if (name.includes("starter")) return "50 GB"
   if (name.includes("professional")) return "500 GB"
@@ -23,6 +29,13 @@ const getStorageLimit = (plan: IPlanCard) => {
 }
 
 const getMaxUsers = (plan: IPlanCard) => {
+  if (plan.maxUsers !== undefined) {
+    if (typeof plan.maxUsers === "number") {
+      return `${plan.maxUsers} Users`
+    }
+    return plan.maxUsers
+  }
+
   const name = plan.name.toLowerCase()
   if (name.includes("starter")) return "5 Users"
   if (name.includes("professional")) return "25 Users"
@@ -30,27 +43,7 @@ const getMaxUsers = (plan: IPlanCard) => {
   return "Custom"
 }
 
-interface IBillingSectionProps {
-  isCreatePlanOpen: boolean
-  createPlanForm: INewPlanInput
-  customFeature: string
-  onCloseCreatePlan: () => void
-  onChangeCreatePlanForm: <K extends keyof INewPlanInput>(
-    field: K
-  ) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
-  onToggleFeature: (feature: string) => void
-  onChangeCustomFeature: (value: string) => void
-}
-
-export const BillingSection = ({
-  isCreatePlanOpen,
-  createPlanForm,
-  customFeature,
-  onCloseCreatePlan,
-  onChangeCreatePlanForm,
-  onToggleFeature,
-  onChangeCustomFeature,
-}: IBillingSectionProps) => {
+export const BillingSection = () => {
   const [planCards, setPlanCards] = useState<IPlanCard[]>([])
   const [archivePlans, setArchivePlans] = useState<IPlanCard[]>([])
   const [activeTab, setActiveTab] = useState<"active" | "inactive">("active")
@@ -135,7 +128,7 @@ export const BillingSection = ({
             </thead>
             <tbody>
               {(activeTab === "active" ? planCards : archivePlans).map((plan) => (
-                <tr key={plan.name} className="border-b border-slate-100 last:border-none">
+                <tr key={plan.id ?? plan.name} className="border-b border-slate-100 last:border-none">
                   <td className="py-4">
                     <p className="font-semibold text-slate-900">{plan.name}</p>
                     <p className="text-xs text-slate-500">{plan.tier}</p>

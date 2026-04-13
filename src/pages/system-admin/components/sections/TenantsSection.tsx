@@ -22,6 +22,7 @@ import {
   loadTenantRecords,
   submitTenantProvision,
 } from "@/pages/system-admin/services/tenant-service"
+import { loadPlanCards } from "@/pages/system-admin/services/billing-service"
 import type {
   ITenantAdminAvailabilityResult,
   ITenantProvisionPayload,
@@ -52,6 +53,8 @@ export const TenantsSection = ({
   void onOpenRegisterTenant
 
   const [tenants, setTenants] = useState<ITenantRecord[]>([])
+  const [subscriptionPlans, setSubscriptionPlans] = useState<ITenantProvisionPlan[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<TTenantStatus | "all">("all")
   const [formState, setFormState] = useState<ITenantProvisionFormState>(INITIAL_TENANT_PROVISION_FORM_STATE)
@@ -77,6 +80,56 @@ export const TenantsSection = ({
     }
 
     void loadTenants()
+  }, [])
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      setIsLoadingPlans(true)
+
+      try {
+        const plans = await loadPlanCards()
+        const mappedPlans: ITenantProvisionPlan[] = plans.map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          storageQuota:
+            plan.storageLimit === undefined || plan.storageLimit === null
+              ? "N/A"
+              : typeof plan.storageLimit === "number"
+                ? `${plan.storageLimit} GB`
+                : String(plan.storageLimit),
+          maxUsers:
+            plan.maxUsers === undefined || plan.maxUsers === null
+              ? 0
+              : typeof plan.maxUsers === "number"
+                ? plan.maxUsers
+                : Number(plan.maxUsers),
+          description: plan.description ?? plan.features.join(" • "),
+        }))
+
+        setSubscriptionPlans(mappedPlans)
+
+        if (mappedPlans.length > 0) {
+          setFormState((current) => {
+            const hasCurrentSelection = mappedPlans.some((plan) => plan.name === current.selectedPlanName)
+
+            if (hasCurrentSelection) {
+              return current
+            }
+
+            return {
+              ...current,
+              selectedPlanName: mappedPlans[0].name,
+            }
+          })
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to load subscription plans")
+      } finally {
+        setIsLoadingPlans(false)
+      }
+    }
+
+    void loadPlans()
   }, [])
 
   const summaryCards = useMemo(() => {
@@ -111,8 +164,13 @@ export const TenantsSection = ({
   }, [searchTerm, selectedStatus, tenants])
 
   const selectedPlan = useMemo<ITenantProvisionPlan>(() => {
-    return TENANT_PROVISION_PLANS.find((plan) => plan.name === formState.selectedPlanName) ?? TENANT_PROVISION_PLANS[1]
-  }, [formState.selectedPlanName])
+    return (
+      subscriptionPlans.find((plan) => plan.name === formState.selectedPlanName) ??
+      TENANT_PROVISION_PLANS.find((plan) => plan.name === formState.selectedPlanName) ??
+      subscriptionPlans[0] ??
+      TENANT_PROVISION_PLANS[1]
+    )
+  }, [formState.selectedPlanName, subscriptionPlans])
 
   const handleInputChange = <K extends keyof ITenantProvisionFormState>(field: K) => (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -192,12 +250,12 @@ export const TenantsSection = ({
         const availability = await checkAdminAvailability({
           username: formState.adminFullName,
           email: formState.adminEmail,
-          sdt: formState.adminPhoneNumber,
+          phoneNumber: formState.adminPhoneNumber,
         })
         setAdminAvailability(availability)
 
         if (!availability.available) {
-          toast.error(availability.message || "Email or sdt already exists")
+          toast.error(availability.message || "Email or phone number already exists")
           return
         }
       } catch (error) {
@@ -252,6 +310,18 @@ export const TenantsSection = ({
       return
     }
 
+    if (formState.adminFullName.trim().length > 100) {
+      toast.error("Username must be at most 100 characters.")
+      setCurrentStep(2)
+      return
+    }
+
+    if (!selectedPlan.id?.trim()) {
+      toast.error("Selected plan is invalid. Please reload subscription plans and try again.")
+      setCurrentStep(3)
+      return
+    }
+
     const tenantInput: ITenantProvisionPayload = buildTenantProvisionPayload(
       formState.companyName,
       formState.subdomain,
@@ -280,6 +350,13 @@ export const TenantsSection = ({
       return
     }
 
+    if (!pendingProvisionInput.plan.id?.trim()) {
+      toast.error("Missing planId. Please re-select a valid subscription plan.")
+      setIsConfirmingProvision(false)
+      setCurrentStep(3)
+      return
+    }
+
     setIsSubmitting(true)
     setIsConfirmingProvision(false)
 
@@ -287,11 +364,11 @@ export const TenantsSection = ({
       const provisionResult = await submitTenantProvision(pendingProvisionInput)
       setTenants((current) => [
         {
-          businessName: provisionResult.companyName,
-          nodeCode: provisionResult.subdomain,
+          businessName: pendingProvisionInput.companyName,
+          nodeCode: provisionResult.tenantDomain,
           status: "Trial",
-          plan: provisionResult.plan.name,
-          quotaUsed: provisionResult.plan.storageQuota,
+          plan: pendingProvisionInput.plan.name,
+          quotaUsed: pendingProvisionInput.plan.storageQuota,
           quotaPercent: 0,
           createdDate: new Date().toLocaleDateString("en-US", {
             month: "short",
@@ -299,15 +376,17 @@ export const TenantsSection = ({
             year: "numeric",
           }),
           region: "Provisioning",
-          adminName: pendingProvisionInput.admin.fullName,
+          adminName: provisionResult.tenantAdminUserName,
           adminEmail: pendingProvisionInput.admin.email,
         },
         ...current,
       ])
       toast.success("Tenant provisioned successfully.", {
-        description: provisionResult.activationLink,
+        description: `Domain: ${provisionResult.tenantDomain}`,
       })
-      toast.info("Activation email queued for the root admin.")
+      toast.info("Generated tenant admin password", {
+        description: provisionResult.generatedTenantAdminPassword,
+      })
       setFormState(INITIAL_TENANT_PROVISION_FORM_STATE)
       setSubdomainAvailability(null)
       setAdminAvailability(null)
@@ -442,6 +521,8 @@ export const TenantsSection = ({
         currentStep={currentStep}
         formState={formState}
         selectedPlan={selectedPlan}
+        plans={subscriptionPlans}
+        isLoadingPlans={isLoadingPlans}
         subdomainAvailability={subdomainAvailability}
         adminAvailability={adminAvailability}
         isCheckingSubdomain={isCheckingSubdomain}

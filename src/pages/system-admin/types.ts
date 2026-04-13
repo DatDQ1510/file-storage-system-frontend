@@ -44,9 +44,10 @@ export interface ITenantCreateInput {
   adminEmail: string
 }
 
-export type TTenantProvisionPlanName = "Basic" | "Pro" | "Enterprise"
+export type TTenantProvisionPlanName = string
 
 export interface ITenantProvisionPlan {
+  id?: string
   name: TTenantProvisionPlanName
   storageQuota: string
   maxUsers: number
@@ -90,6 +91,18 @@ export interface ITenantProvisionResponse {
   message: string
 }
 
+export interface IInitialTenantSetupResponse {
+  tenantId: string
+  tenantDomain: string
+  tenantAdminId: string
+  tenantAdminUserName: string
+  tenantPlanId: string
+  planId: string
+  tenantPlanStartDate: string
+  tenantPlanEndDate: string
+  generatedTenantAdminPassword: string
+}
+
 export interface ITenantActivationTokenInfo {
   isValid: boolean
   message: string
@@ -109,14 +122,15 @@ export type TBillingStatus = "Active" | "Inactive"
 export type TBillingCycle = "Monthly" | "Quarterly" | "Yearly"
 
 export interface IPlanCard {
+  id?: string
   tier: string
   name: string
   price: string
   period: string
   status?: TBillingStatus
   description?: string
-  storageLimit?: string
-  maxUsers?: string
+  storageLimit?: string | number
+  maxUsers?: string | number
   isHighlighted?: boolean
   features: string[]
   tenants: string
