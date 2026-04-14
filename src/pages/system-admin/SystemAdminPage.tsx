@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
+import { useLocation, useNavigate } from "react-router"
 import { Header } from "@/components/common/Header"
+import { ROUTES } from "@/constants/routes"
 import {
   getSectionDescription,
   getSectionTitle,
@@ -15,8 +17,31 @@ import { SystemAdminSectionActions } from "@/pages/system-admin/components/Syste
 import { addPlanCard } from "@/pages/system-admin/services/billing-service"
 import type { INewPlanInput, TSystemSection } from "@/pages/system-admin/types"
 
+const SYSTEM_ADMIN_SECTION_QUERY_KEY = "section"
+
+const isSystemAdminSection = (value: string | null): value is TSystemSection => {
+  return (
+    value === "dashboard" ||
+    value === "tenants" ||
+    value === "billing" ||
+    value === "account-management"
+  )
+}
+
+const getSectionFromSearch = (search: string) => {
+  const section = new URLSearchParams(search).get(SYSTEM_ADMIN_SECTION_QUERY_KEY)
+
+  if (isSystemAdminSection(section)) {
+    return section
+  }
+
+  return "dashboard" as const
+}
+
 export const SystemAdminPage = () => {
-  const [activeSection, setActiveSection] = useState<TSystemSection>("dashboard")
+  const navigate = useNavigate()
+  const location = useLocation()
+  const activeSection = getSectionFromSearch(location.search)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false)
@@ -31,6 +56,18 @@ export const SystemAdminPage = () => {
     features: [],
   })
   const [customFeature, setCustomFeature] = useState("")
+
+  const handleSelectSection = (section: TSystemSection) => {
+    const search = section === "dashboard" ? "" : `?${SYSTEM_ADMIN_SECTION_QUERY_KEY}=${section}`
+
+    navigate(
+      {
+        pathname: ROUTES.SYSTEM_ADMIN_DASHBOARD,
+        search,
+      },
+      { replace: true }
+    )
+  }
 
   const handleOpenRegisterTenant = () => {
     setIsRegisterTenantOpen(true)
@@ -68,7 +105,7 @@ export const SystemAdminPage = () => {
 
       <div className="relative flex min-h-screen">
         <div className="hidden xl:block">
-          <SidebarNavigation activeSection={activeSection} onSelectSection={setActiveSection} />
+          <SidebarNavigation activeSection={activeSection} onSelectSection={handleSelectSection} />
         </div>
 
         {isSidebarOpen && (
@@ -83,7 +120,7 @@ export const SystemAdminPage = () => {
               <SidebarNavigation
                 activeSection={activeSection}
                 onSelectSection={(section) => {
-                  setActiveSection(section)
+                  handleSelectSection(section)
                   setIsSidebarOpen(false)
                 }}
               />
@@ -110,8 +147,8 @@ export const SystemAdminPage = () => {
               </div>
             }
             onMenuClick={() => setIsSidebarOpen(true)}
-            onOpenAccount={() => setActiveSection("account-management")}
-            onOpenSettings={() => setActiveSection("account-management")}
+            onOpenAccount={() => handleSelectSection("account-management")}
+            onOpenSettings={() => handleSelectSection("account-management")}
             searchPlaceholder="Search resources..."
             showAccountAction={true}
           />
