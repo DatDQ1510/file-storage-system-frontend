@@ -2,19 +2,21 @@ import type { ReactNode } from "react"
 import { Navigate, Route, Routes } from "react-router"
 import { ROUTES } from "@/constants/routes"
 import { Layout } from "@/layout"
-import { Dashboard } from "@/pages/Dashboard.tsx"
-import { ForgotPassword } from "@/pages/ForgotPassword"
-import { Forbidden } from "@/pages/Forbidden"
-import { Projects } from "@/pages/projects"
-import { ProjectFileDetail } from "@/pages/projects"
-import { ProjectFolderDetail } from "@/pages/projects"
-import { RecycleBin } from "@/pages/recycle-bin"
-import { Recent } from "@/pages/recent"
-import { SignIn } from "@/pages/SignIn"
-import { SignUp } from "@/pages/SignUp"
-import { SetupPassword } from "@/pages/SetupPassword"
-import { Starred } from "@/pages/starred"
-import { TotpSignIn } from "@/pages/TotpSignIn"
+import {
+  Dashboard,
+  ForgotPassword,
+  Forbidden,
+  ProjectFileDetail,
+  ProjectFolderDetail,
+  Projects,
+  RecycleBin,
+  Recent,
+  SignIn,
+  SignUp,
+  SetupPassword,
+  Starred,
+  TotpSignIn,
+} from "@/pages/user"
 import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
 import { CreatePlanPage } from "@/pages/system-admin/pages/CreatePlanPage"
 import { TenantAdminPage } from "@/pages/tenant-admin/TenantAdminPage"

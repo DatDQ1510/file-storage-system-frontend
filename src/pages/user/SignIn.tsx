@@ -1,4 +1,4 @@
-import { Building2, Lock, Moon, Shield, Sun, AlertCircle, Eye, EyeOff, Smartphone } from "lucide-react";
+import { Building2, Lock, Moon, Shield, Sun, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { ROUTES } from "@/constants/routes";

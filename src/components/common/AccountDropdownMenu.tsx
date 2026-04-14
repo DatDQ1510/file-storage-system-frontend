@@ -19,7 +19,6 @@ export const AccountDropdownMenu = ({
   accentClassName = "bg-blue-100 text-blue-700",
   onLogout,
   onOpenAccount,
-  onOpenSettings,
   showAccountAction = true,
 }: IAccountDropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -65,11 +64,6 @@ export const AccountDropdownMenu = ({
 
   const handleOpenAccount = () => {
     onOpenAccount?.()
-    setIsOpen(false)
-  }
-
-  const handleOpenSettings = () => {
-    onOpenSettings?.()
     setIsOpen(false)
   }
 
