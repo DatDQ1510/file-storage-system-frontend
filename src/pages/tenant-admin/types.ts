@@ -49,3 +49,66 @@ export interface IResourceSnapshot {
   status: string
   statusColor: string
 }
+
+export interface ICreateTenantUserRequest {
+  userName: string
+  email: string
+  password: string
+  phoneNumber: string
+  department: string
+}
+
+export interface ICreateTenantUserResponse {
+  id?: string
+  userName?: string
+  email?: string
+  phoneNumber?: string
+  department?: string
+}
+
+export type TTenantUserStatus = "Active" | "Pending" | "Suspended"
+
+export interface IAllUserResponse {
+  userName: string
+  email: string
+  phoneNumber: string
+  department: string
+  status: string
+  MFAEnabled: boolean
+  storage: string | number | null
+  createdAt?: string
+}
+
+export interface IAllUserPageResponse {
+  items: IAllUserResponse[]
+  page: number
+  offset: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+}
+
+export interface IUserDirectoryRecord {
+  id: string
+  fullName: string
+  email: string
+  phone: string
+  employeeCode: string
+  department: string
+  status: TTenantUserStatus
+  joinedAt: string
+  mfaEnabled: boolean
+  storageUsed: string
+}
+
+export interface IUserDirectoryPage {
+  items: IUserDirectoryRecord[]
+  page: number
+  offset: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+  isMockData?: boolean
+}

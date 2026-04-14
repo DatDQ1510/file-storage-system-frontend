@@ -242,7 +242,7 @@ export const checkTenantAdminAvailability = async (
   }
 
   const response = await api.request<IApiResponse<ICheckTenantAdminResponse> | ICheckTenantAdminResponse>({
-    url: "/tenant-admins/check-tenantadmin",
+    url: "/tenant-admins/check-tenantAdmin",
     method: "GET",
     params: {
       username: normalizedUsername,

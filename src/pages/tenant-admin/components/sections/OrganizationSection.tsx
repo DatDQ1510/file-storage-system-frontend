@@ -1,30 +1,31 @@
-import { useMemo, useState } from "react"
-import { Ellipsis, Plus, Search, Upload, UserCheck } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Ellipsis,
+  Plus,
+  Search,
+  Upload,
+  UserCheck,
+} from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CreateUserModal } from "@/pages/tenant-admin/components/sections/organization/CreateUserModal"
+import {
+  createTenantUser,
+  loadUserDirectoryPage,
+} from "@/pages/tenant-admin/services/user-service"
+import type {
+  ICreateTenantUserRequest,
+  IUserDirectoryRecord,
+  TTenantUserStatus,
+} from "@/pages/tenant-admin/types"
 import { cn } from "@/lib/utils"
 
-type TMemberRole = "Workspace Admin" | "Project Manager" | "Contributor" | "Viewer"
-type TMemberStatus = "Active" | "Pending" | "Suspended"
+type TMemberStatus = TTenantUserStatus
 
-type TActionMode = "single" | "batch" | null
-
-interface IMemberDirectoryRecord {
-  id: string
-  fullName: string
-  email: string
-  phone: string
-  employeeCode: string
-  department: string
-  role: TMemberRole
-  status: TMemberStatus
-  joinedAt: string
-  lastActive: string
-  mfaEnabled: boolean
-  storageUsed: string
-}
-
-const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
+const MEMBER_DIRECTORY: IUserDirectoryRecord[] = [
   {
     id: "usr-001",
     fullName: "Liam Chen",
@@ -32,10 +33,8 @@ const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
     phone: "+84 901 122 334",
     employeeCode: "EMP-1001",
     department: "Engineering",
-    role: "Workspace Admin",
     status: "Active",
     joinedAt: "2025-08-11",
-    lastActive: "2m ago",
     mfaEnabled: true,
     storageUsed: "13.2 GB",
   },
@@ -46,10 +45,8 @@ const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
     phone: "+84 906 300 420",
     employeeCode: "EMP-1002",
     department: "Engineering",
-    role: "Contributor",
     status: "Active",
     joinedAt: "2025-11-22",
-    lastActive: "17m ago",
     mfaEnabled: true,
     storageUsed: "8.9 GB",
   },
@@ -60,10 +57,8 @@ const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
     phone: "+84 978 130 098",
     employeeCode: "EMP-1021",
     department: "Marketing",
-    role: "Project Manager",
     status: "Active",
     joinedAt: "2025-07-03",
-    lastActive: "1h ago",
     mfaEnabled: true,
     storageUsed: "4.1 GB",
   },
@@ -74,10 +69,8 @@ const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
     phone: "+84 933 223 711",
     employeeCode: "EMP-1044",
     department: "Operations",
-    role: "Contributor",
     status: "Pending",
     joinedAt: "2026-03-27",
-    lastActive: "Never",
     mfaEnabled: false,
     storageUsed: "0.0 GB",
   },
@@ -88,22 +81,13 @@ const MEMBER_DIRECTORY: IMemberDirectoryRecord[] = [
     phone: "+84 983 551 345",
     employeeCode: "EMP-1080",
     department: "Finance",
-    role: "Viewer",
     status: "Suspended",
     joinedAt: "2024-12-09",
-    lastActive: "5d ago",
     mfaEnabled: false,
     storageUsed: "1.8 GB",
   },
 ]
 
-const ROLE_OPTIONS: Array<TMemberRole | "all"> = [
-  "all",
-  "Workspace Admin",
-  "Project Manager",
-  "Contributor",
-  "Viewer",
-]
 
 const STATUS_OPTIONS: Array<TMemberStatus | "all"> = [
   "all",
@@ -120,25 +104,152 @@ const SUMMARY_CARDS = [
 ]
 
 export const OrganizationSection = () => {
-  const [actionMode, setActionMode] = useState<TActionMode>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRole, setSelectedRole] = useState<TMemberRole | "all">("all")
   const [selectedStatus, setSelectedStatus] = useState<TMemberStatus | "all">("all")
+  const [members, setMembers] = useState<IUserDirectoryRecord[]>(MEMBER_DIRECTORY)
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+  const [isUsingMockData, setIsUsingMockData] = useState(true)
+  const [page, setPage] = useState(0)
+  const [offset, setOffset] = useState(10)
+  const [totalElements, setTotalElements] = useState(MEMBER_DIRECTORY.length)
+  const [totalPages, setTotalPages] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const [hasPrevious, setHasPrevious] = useState(false)
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
+  const [isSubmittingCreateUser, setIsSubmittingCreateUser] = useState(false)
+
+  const mapMockMembersPage = useCallback(
+    (nextPage: number, nextOffset: number) => {
+      const total = MEMBER_DIRECTORY.length
+      const computedTotalPages = Math.max(Math.ceil(total / nextOffset), 1)
+      const boundedPage = Math.min(nextPage, computedTotalPages - 1)
+      const startIndex = boundedPage * nextOffset
+      const endIndex = startIndex + nextOffset
+
+      setMembers(MEMBER_DIRECTORY.slice(startIndex, endIndex))
+      setPage(boundedPage)
+      setOffset(nextOffset)
+      setTotalElements(total)
+      setTotalPages(computedTotalPages)
+      setHasNext(boundedPage < computedTotalPages - 1)
+      setHasPrevious(boundedPage > 0)
+      setIsUsingMockData(true)
+    },
+    []
+  )
+
+  const loadMembers = useCallback(async () => {
+    setIsLoadingMembers(true)
+
+    try {
+      const memberPage = await loadUserDirectoryPage({ page, offset })
+
+      setMembers(memberPage.items)
+      setPage(memberPage.page)
+      setOffset(memberPage.offset)
+      setTotalElements(memberPage.totalElements)
+      setTotalPages(Math.max(memberPage.totalPages, 1))
+      setHasNext(memberPage.hasNext)
+      setHasPrevious(memberPage.hasPrevious)
+      setIsUsingMockData(false)
+    } catch {
+      mapMockMembersPage(page, offset)
+      toast.error("Cannot load users from API. Showing mock data.")
+    } finally {
+      setIsLoadingMembers(false)
+    }
+  }, [mapMockMembersPage, offset, page])
+
+  useEffect(() => {
+    void loadMembers()
+  }, [loadMembers])
 
   const filteredMembers = useMemo(() => {
-    return MEMBER_DIRECTORY.filter((member) => {
+    return members.filter((member) => {
       const normalizedSearch = searchTerm.trim().toLowerCase()
       const matchesSearch =
         normalizedSearch.length === 0 ||
         member.fullName.toLowerCase().includes(normalizedSearch) ||
         member.email.toLowerCase().includes(normalizedSearch) ||
         member.employeeCode.toLowerCase().includes(normalizedSearch)
-      const matchesRole = selectedRole === "all" || member.role === selectedRole
       const matchesStatus = selectedStatus === "all" || member.status === selectedStatus
 
-      return matchesSearch && matchesRole && matchesStatus
+      return matchesSearch && matchesStatus
     })
-  }, [searchTerm, selectedRole, selectedStatus])
+  }, [members, searchTerm, selectedStatus])
+
+  const handleOpenCreateUserModal = () => {
+    setIsCreateUserModalOpen(true)
+  }
+
+  const handleCloseCreateUserModal = () => {
+    if (isSubmittingCreateUser) {
+      return
+    }
+
+    setIsCreateUserModalOpen(false)
+  }
+
+  const handleCreateUser = async (input: ICreateTenantUserRequest) => {
+    setIsSubmittingCreateUser(true)
+
+    try {
+      const createdUser = await createTenantUser(input)
+      const nextIndex = members.length + 1
+      const generatedId = `usr-${String(nextIndex).padStart(3, "0")}`
+      const joinedAt = new Date().toISOString().slice(0, 10)
+
+      setMembers((current) => [
+        {
+          id: createdUser.id?.trim() ? createdUser.id : generatedId,
+          fullName: createdUser.userName?.trim() ? createdUser.userName : input.userName,
+          email: createdUser.email?.trim() ? createdUser.email : input.email,
+          phone: createdUser.phoneNumber?.trim() ? createdUser.phoneNumber : input.phoneNumber || "N/A",
+          employeeCode: `EMP-${1000 + nextIndex}`,
+          department:
+            createdUser.department?.trim() || input.department.trim() || "General",
+          status: "Pending",
+          joinedAt,
+          mfaEnabled: false,
+          storageUsed: "0.0 GB",
+        },
+        ...current,
+      ])
+
+      setIsCreateUserModalOpen(false)
+      toast.success("User created successfully")
+      setTotalElements((current) => current + 1)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create user")
+    } finally {
+      setIsSubmittingCreateUser(false)
+    }
+  }
+
+  const handleOffsetChange = (nextOffset: number) => {
+    if (!Number.isFinite(nextOffset) || nextOffset <= 0) {
+      return
+    }
+
+    setOffset(nextOffset)
+    setPage(0)
+  }
+
+  const handlePreviousPage = () => {
+    if (!hasPrevious || isLoadingMembers) {
+      return
+    }
+
+    setPage((current) => Math.max(current - 1, 0))
+  }
+
+  const handleNextPage = () => {
+    if (!hasNext || isLoadingMembers) {
+      return
+    }
+
+    setPage((current) => current + 1)
+  }
 
   return (
     <div className="space-y-5">
@@ -155,7 +266,7 @@ export const OrganizationSection = () => {
             size="sm"
             variant="outline"
             className="border-slate-300 bg-white"
-            onClick={() => setActionMode("batch")}
+            onClick={() => toast.info("Batch import flow will be implemented next.")}
           >
             <Upload className="h-4 w-4" />
             Add Users by Batch
@@ -163,7 +274,7 @@ export const OrganizationSection = () => {
           <Button
             size="sm"
             className="bg-cyan-700 text-white hover:bg-cyan-800"
-            onClick={() => setActionMode("single")}
+            onClick={handleOpenCreateUserModal}
           >
             <Plus className="h-4 w-4" />
             Add User
@@ -188,6 +299,11 @@ export const OrganizationSection = () => {
       <Card className="border-slate-200 bg-white">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-slate-900">Member Directory</CardTitle>
+          {isUsingMockData && (
+            <p className="text-xs font-medium text-amber-600">
+              API unavailable - displaying mock data.
+            </p>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -202,18 +318,6 @@ export const OrganizationSection = () => {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
-
-            <select
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none"
-              onChange={(event) => setSelectedRole(event.target.value as TMemberRole | "all")}
-              value={selectedRole}
-            >
-              {ROLE_OPTIONS.map((role) => (
-                <option key={role} value={role}>
-                  {role === "all" ? "All Roles" : role}
-                </option>
-              ))}
-            </select>
 
             <select
               className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none"
@@ -233,31 +337,24 @@ export const OrganizationSection = () => {
               className="border-slate-300"
               onClick={() => {
                 setSearchTerm("")
-                setSelectedRole("all")
                 setSelectedStatus("all")
+                setPage(0)
               }}
             >
               Reset Filters
             </Button>
+
+            <select
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none"
+              onChange={(event) => handleOffsetChange(Number(event.target.value))}
+              value={offset}
+            >
+              <option value={5}>5 / page</option>
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+            </select>
           </div>
-
-          {actionMode === "single" && (
-            <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2.5">
-              <p className="text-sm font-semibold text-cyan-900">Add User Flow</p>
-              <p className="text-xs text-cyan-800">
-                Create one account with full identity fields: full name, corporate email, phone, employee code, department, and role.
-              </p>
-            </div>
-          )}
-
-          {actionMode === "batch" && (
-            <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2.5">
-              <p className="text-sm font-semibold text-cyan-900">Batch Import Flow</p>
-              <p className="text-xs text-cyan-800">
-                Upload CSV with columns: fullName, email, phone, employeeCode, department, role, status. System validates duplicates first.
-              </p>
-            </div>
-          )}
 
           <div className="rounded-lg border border-slate-200">
             <div className="overflow-x-auto">
@@ -267,81 +364,118 @@ export const OrganizationSection = () => {
                     <th className="px-3 py-2.5">Member</th>
                     <th className="px-3 py-2.5">Contact</th>
                     <th className="px-3 py-2.5">Department</th>
-                    <th className="px-3 py-2.5">Role</th>
                     <th className="px-3 py-2.5">Status</th>
                     <th className="px-3 py-2.5">MFA</th>
                     <th className="px-3 py-2.5">Storage</th>
-                    <th className="px-3 py-2.5">Last Active</th>
                     <th className="px-3 py-2.5">Joined</th>
                     <th className="px-3 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredMembers.map((member) => (
-                    <tr key={member.id} className="border-b border-slate-100 last:border-none">
-                      <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-900">{member.fullName}</p>
-                        <p className="text-xs text-slate-500">{member.employeeCode}</p>
-                      </td>
-
-                      <td className="px-3 py-3">
-                        <p className="text-slate-700">{member.email}</p>
-                        <p className="text-xs text-slate-500">{member.phone}</p>
-                      </td>
-
-                      <td className="px-3 py-3 text-slate-700">{member.department}</td>
-                      <td className="px-3 py-3 text-slate-700">{member.role}</td>
-
-                      <td className="px-3 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
-                            member.status === "Active" && "bg-emerald-100 text-emerald-700",
-                            member.status === "Pending" && "bg-amber-100 text-amber-700",
-                            member.status === "Suspended" && "bg-red-100 text-red-700"
-                          )}
-                        >
-                          {member.status}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold",
-                            member.mfaEnabled
-                              ? "bg-cyan-100 text-cyan-700"
-                              : "bg-slate-100 text-slate-600"
-                          )}
-                        >
-                          <UserCheck className="h-3.5 w-3.5" />
-                          {member.mfaEnabled ? "Enabled" : "Disabled"}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-3 text-slate-700">{member.storageUsed}</td>
-                      <td className="px-3 py-3 text-slate-700">{member.lastActive}</td>
-                      <td className="px-3 py-3 text-slate-700">{member.joinedAt}</td>
-
-                      <td className="px-3 py-3 text-right">
-                        <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                          <Ellipsis className="h-4 w-4" />
-                        </Button>
+                  {isLoadingMembers ? (
+                    <tr>
+                      <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
+                        Loading users...
                       </td>
                     </tr>
-                  ))}
+                  ) : filteredMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
+                        No users found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMembers.map((member) => (
+                      <tr key={member.id} className="border-b border-slate-100 last:border-none">
+                        <td className="px-3 py-3">
+                          <p className="font-semibold text-slate-900">{member.fullName}</p>
+                          <p className="text-xs text-slate-500">{member.employeeCode}</p>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <p className="text-slate-700">{member.email}</p>
+                          <p className="text-xs text-slate-500">{member.phone}</p>
+                        </td>
+
+                        <td className="px-3 py-3 text-slate-700">{member.department}</td>
+                        <td className="px-3 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
+                              member.status === "Active" && "bg-emerald-100 text-emerald-700",
+                              member.status === "Pending" && "bg-amber-100 text-amber-700",
+                              member.status === "Suspended" && "bg-red-100 text-red-700"
+                            )}
+                          >
+                            {member.status}
+                          </span>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold",
+                              member.mfaEnabled
+                                ? "bg-cyan-100 text-cyan-700"
+                                : "bg-slate-100 text-slate-600"
+                            )}
+                          >
+                            <UserCheck className="h-3.5 w-3.5" />
+                            {member.mfaEnabled ? "Enabled" : "Disabled"}
+                          </span>
+                        </td>
+
+                        <td className="px-3 py-3 text-slate-700">{member.storageUsed}</td>
+                        <td className="px-3 py-3 text-slate-700">{member.joinedAt}</td>
+
+                        <td className="px-3 py-3 text-right">
+                          <Button size="icon-sm" variant="ghost" className="text-slate-500">
+                            <Ellipsis className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Total records: {filteredMembers.length}</span>
-            <span>Showing expanded member profile fields for faster admin reviews.</span>
+            <span>Total records: {totalElements}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePreviousPage}
+                disabled={!hasPrevious || isLoadingMembers}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
+              <span>
+                Page {page + 1}/{totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleNextPage}
+                disabled={!hasNext || isLoadingMembers}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
+      <CreateUserModal
+        isOpen={isCreateUserModalOpen}
+        isSubmitting={isSubmittingCreateUser}
+        onClose={handleCloseCreateUserModal}
+        onSubmit={handleCreateUser}
+      />
     </div>
   )
 }
