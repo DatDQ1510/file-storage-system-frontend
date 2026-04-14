@@ -1,27 +1,141 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import {
-  Building2,
-  ChevronLeft,
   ChevronRight,
-  Clock3,
-  X,
 } from "lucide-react"
+import { toast } from "sonner"
 import { Header } from "@/components/common/Header"
 import { Button } from "@/components/ui/button"
 import { DashboardSection } from "@/pages/tenant-admin/components/sections/DashboardSection"
 import { OrganizationSection } from "@/pages/tenant-admin/components/sections/OrganizationSection"
 import { ProjectsSection } from "@/pages/tenant-admin/components/sections/ProjectsSection"
+import { CreateProjectModal } from "@/pages/tenant-admin/components/sections/projects/CreateProjectModal"
 import { SecuritySection } from "@/pages/tenant-admin/components/sections/SecuritySection"
 import { TenantSidebar } from "@/pages/tenant-admin/components/TenantSidebar"
 import {
+  PROJECT_RECORDS,
   getSectionDescription,
   getSectionTitle,
 } from "@/pages/tenant-admin/constants"
-import type { TTenantAdminSection } from "@/pages/tenant-admin/types"
+import {
+  createProject,
+  searchProjectOwners,
+} from "@/pages/tenant-admin/services/project-service"
+import type {
+  IProjectOwnerOption,
+  IProjectRecord,
+  IProjectRequest,
+  IProjectResponse,
+  TTenantAdminSection,
+} from "@/pages/tenant-admin/types"
+
+const PROJECT_OWNER_OPTIONS: IProjectOwnerOption[] = [
+  { id: "usr-001", name: "Sarah Jenkins" },
+  { id: "usr-002", name: "Admin David" },
+  { id: "usr-003", name: "Marcus Thorne" },
+  { id: "usr-004", name: "Kevin Art" },
+  { id: "usr-005", name: "Janet Doe" },
+]
+
+const mapProjectStatus = (status?: string): IProjectRecord["status"] => {
+  const normalizedStatus = status?.trim().toUpperCase() ?? ""
+
+  if (normalizedStatus.includes("ARCH")) {
+    return "Archived"
+  }
+
+  if (normalizedStatus.includes("PLAN") || normalizedStatus.includes("PENDING")) {
+    return "Planning"
+  }
+
+  return "Active"
+}
+
+const mapCreatedProjectToRecord = (
+  project: IProjectResponse,
+  ownerName: string,
+  fallbackId: string
+): IProjectRecord => {
+  const status = mapProjectStatus(project.status)
+
+  return {
+    id: project.id?.trim() ? project.id : fallbackId,
+    name: project.nameProject?.trim() ? project.nameProject : "Untitled Project",
+    department: "General",
+    pm: project.ownerName?.trim() ? project.ownerName : ownerName,
+    membersCount: 1,
+    storageUsed: "0GB",
+    storageTotal: "100GB",
+    storagePercent: 0,
+    status,
+    icon: "folder",
+    iconBg: "bg-blue-100",
+    iconColor: "text-blue-600",
+  }
+}
 
 export const TenantAdminPage = () => {
   const [activeSection, setActiveSection] = useState<TTenantAdminSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [projectRecords, setProjectRecords] = useState<IProjectRecord[]>(PROJECT_RECORDS)
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false)
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false)
+  const [projectOwnerOptions, setProjectOwnerOptions] = useState<IProjectOwnerOption[]>(PROJECT_OWNER_OPTIONS)
+  const [isSearchingOwners, setIsSearchingOwners] = useState(false)
+
+  const handleOpenCreateProjectModal = () => {
+    setProjectOwnerOptions(PROJECT_OWNER_OPTIONS)
+    setIsCreateProjectModalOpen(true)
+  }
+
+  const handleCloseCreateProjectModal = () => {
+    if (isSubmittingProject) {
+      return
+    }
+
+    setIsCreateProjectModalOpen(false)
+  }
+
+  const handleCreateProject = async (input: IProjectRequest) => {
+    setIsSubmittingProject(true)
+
+    try {
+      const createdProject = await createProject(input)
+      const ownerName =
+        projectOwnerOptions.find((owner) => owner.id === input.ownerId)?.name ??
+        "Project Owner"
+      const fallbackId = `proj-${String(projectRecords.length + 1).padStart(3, "0")}`
+
+      setProjectRecords((current) => [
+        mapCreatedProjectToRecord(createdProject, ownerName, fallbackId),
+        ...current,
+      ])
+
+      setIsCreateProjectModalOpen(false)
+      toast.success("Tạo dự án thành công")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể tạo dự án")
+    } finally {
+      setIsSubmittingProject(false)
+    }
+  }
+
+  const handleSearchProjectOwners = useCallback(async (keyword: string) => {
+    const normalizedKeyword = keyword.trim()
+    setIsSearchingOwners(true)
+
+    try {
+      const owners = await searchProjectOwners({
+        keyword: normalizedKeyword,
+        page: 0,
+        size: 10,
+      })
+      setProjectOwnerOptions(owners)
+    } catch {
+      setProjectOwnerOptions([])
+    } finally {
+      setIsSearchingOwners(false)
+    }
+  }, [])
 
   return (
     <div
@@ -89,7 +203,9 @@ export const TenantAdminPage = () => {
                     <Button variant="outline" className="border-slate-300 bg-white">
                       Export Project Report
                     </Button>
-                    <Button className="bg-cyan-700 text-white hover:bg-cyan-800">+ Create New Project</Button>
+                    <Button className="bg-cyan-700 text-white hover:bg-cyan-800" onClick={handleOpenCreateProjectModal}>
+                      Add Project
+                    </Button>
                   </>
                 )}
 
@@ -100,28 +216,20 @@ export const TenantAdminPage = () => {
             </div>
 
             {activeSection === "dashboard" && <DashboardSection />}
-            {activeSection === "projects" && <ProjectsSection />}
+            {activeSection === "projects" && <ProjectsSection projectRecords={projectRecords} />}
             {activeSection === "organization" && <OrganizationSection />}
             {activeSection === "security" && <SecuritySection />}
 
-            <div className="mt-5 flex items-center justify-end gap-2 text-sm text-slate-500">
-              <button className="rounded-md border border-slate-300 bg-white p-1.5" type="button">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button className="rounded-md border border-cyan-700 bg-cyan-700 px-3 py-1 text-white" type="button">
-                1
-              </button>
-              <button className="rounded-md border border-slate-300 bg-white px-3 py-1" type="button">
-                2
-              </button>
-              <span>...</span>
-              <button className="rounded-md border border-slate-300 bg-white px-3 py-1" type="button">
-                9
-              </button>
-              <button className="rounded-md border border-slate-300 bg-white p-1.5" type="button">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+            <CreateProjectModal
+              isOpen={isCreateProjectModalOpen}
+              isSubmitting={isSubmittingProject}
+              isSearchingOwners={isSearchingOwners}
+              owners={projectOwnerOptions}
+              onSearchOwners={handleSearchProjectOwners}
+              onClose={handleCloseCreateProjectModal}
+              onSubmit={handleCreateProject}
+            />
+
           </main>
         </div>
       </div>

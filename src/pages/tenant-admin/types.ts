@@ -112,3 +112,44 @@ export interface IUserDirectoryPage {
   hasPrevious: boolean
   isMockData?: boolean
 }
+
+export interface IProjectOwnerOption {
+  id: string
+  name: string
+  email?: string
+}
+
+export interface IUserSearchItemResponse {
+  id: string
+  userName: string
+  email: string
+}
+
+export interface IUserSearchPageResponse {
+  items: IUserSearchItemResponse[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+}
+
+export interface IProjectRequest {
+  nameProject: string
+  ownerId: string
+}
+
+export interface IProjectResponse {
+  id?: string
+  nameProject?: string
+  ownerId?: string
+  ownerName?: string
+  tenantId?: string
+  tenantName?: string
+  tenantAdminId?: string
+  tenantAdminName?: string
+  createdAt?: string
+  updatedAt?: string
+  status?: string
+}

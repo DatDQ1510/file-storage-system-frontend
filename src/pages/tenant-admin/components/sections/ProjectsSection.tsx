@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { PROJECT_RECORDS, getProjectStatusClassName } from "@/pages/tenant-admin/constants"
+import type { IProjectRecord } from "@/pages/tenant-admin/types"
 
 const PROJECT_ICON_MAP = {
   folder: FolderKanban,
@@ -23,7 +24,11 @@ const PROJECT_ICON_MAP = {
   account_balance: Landmark,
 } as const
 
-export const ProjectsSection = () => {
+interface IProjectsSectionProps {
+  projectRecords?: IProjectRecord[]
+}
+
+export const ProjectsSection = ({ projectRecords = PROJECT_RECORDS }: IProjectsSectionProps) => {
   return (
     <div className="space-y-5">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -81,7 +86,7 @@ export const ProjectsSection = () => {
             </thead>
 
             <tbody>
-              {PROJECT_RECORDS.map((project) => {
+              {projectRecords.map((project) => {
                 const Icon = PROJECT_ICON_MAP[project.icon as keyof typeof PROJECT_ICON_MAP] ?? FolderKanban
 
                 return (
