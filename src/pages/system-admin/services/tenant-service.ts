@@ -3,6 +3,7 @@ import type {
   ITenantAdminAvailabilityResult,
   ITenantActivationPayload,
   ITenantActivationTokenInfo,
+  ITenantRecordPage,
   ITenantProvisionPayload,
   ITenantRecord,
   ITenantSubdomainAvailabilityResult,
@@ -11,6 +12,7 @@ import {
   activateTenantAccount,
   checkTenantAdminAvailability,
   checkTenantSubdomainAvailability,
+  fetchTenantRecordPage,
   fetchTenantRecords,
   provisionTenant,
   validateTenantActivationToken,
@@ -18,6 +20,13 @@ import {
 
 export const loadTenantRecords = async (): Promise<ITenantRecord[]> => {
   return fetchTenantRecords()
+}
+
+export const loadTenantRecordPage = async (input: {
+  page: number
+  offset: number
+}): Promise<ITenantRecordPage> => {
+  return fetchTenantRecordPage(input)
 }
 
 export const checkSubdomainAvailability = async (

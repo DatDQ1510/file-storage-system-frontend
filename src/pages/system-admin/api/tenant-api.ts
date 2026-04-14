@@ -1,13 +1,16 @@
 import { api } from "@/lib/api/axios-client"
 import { TENANT_TABLE_DATA } from "@/pages/system-admin/constants"
 import type {
+  IAllTenantPageResponse,
   IInitialTenantSetupResponse,
   ITenantAdminAvailabilityResult,
   ITenantActivationPayload,
   ITenantActivationTokenInfo,
   ITenantProvisionPayload,
+  ITenantRecordPage,
   ITenantRecord,
   ITenantSubdomainAvailabilityResult,
+  TTenantStatus,
 } from "@/pages/system-admin/types"
 import type { IApiResponse } from "@/types/auth"
 import {
@@ -39,6 +42,11 @@ interface ICreateInitialTenantSetupRequest {
   planId: string
 }
 
+interface IGetTenantRecordsInput {
+  page: number
+  offset: number
+}
+
 const unwrapApiData = <TData>(payload: unknown): TData | null => {
   if (!payload || typeof payload !== "object") {
     return null
@@ -55,6 +63,128 @@ const unwrapApiData = <TData>(payload: unknown): TData | null => {
 export const fetchTenantRecords = async (): Promise<ITenantRecord[]> => {
   // TODO: Replace mock implementation with real backend request
   return Promise.resolve(TENANT_TABLE_DATA)
+}
+
+const toNumericValue = (value: string | number | null | undefined): number => {
+  if (typeof value === "number") {
+    return value
+  }
+
+  if (typeof value === "string") {
+    const parsedValue = Number(value)
+    return Number.isFinite(parsedValue) ? parsedValue : 0
+  }
+
+  return 0
+}
+
+const toUiTenantStatus = (statusTenant: string): TTenantStatus => {
+  const normalizedStatus = statusTenant.trim().toUpperCase()
+
+  if (normalizedStatus.includes("SUSPEND") || normalizedStatus.includes("INACTIVE") || normalizedStatus.includes("DISABLE")) {
+    return "Suspended"
+  }
+
+  if (normalizedStatus.includes("ACTIVE")) {
+    return "Active"
+  }
+
+  return "Trial"
+}
+
+const toLocaleDateLabel = (input: string): string => {
+  const value = new Date(input)
+
+  if (Number.isNaN(value.getTime())) {
+    return "N/A"
+  }
+
+  return value.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  })
+}
+
+const mapApiTenantToTenantRecord = (tenant: IAllTenantPageResponse["items"][number]): ITenantRecord => {
+  const usedStorageSize = toNumericValue(tenant.usedStorageSize)
+  const planBaseStorageLimit = toNumericValue(tenant.planBaseStorageLimit)
+  const exTraStorageSize = toNumericValue(tenant.exTraStorageSize)
+  const totalStorageSize = planBaseStorageLimit + exTraStorageSize
+  const quotaPercent =
+    totalStorageSize <= 0 ? 0 : Math.min(Math.round((usedStorageSize / totalStorageSize) * 100), 100)
+
+  return {
+    id: tenant.id,
+    businessName: tenant.nameTenant,
+    nodeCode: tenant.domainTenant,
+    status: toUiTenantStatus(tenant.statusTenant),
+    plan: tenant.planName,
+    quotaUsed: `${usedStorageSize.toLocaleString("en-US")} GB`,
+    quotaPercent,
+    createdDate: toLocaleDateLabel(tenant.createdAt),
+    region: "Vietnam",
+    adminName: tenant.tenantAdminUserName,
+    adminEmail: tenant.tenantAdminEmail,
+    adminPhoneNumber: tenant.tenantAdminPhoneNumber,
+    createdAt: tenant.createdAt,
+    updatedAt: tenant.updatedAt,
+    tenantAdminId: tenant.tenantAdminId,
+    tenantPlanStatus: tenant.tenantPlanStatus,
+    planPrice: tenant.planPrice ?? undefined,
+    planBillingCycle: tenant.planBillingCycle,
+    planStartDate: tenant.planStartDate,
+    planEndDate: tenant.planEndDate,
+  }
+}
+
+const buildMockTenantRecordPage = ({ page, offset }: IGetTenantRecordsInput): ITenantRecordPage => {
+  const totalElements = TENANT_TABLE_DATA.length
+  const totalPages = Math.max(Math.ceil(totalElements / offset), 1)
+  const boundedPage = Math.min(page, totalPages - 1)
+  const startIndex = boundedPage * offset
+  const endIndex = startIndex + offset
+  const items = TENANT_TABLE_DATA.slice(startIndex, endIndex)
+
+  return {
+    items,
+    page: boundedPage,
+    offset,
+    totalElements,
+    totalPages,
+    hasNext: boundedPage < totalPages - 1,
+    hasPrevious: boundedPage > 0,
+    isMockData: true,
+  }
+}
+
+export const fetchTenantRecordPage = async ({
+  page,
+  offset,
+}: IGetTenantRecordsInput): Promise<ITenantRecordPage> => {
+  try {
+    const response = await api.get<IApiResponse<IAllTenantPageResponse>>("/tenants", {
+      params: {
+        page,
+        offset,
+      },
+      skipGlobalErrorHandler: true,
+    })
+
+    const payload = response.data.data
+    return {
+      items: payload.items.map(mapApiTenantToTenantRecord),
+      page: payload.page,
+      offset: payload.offset,
+      totalElements: payload.totalElements,
+      totalPages: payload.totalPages,
+      hasNext: payload.hasNext,
+      hasPrevious: payload.hasPrevious,
+      isMockData: false,
+    }
+  } catch {
+    return buildMockTenantRecordPage({ page, offset })
+  }
 }
 
 export const checkTenantSubdomainAvailability = async (

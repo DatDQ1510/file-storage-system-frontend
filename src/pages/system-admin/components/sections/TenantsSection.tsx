@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ChangeEvent, FormEvent } from "react"
-import { ChevronDown, ChevronRight, Filter, Search } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Power, Search } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,7 +19,7 @@ import {
 import {
   checkAdminAvailability,
   checkSubdomainAvailability,
-  loadTenantRecords,
+  loadTenantRecordPage,
   submitTenantProvision,
 } from "@/pages/system-admin/services/tenant-service"
 import { loadPlanCards } from "@/pages/system-admin/services/billing-service"
@@ -53,6 +53,16 @@ export const TenantsSection = ({
   void onOpenRegisterTenant
 
   const [tenants, setTenants] = useState<ITenantRecord[]>([])
+  const [isLoadingTenants, setIsLoadingTenants] = useState(false)
+  const [page, setPage] = useState(0)
+  const [offset, setOffset] = useState(10)
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const [hasPrevious, setHasPrevious] = useState(false)
+  const [isUsingMockData, setIsUsingMockData] = useState(false)
+  const [selectedTenantDetail, setSelectedTenantDetail] = useState<ITenantRecord | null>(null)
+  const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null)
   const [subscriptionPlans, setSubscriptionPlans] = useState<ITenantProvisionPlan[]>([])
   const [isLoadingPlans, setIsLoadingPlans] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -69,18 +79,33 @@ export const TenantsSection = ({
   const [isConfirmingProvision, setIsConfirmingProvision] = useState(false)
   const [pendingProvisionInput, setPendingProvisionInput] = useState<ITenantProvisionPayload | null>(null)
 
-  useEffect(() => {
-    const loadTenants = async () => {
-      try {
-        const result = await loadTenantRecords()
-        setTenants(result)
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load tenant list")
-      }
-    }
+  const loadTenants = useCallback(async () => {
+    setIsLoadingTenants(true)
 
+    try {
+      const tenantPage = await loadTenantRecordPage({
+        page,
+        offset,
+      })
+
+      setTenants(tenantPage.items)
+      setPage(tenantPage.page)
+      setOffset(tenantPage.offset)
+      setTotalElements(tenantPage.totalElements)
+      setTotalPages(Math.max(tenantPage.totalPages, 1))
+      setHasNext(tenantPage.hasNext)
+      setHasPrevious(tenantPage.hasPrevious)
+      setIsUsingMockData(Boolean(tenantPage.isMockData))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load tenant list")
+    } finally {
+      setIsLoadingTenants(false)
+    }
+  }, [offset, page])
+
+  useEffect(() => {
     void loadTenants()
-  }, [])
+  }, [loadTenants])
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -135,8 +160,9 @@ export const TenantsSection = ({
   const summaryCards = useMemo(() => {
     const totalEnterprises = tenants.length
     const activeTrials = tenants.filter((tenant) => tenant.status === "Trial").length
+    const totalQuotaPercent = tenants.reduce((sum, tenant) => sum + tenant.quotaPercent, 0)
     const infrastructureLoad = Math.round(
-      (tenants.reduce((sum, tenant) => sum + tenant.quotaPercent, 0) / (tenants.length * 100)) * 100
+      tenants.length > 0 ? (totalQuotaPercent / (tenants.length * 100)) * 100 : 0
     )
     const revenueRunRate = `$${(tenants.filter((tenant) => tenant.status === "Active").length * 0.8 + 1.6).toFixed(1)}M`
 
@@ -364,6 +390,7 @@ export const TenantsSection = ({
       const provisionResult = await submitTenantProvision(pendingProvisionInput)
       setTenants((current) => [
         {
+          id: provisionResult.tenantId,
           businessName: pendingProvisionInput.companyName,
           nodeCode: provisionResult.tenantDomain,
           status: "Trial",
@@ -375,7 +402,7 @@ export const TenantsSection = ({
             day: "2-digit",
             year: "numeric",
           }),
-          region: "Provisioning",
+          region: "Vietnam",
           adminName: provisionResult.tenantAdminUserName,
           adminEmail: pendingProvisionInput.admin.email,
         },
@@ -384,20 +411,83 @@ export const TenantsSection = ({
       toast.success("Tenant provisioned successfully.", {
         description: `Domain: ${provisionResult.tenantDomain}`,
       })
-      toast.info("Generated tenant admin password", {
-        description: provisionResult.generatedTenantAdminPassword,
-      })
+
       setFormState(INITIAL_TENANT_PROVISION_FORM_STATE)
       setSubdomainAvailability(null)
       setAdminAvailability(null)
       setCurrentStep(1)
       setPendingProvisionInput(null)
       onCloseRegisterTenant()
+      setTotalElements((current) => current + 1)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to provision tenant")
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleViewTenantDetail = (tenant: ITenantRecord) => {
+    setSelectedTenantDetail(tenant)
+  }
+
+  const handleCloseTenantDetail = () => {
+    setSelectedTenantDetail(null)
+  }
+
+  const handleToggleTenantStatus = async (tenant: ITenantRecord) => {
+    const nextStatus: TTenantStatus = tenant.status === "Suspended" ? "Active" : "Suspended"
+    setUpdatingTenantId(tenant.id ?? tenant.businessName)
+
+    try {
+      setTenants((current) =>
+        current.map((item) => {
+          const isTargetTenant = (item.id && item.id === tenant.id) || item.businessName === tenant.businessName
+          return isTargetTenant
+            ? {
+                ...item,
+                status: nextStatus,
+              }
+            : item
+        })
+      )
+
+      toast.success(
+        nextStatus === "Suspended"
+          ? "Tenant status changed to Suspended"
+          : "Tenant status changed to Active"
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update tenant status")
+    } finally {
+      setUpdatingTenantId(null)
+    }
+  }
+
+  const handleOffsetChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextOffset = Number(event.target.value)
+
+    if (!Number.isFinite(nextOffset) || nextOffset <= 0) {
+      return
+    }
+
+    setOffset(nextOffset)
+    setPage(0)
+  }
+
+  const handlePreviousPage = () => {
+    if (!hasPrevious || isLoadingTenants) {
+      return
+    }
+
+    setPage((current) => Math.max(current - 1, 0))
+  }
+
+  const handleNextPage = () => {
+    if (!hasNext || isLoadingTenants) {
+      return
+    }
+
+    setPage((current) => current + 1)
   }
 
   return (
@@ -421,6 +511,11 @@ export const TenantsSection = ({
           <div>
             <CardTitle className="text-lg font-semibold text-slate-900">Active Enterprise Tenants</CardTitle>
             <p className="mt-1 text-xs text-slate-500">Monitor tenant status, plan usage, and onboarding date in one table.</p>
+            {isUsingMockData && (
+              <p className="mt-1 text-xs font-semibold text-amber-600">
+                Using mock tenant data because tenant listing API is unavailable.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -453,12 +548,24 @@ export const TenantsSection = ({
               onClick={() => {
                 setSearchTerm("")
                 setSelectedStatus("all")
+                setPage(0)
               }}
             >
               <Filter className="h-4 w-4" />
               Reset
               <ChevronDown className="h-4 w-4" />
             </Button>
+
+            <select
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none"
+              onChange={handleOffsetChange}
+              value={offset}
+            >
+              <option value={5}>5 / page</option>
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+            </select>
 
           </div>
         </CardHeader>
@@ -474,45 +581,105 @@ export const TenantsSection = ({
                 <th className="py-3">Quota Used</th>
                 <th className="py-3">Region</th>
                 <th className="py-3">Created Date</th>
-                <th className="py-3 text-right">Actions</th>
+                <th className="py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTenants.map((tenant) => (
-                <tr key={tenant.businessName} className="border-b border-slate-100 last:border-none">
-                  <td className="py-4">
-                    <p className="font-semibold text-slate-900">{tenant.businessName}</p>
-                    <p className="text-xs text-slate-500">{tenant.nodeCode}</p>
-                  </td>
-                  <td className="py-4">
-                    <p className="font-semibold text-slate-900">{tenant.adminName}</p>
-                    <p className="text-xs text-slate-500">{tenant.adminEmail}</p>
-                  </td>
-                  <td>
-                    <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getTenantStatusClassName(tenant.status))}>
-                      {tenant.status}
-                    </span>
-                  </td>
-                  <td className="text-slate-700">{tenant.plan}</td>
-                  <td>
-                    <div className="w-32">
-                      <p className="mb-1 text-xs font-semibold text-slate-700">{tenant.quotaUsed}</p>
-                      <div className="h-2 rounded-full bg-slate-200">
-                        <div className="h-2 rounded-full bg-blue-600" style={{ width: `${tenant.quotaPercent}%` }} />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-slate-700">{tenant.region}</td>
-                  <td className="text-slate-700">{tenant.createdDate}</td>
-                  <td className="text-right">
-                    <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+              {isLoadingTenants ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                    Loading tenants...
                   </td>
                 </tr>
-              ))}
+              ) : filteredTenants.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                    No tenants found for the current filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredTenants.map((tenant) => (
+                  <tr key={tenant.id ?? tenant.businessName} className="border-b border-slate-100 last:border-none">
+                    <td className="py-4">
+                      <p className="font-semibold text-slate-900">{tenant.businessName}</p>
+                      <p className="text-xs text-slate-500">{tenant.nodeCode}</p>
+                    </td>
+                    <td className="py-4">
+                      <p className="font-semibold text-slate-900">{tenant.adminName}</p>
+                      <p className="text-xs text-slate-500">{tenant.adminEmail}</p>
+                    </td>
+                    <td>
+                      <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getTenantStatusClassName(tenant.status))}>
+                        {tenant.status}
+                      </span>
+                    </td>
+                    <td className="text-slate-700">{tenant.plan}</td>
+                    <td>
+                      <div className="w-32">
+                        <p className="mb-1 text-xs font-semibold text-slate-700">{tenant.quotaUsed}</p>
+                        <div className="h-2 rounded-full bg-slate-200">
+                          <div className="h-2 rounded-full bg-blue-600" style={{ width: `${tenant.quotaPercent}%` }} />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-slate-700">{tenant.region}</td>
+                    <td className="text-slate-700">{tenant.createdDate}</td>
+                    <td>
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-600"
+                          onClick={() => handleViewTenantDetail(tenant)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Detail
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-300 text-slate-600"
+                          onClick={() => handleToggleTenantStatus(tenant)}
+                          disabled={updatingTenantId === (tenant.id ?? tenant.businessName)}
+                        >
+                          <Power className="h-4 w-4" />
+                          {tenant.status === "Suspended" ? "Activate" : "Disable"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Showing page <span className="font-semibold text-slate-900">{page + 1}</span> / {totalPages} - total tenants: {totalElements}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-300"
+                onClick={handlePreviousPage}
+                disabled={!hasPrevious || isLoadingTenants}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-300"
+                onClick={handleNextPage}
+                disabled={!hasNext || isLoadingTenants}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -586,6 +753,66 @@ export const TenantsSection = ({
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Provisioning..." : "Xác nhận & Provision"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTenantDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+              <h3 className="text-lg font-semibold text-slate-900">Tenant Detail</h3>
+              <p className="mt-1 text-sm text-slate-600">Tenant information and current plan snapshot.</p>
+            </div>
+
+            <div className="grid gap-4 p-6 text-sm text-slate-700 sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tenant Name</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.businessName}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Domain</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.nodeCode}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.adminName}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin Email</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.adminEmail}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin Phone</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.adminPhoneNumber ?? "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Status</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.status}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Plan</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.plan}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quota Used</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.quotaUsed}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Created Date</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.createdDate}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Plan Status</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.tenantPlanStatus ?? "N/A"}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <Button type="button" variant="ghost" onClick={handleCloseTenantDetail}>
+                Close
               </Button>
             </div>
           </div>

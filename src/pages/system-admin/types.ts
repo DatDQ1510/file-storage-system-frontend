@@ -8,6 +8,13 @@ export type TSystemSection =
 
 export type TTenantStatus = "Active" | "Trial" | "Suspended"
 
+export type TTenantApiStatus =
+  | "ACTIVE"
+  | "TRIAL"
+  | "SUSPENDED"
+  | "INACTIVE"
+  | "UNKNOWN"
+
 export interface ISystemNavItem {
   label: string
   icon: LucideIcon
@@ -20,6 +27,7 @@ export interface ISystemNavGroup {
 }
 
 export interface ITenantRecord {
+  id?: string
   businessName: string
   nodeCode: string
   status: TTenantStatus
@@ -30,6 +38,59 @@ export interface ITenantRecord {
   region: string
   adminName: string
   adminEmail: string
+  adminPhoneNumber?: string
+  createdAt?: string
+  updatedAt?: string
+  tenantAdminId?: string
+  tenantPlanStatus?: string
+  planPrice?: number
+  planBillingCycle?: string
+  planStartDate?: string
+  planEndDate?: string
+}
+
+export interface IAllTenantResponse {
+  id: string
+  nameTenant: string
+  domainTenant: string
+  exTraStorageSize: string | number | null
+  usedStorageSize: string | number | null
+  statusTenant: string
+  tenantAdminId: string
+  tenantAdminUserName: string
+  tenantAdminEmail: string
+  tenantAdminPhoneNumber: string
+  planId: string
+  planName: string
+  planBaseStorageLimit: string | number | null
+  planPrice: number | null
+  planBillingCycle: string
+  tenantPlanStatus: string
+  planStartDate: string
+  planEndDate: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IAllTenantPageResponse {
+  items: IAllTenantResponse[]
+  page: number
+  offset: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+}
+
+export interface ITenantRecordPage {
+  items: ITenantRecord[]
+  page: number
+  offset: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+  isMockData?: boolean
 }
 
 export interface ITenantCreateInput {
