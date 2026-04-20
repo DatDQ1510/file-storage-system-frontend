@@ -31,7 +31,7 @@ export const postAddProjectMember = async (
   input: IAddProjectMemberRequest
 ): Promise<IProjectMemberResponse> => {
   const response = await api.post<IApiResponse<IProjectMemberResponse>>(
-    `/projects/${encodeURIComponent(projectId)}/members`,
+    `/projects/${encodeURIComponent(projectId)}/members/assign`,
     input,
     {
       skipGlobalErrorHandler: true,
@@ -45,6 +45,7 @@ export const getProjectOwnerOptions = async (input: {
   keyword: string
   page?: number
   size?: number
+  signal?: AbortSignal
 }): Promise<IProjectOwnerOption[]> => {
   const response = await api.get<IApiResponse<IUserSearchPageResponse>>(
     "/users/search",
@@ -54,6 +55,7 @@ export const getProjectOwnerOptions = async (input: {
         page: input.page ?? 0,
         size: input.size ?? 10,
       },
+      signal: input.signal,
       skipGlobalErrorHandler: true,
     }
   )

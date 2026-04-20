@@ -1,7 +1,7 @@
 import { Loader2, X } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useUserSearch } from "@/hooks/use-user-search"
 import type {
   IAddProjectMemberRequest,
   IProjectOwnerOption,
@@ -11,9 +11,7 @@ interface IAddProjectMemberModalProps {
   isOpen: boolean
   projectName: string
   isSubmitting: boolean
-  isSearchingUsers: boolean
-  users: IProjectOwnerOption[]
-  onSearchUsers: (keyword: string) => Promise<void>
+  fetchUsers: (keyword: string, signal?: AbortSignal) => Promise<IProjectOwnerOption[]>
   onClose: () => void
   onSubmit: (input: IAddProjectMemberRequest) => Promise<void>
 }
@@ -44,7 +42,7 @@ const PERMISSION_OPTIONS = [
 const DEFAULT_PERMISSION = 1
 
 const INITIAL_FORM_STATE: IAddProjectMemberRequest = {
-  userId: "",
+  memberUserId: "",
   permission: DEFAULT_PERMISSION,
 }
 
@@ -52,18 +50,22 @@ export const AddProjectMemberModal = ({
   isOpen,
   projectName,
   isSubmitting,
-  isSearchingUsers,
-  users,
-  onSearchUsers,
+  fetchUsers,
   onClose,
   onSubmit,
 }: IAddProjectMemberModalProps) => {
   const [formState, setFormState] = useState<IAddProjectMemberRequest>(INITIAL_FORM_STATE)
   const [userKeyword, setUserKeyword] = useState("")
-  const [isUserTyping, setIsUserTyping] = useState(false)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
+  const [hasPrefetchedUsers, setHasPrefetchedUsers] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const debouncedKeyword = useDebouncedValue(userKeyword, 800)
+  const {
+    isSearching: isSearchingUsers,
+    results: users,
+    search: searchUsers,
+    searchImmediately,
+    clearResults,
+  } = useUserSearch(fetchUsers, 300, { allowEmptyKeyword: true })
 
   const selectedPermissionSet = useMemo(() => {
     const set = new Set<number>()
@@ -78,16 +80,8 @@ export const AddProjectMemberModal = ({
   }, [formState.permission])
 
   const canSubmit = useMemo(() => {
-    return Boolean(formState.userId.trim() && formState.permission > 0)
-  }, [formState.permission, formState.userId])
-
-  useEffect(() => {
-    if (!isOpen || !isUserTyping) {
-      return
-    }
-
-    void onSearchUsers(debouncedKeyword.trim())
-  }, [debouncedKeyword, isOpen, isUserTyping, onSearchUsers])
+    return Boolean(formState.memberUserId.trim() && formState.permission > 0)
+  }, [formState.memberUserId, formState.permission])
 
   if (!isOpen) {
     return null
@@ -96,9 +90,10 @@ export const AddProjectMemberModal = ({
   const resetForm = () => {
     setFormState(INITIAL_FORM_STATE)
     setUserKeyword("")
-    setIsUserTyping(false)
     setIsUserDropdownOpen(false)
+    setHasPrefetchedUsers(false)
     setErrorMessage("")
+    clearResults()
   }
 
   const handleClose = () => {
@@ -126,11 +121,11 @@ export const AddProjectMemberModal = ({
 
   const handleSubmit = async () => {
     const normalizedInput: IAddProjectMemberRequest = {
-      userId: formState.userId.trim(),
+      memberUserId: formState.memberUserId.trim(),
       permission: formState.permission,
     }
 
-    if (!normalizedInput.userId) {
+    if (!normalizedInput.memberUserId) {
       setErrorMessage("Người dùng là bắt buộc.")
       return
     }
@@ -181,24 +176,27 @@ export const AddProjectMemberModal = ({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">Người dùng *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">Người được thêm *</label>
             <div className="relative">
               <input
                 value={userKeyword}
                 onChange={(event) => {
                   const nextKeyword = event.target.value
                   setUserKeyword(nextKeyword)
+                  void searchUsers(nextKeyword)
                   setFormState((current) => ({
                     ...current,
-                    userId: "",
+                    memberUserId: "",
                   }))
-                  setIsUserTyping(true)
                   setIsUserDropdownOpen(true)
                 }}
                 onFocus={() => {
-                  setIsUserTyping(true)
                   setIsUserDropdownOpen(true)
-                  void onSearchUsers(userKeyword.trim())
+
+                  if (!hasPrefetchedUsers && users.length === 0) {
+                    setHasPrefetchedUsers(true)
+                    void searchImmediately("")
+                  }
                 }}
                 placeholder="Nhập tên hoặc email người dùng"
                 className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 pr-9 text-sm text-slate-800 outline-none focus:border-cyan-500"
@@ -215,7 +213,7 @@ export const AddProjectMemberModal = ({
                 </p>
               )}
 
-              {isUserDropdownOpen && (userKeyword.trim() || isSearchingUsers || users.length > 0) && (
+              {isUserDropdownOpen && (userKeyword.trim() || isSearchingUsers || hasPrefetchedUsers || users.length > 0) && (
                 <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {isSearchingUsers ? (
                     <p className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
@@ -233,9 +231,8 @@ export const AddProjectMemberModal = ({
                         onClick={() => {
                           setFormState((current) => ({
                             ...current,
-                            userId: user.id,
+                            memberUserId: user.id,
                           }))
-                          setIsUserTyping(false)
                           setIsUserDropdownOpen(false)
                           setUserKeyword(user.email ? `${user.name} (${user.email})` : user.name)
                         }}

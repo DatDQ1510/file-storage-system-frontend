@@ -34,8 +34,11 @@ const AUTH_DATA_KEY = "authData"
 const ROLE_KEY = "role"
 const REFRESH_ENDPOINT = "/auth/refresh"
 const FALLBACK_ERROR_MESSAGE = "Something went wrong while calling the API."
+const MAX_RETRY_COUNT = 3
+const RETRY_DELAY_MS = 1000
 
 let refreshTokenPromise: Promise<string | null> | null = null
+const shownErrorUrls = new Set<string>()
 
 const ERROR_MESSAGE_BY_STATUS: Record<number, string> = {
   400: "Bad request.",
@@ -246,12 +249,15 @@ httpAxiosClient.interceptors.response.use(
       skipGlobalErrorHandler?: boolean
       skipAuth?: boolean
       _retry?: boolean
+      _retryCount?: number
     }
 
     const isUnauthorized = error.response?.status === 401
     const isRefreshRequest = config?.url?.includes(REFRESH_ENDPOINT)
-    const canRefresh = Boolean(config && !config.skipAuth && !config._retry && !isRefreshRequest)
+    const retryCount = (config?._retryCount ?? 0) as number
 
+    // Handle 401 Unauthorized with token refresh
+    const canRefresh = Boolean(config && !config.skipAuth && !config._retry && !isRefreshRequest)
     if (isUnauthorized && canRefresh) {
       config._retry = true
 
@@ -288,12 +294,41 @@ httpAxiosClient.interceptors.response.use(
       redirectToSignIn()
     }
 
+    // Retry logic for non-401 errors (max 3 attempts)
+    const isRetryableError =
+      error.response?.status !== 401 &&
+      (error.code === "ECONNABORTED" ||
+        error.code === "ENOTFOUND" ||
+        error.response?.status === 408 ||
+        error.response?.status === 429 ||
+        error.response?.status === 500 ||
+        error.response?.status === 502 ||
+        error.response?.status === 503)
+
+    if (isRetryableError && retryCount < MAX_RETRY_COUNT) {
+      config._retryCount = retryCount + 1
+      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount) // exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return httpAxiosClient(config)
+    }
+
+    // Show error toast only once per URL (after all retries exhausted)
     if (!config?.skipGlobalErrorHandler) {
       const method = normalizeMethod(config?.method)
       const endpoint = config?.url ?? "Unknown endpoint"
-      toast.error(apiError.message, {
-        description: `${method} ${endpoint}`,
-      })
+      const errorKey = `${method}-${endpoint}`
+
+      if (!shownErrorUrls.has(errorKey)) {
+        shownErrorUrls.add(errorKey)
+        // Clear from set after 5 seconds to allow re-showing same error later
+        setTimeout(() => {
+          shownErrorUrls.delete(errorKey)
+        }, 5000)
+
+        toast.error(apiError.message, {
+          description: `${method} ${endpoint}`,
+        })
+      }
     }
 
     return Promise.reject(apiError)

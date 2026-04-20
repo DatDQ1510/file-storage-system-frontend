@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
-import { PROJECT_ITEMS } from "@/constants/projects";
-import { getProjectPath, getProjectFilePath } from "@/constants/routes";
-import { PROJECT_FILE_ITEMS } from "@/constants/project-files";
+import { getProjectFilePath } from "@/constants/routes";
 import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
 import { ProjectFileTypeIcon, type TProjectFileType } from "@/components/projects/ProjectFileTypeIcon";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
 import { getStoredAuthData } from "@/lib/api/auth-service";
 import {
+  assignProjectMember,
   getTenantUserOptions,
   getUserProjectDetail,
   type IUserProjectDetail,
@@ -28,26 +27,15 @@ interface IProjectFileListItem {
 export const ProjectFolderDetail = () => {
   const navigate = useNavigate();
   const { projectId, folderId } = useParams();
-  const ownerSearchRequestSequenceRef = useRef(0);
   const [uploadedFilesByProject, setUploadedFilesByProject] = useState<Record<string, IProjectFileListItem[]>>({});
   const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
   const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
-  const [isSearchingTenantUsers, setIsSearchingTenantUsers] = useState(false);
-  const [tenantUserOptions, setTenantUserOptions] = useState<IUserTenantOption[]>([]);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
   const authData = getStoredAuthData();
   const currentUserId = authData?.userId?.trim() ?? "";
-
-  const selectedProject = PROJECT_ITEMS.find((projectItem) => {
-    return projectItem.id === projectId;
-  });
-
-  const selectedFolder = selectedProject?.folders.find((folderItem) => {
-    return folderItem.id === folderId;
-  });
 
   const isCurrentUserProjectOwner = useMemo(() => {
     if (!projectDetail?.ownerId || !currentUserId) {
@@ -56,12 +44,6 @@ export const ProjectFolderDetail = () => {
 
     return projectDetail.ownerId === currentUserId;
   }, [currentUserId, projectDetail?.ownerId]);
-
-  const projectDetailFile = useMemo(() => {
-    return PROJECT_FILE_ITEMS.find((fileItem) => {
-      return fileItem.projectId === projectId;
-    });
-  }, [projectId]);
 
   useEffect(() => {
     if (!projectId) {
@@ -99,75 +81,50 @@ export const ProjectFolderDetail = () => {
   }, [projectId]);
 
   const fileItems = useMemo<IProjectFileListItem[]>(() => {
-    const baseFileItems: IProjectFileListItem[] = [
-      {
-        id: "file-1",
-        name: projectDetailFile?.name ?? "Architectural_Brief_v2.pdf",
-        owner: selectedProject?.projectLead ?? "Sarah Chen",
-        lastModified: "Oct 24, 2023",
-        size: "4.2 MB",
-        type: "pdf",
-      },
-      {
-        id: "file-2",
-        name: "Titan_Infrastructure_Status.docx",
-        owner: "Me",
-        lastModified: "2 hours ago",
-        size: "1.8 MB",
-        type: "docx",
-      },
-      {
-        id: "file-3",
-        name: "Budget_Projections_Q4.xlsx",
-        owner: "Finance Dept",
-        lastModified: "Yesterday",
-        size: "850 KB",
-        type: "xlsx",
-      },
-      {
-        id: "file-4",
-        name: "Site_Blueprint_Primary.png",
-        owner: "Me",
-        lastModified: "Oct 20, 2023",
-        size: "12.5 MB",
-        type: "png",
-      },
-    ];
-
     if (!projectId) {
-      return baseFileItems;
+      return [];
     }
 
-    return [...baseFileItems, ...(uploadedFilesByProject[projectId] ?? [])];
-  }, [projectDetailFile?.name, projectId, selectedProject?.projectLead, uploadedFilesByProject]);
+    return uploadedFilesByProject[projectId] ?? [];
+  }, [projectId, uploadedFilesByProject]);
 
   useEffect(() => {
-    if (!projectId && PROJECT_ITEMS.length > 0) {
-      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
+    if (!projectId) {
+      setProjectDetail(null);
       return;
     }
 
-    if (projectId && !selectedProject && PROJECT_ITEMS.length > 0) {
-      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
-      return;
-    }
+    let isMounted = true;
 
-    if (selectedProject && folderId && !selectedFolder) {
-      navigate(getProjectPath(selectedProject.id), { replace: true });
-    }
-  }, [folderId, navigate, projectId, selectedFolder, selectedProject]);
+    const loadProjectDetail = async () => {
+      setIsLoadingProjectDetail(true);
 
-  if (!selectedProject || !selectedFolder) {
-    if (isLoadingProjectDetail) {
-      return (
-        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-          Loading project details...
-        </div>
-      );
-    }
+      try {
+        const response = await getUserProjectDetail(projectId);
 
-    return null;
-  }
+        if (isMounted) {
+          setProjectDetail(response);
+        }
+      } catch {
+        if (isMounted) {
+          setProjectDetail(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingProjectDetail(false);
+        }
+      }
+    };
+
+    void loadProjectDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [projectId]);
+
+  // Folder details would come from API - for now, display project content
+  const displayFolderName = folderId || "All Files";
 
   const resolveFileTypeFromFileName = (fileName: string): TProjectFileType => {
     if (fileName.endsWith(".pdf")) {
@@ -191,10 +148,6 @@ export const ProjectFolderDetail = () => {
     }
 
     return `${(rawFileSize / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const handleCreateFolder = () => {
-    navigate(getProjectPath(selectedProject.id));
   };
 
   const handleUploadFiles = (uploadedFileList: FileList | null) => {
@@ -223,20 +176,12 @@ export const ProjectFolderDetail = () => {
     });
   };
 
-  const handleSearchTenantUsers = async (keyword: string) => {
-    const requestSequence = ownerSearchRequestSequenceRef.current + 1;
-    ownerSearchRequestSequenceRef.current = requestSequence;
-    setIsSearchingTenantUsers(true);
-
+  const fetchTenantUsers = useCallback(async (keyword: string): Promise<IUserTenantOption[]> => {
     try {
       const users = await getTenantUserOptions({
         page: 0,
         offset: 100,
       });
-
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return;
-      }
 
       const normalizedKeyword = keyword.trim().toLowerCase();
       const filteredUsers = normalizedKeyword
@@ -248,33 +193,66 @@ export const ProjectFolderDetail = () => {
           })
         : users;
 
-      setTenantUserOptions(filteredUsers);
+      return filteredUsers;
     } catch (error) {
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return;
-      }
-
-      setTenantUserOptions([]);
       toast.error(error instanceof Error ? error.message : "Unable to load tenant users.");
-    } finally {
-      if (requestSequence === ownerSearchRequestSequenceRef.current) {
-        setIsSearchingTenantUsers(false);
-      }
+      return [];
     }
-  };
+  }, []);
 
-  const handleSubmitAddUser = async () => {
+  const handleSubmitAddUser = async (input: { memberUserId: string; permission: number }) => {
+    if (!projectId) {
+      toast.error("Project ID is missing");
+      return;
+    }
+
     setIsSubmittingAddUser(true);
 
     try {
-      toast.success("Ready to add member", {
-        description: "Backend add-member endpoint is wired in tenant-admin flow.",
+      const response = await assignProjectMember({
+        projectId,
+        memberUserId: input.memberUserId,
+        permission: input.permission,
       });
+
+      toast.success("User added to project successfully", {
+        description: `${response.userName} added with permission level ${response.permission}`,
+      });
+
       setIsAddUserModalOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to add user to project";
+      toast.error("Failed to add user", {
+        description: errorMessage,
+      });
     } finally {
       setIsSubmittingAddUser(false);
     }
   };
+
+  if (!projectId || !projectDetail) {
+    if (!projectId) {
+      return null;
+    }
+
+    if (isLoadingProjectDetail) {
+      return (
+        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+          Loading project details...
+        </div>
+      );
+    }
+
+    if (projectDetail === null) {
+      return (
+        <div className="rounded-md border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+          Project not found. Please verify the project ID.
+        </div>
+      );
+    }
+
+    return null;
+  }
 
   return (
     <div className="space-y-8">
@@ -282,15 +260,12 @@ export const ProjectFolderDetail = () => {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              {selectedProject.name} / {selectedFolder.name}
+              {projectDetail?.name} / {displayFolderName}
             </p>
             <h1 className="text-3xl font-semibold text-blue-700">Folder Detail</h1>
           </div>
 
           <ProjectFolderActions
-            onCreateFolder={handleCreateFolder}
-            onUploadFolder={() => folderUploadRef.current?.click()}
-            onUploadFile={() => fileUploadRef.current?.click()}
             showAddUserButton={isCurrentUserProjectOwner}
             onAddUser={() => setIsAddUserModalOpen(true)}
           />
@@ -335,9 +310,8 @@ export const ProjectFolderDetail = () => {
         <AddProjectMemberModal
           isOpen={isAddUserModalOpen}
           isSubmitting={isSubmittingAddUser}
-          isSearchingUsers={isSearchingTenantUsers}
-          userOptions={tenantUserOptions}
-          onSearchUsers={handleSearchTenantUsers}
+          projectName={projectDetail.name}
+          fetchUsers={fetchTenantUsers}
           onClose={() => setIsAddUserModalOpen(false)}
           onSubmit={handleSubmitAddUser}
         />
@@ -354,7 +328,7 @@ export const ProjectFolderDetail = () => {
             </thead>
             <tbody>
               {fileItems.map((fileItem) => {
-                const isPreviewFile = fileItem.type === "pdf" && !!projectDetailFile;
+                const isPreviewFile = fileItem.type === "pdf";
 
                 return (
                   <tr key={fileItem.id} className="border-b border-border last:border-b-0">
@@ -363,11 +337,11 @@ export const ProjectFolderDetail = () => {
                         type="button"
                         className="flex items-center gap-3 text-left"
                         onClick={() => {
-                          if (!isPreviewFile || !projectId || !projectDetailFile) {
+                          if (!isPreviewFile || !projectId || !fileItem.id) {
                             return;
                           }
 
-                          navigate(getProjectFilePath(projectId, projectDetailFile.id));
+                          navigate(getProjectFilePath(projectId, fileItem.id));
                         }}
                       >
                         <ProjectFileTypeIcon fileType={fileItem.type} />

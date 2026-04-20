@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
-import { PROJECT_ITEMS } from "@/constants/projects";
 import { getProjectPath } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,16 +31,6 @@ export const ProjectsTree = ({ isExpanded, onToggleExpand }: IProjectsTreeProps)
   };
 
   const shouldDisplay = isExpanded || isProjectSectionActive;
-
-  const mockProjectIds = useMemo(() => {
-    return new Set(PROJECT_ITEMS.map((projectItem) => projectItem.id));
-  }, []);
-
-  const visibleUserProjects = useMemo(() => {
-    return userProjects.filter((projectItem) => {
-      return !mockProjectIds.has(projectItem.id);
-    });
-  }, [mockProjectIds, userProjects]);
 
   const loadProjectPage = async (page: number, isLoadMore = false) => {
     if (isLoadMore) {
@@ -128,28 +117,7 @@ export const ProjectsTree = ({ isExpanded, onToggleExpand }: IProjectsTreeProps)
 
       {shouldDisplay && (
         <div className="mt-1 space-y-1 pl-8">
-          {PROJECT_ITEMS.map((projectItem) => {
-            const projectPath = getProjectPath(projectItem.id);
-            const activeProject = location.pathname === projectPath;
-
-            return (
-              <button
-                key={projectItem.id}
-                className={cn(
-                  "flex w-full items-center truncate rounded-md px-2 py-1 text-left text-xs font-medium transition-all",
-                  activeProject
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-500/25 dark:text-blue-100"
-                    : "text-muted-foreground hover:bg-primary/20 hover:text-primary dark:hover:bg-primary/30 dark:hover:text-primary-foreground"
-                )}
-                onClick={() => handleProjectNavigation(projectItem.id)}
-                type="button"
-              >
-                <span className="truncate">{projectItem.name}</span>
-              </button>
-            );
-          })}
-
-          {visibleUserProjects.map((projectItem) => {
+          {userProjects.map((projectItem) => {
             const projectPath = getProjectPath(projectItem.id);
             const activeProject =
               location.pathname === projectPath ||
@@ -159,7 +127,7 @@ export const ProjectsTree = ({ isExpanded, onToggleExpand }: IProjectsTreeProps)
               <button
                 key={projectItem.id}
                 className={cn(
-                  "flex w-full items-center truncate rounded-md px-2 py-1 text-left text-xs font-medium transition-all",
+                  "flex w-full items-center truncate rounded-md px-2 py-2 text-left text-sm font-medium transition-all",
                   activeProject
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/25 dark:text-blue-100"
                     : "text-muted-foreground hover:bg-primary/20 hover:text-primary dark:hover:bg-primary/30 dark:hover:text-primary-foreground"

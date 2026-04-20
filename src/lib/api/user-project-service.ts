@@ -46,6 +46,21 @@ export interface IUserTenantOption {
   email: string
 }
 
+export interface IProjectMemberResponse {
+  id: string
+  projectId: string
+  userId: string
+  userName: string
+  permission: number
+  grantedByUserId: string | null
+}
+
+export interface IAssignProjectMemberRequest {
+  projectId: string
+  memberUserId: string
+  permission: number
+}
+
 export interface IUserProjectPageResponse {
   items: IUserProjectListItemResponse[]
   page: number
@@ -132,15 +147,10 @@ const toUserProjectDetail = (
 }
 
 const toUserTenantOption = (
-  item: IUserTenantListItemResponse,
-  index: number,
-  page: number,
-  offset: number
+  item: IUserTenantListItemResponse
 ): IUserTenantOption => {
-  const fallbackId = `tenant-user-${page}-${offset}-${index}`
-
   return {
-    id: item.id?.trim() ? item.id : fallbackId,
+    id: item.id?.trim() ? item.id : "",
     name: item.userName?.trim() ? item.userName : "Unknown User",
     email: item.email?.trim() ? item.email : "",
   }
@@ -179,7 +189,24 @@ export const getTenantUserOptions = async (input?: {
 
   const payload = response.data.data
 
-  return payload.items.map((item, index) =>
-    toUserTenantOption(item, index, payload.page, payload.offset)
+  return payload.items
+    .map((item) => toUserTenantOption(item))
+    .filter((item) => item.id.trim().length > 0)
+}
+
+export const assignProjectMember = async (
+  input: IAssignProjectMemberRequest
+): Promise<IProjectMemberResponse> => {
+  const response = await api.post<IApiResponse<IProjectMemberResponse>>(
+    `/projects/${encodeURIComponent(input.projectId)}/members/assign`,
+    {
+      memberUserId: input.memberUserId,
+      permission: input.permission,
+    },
+    {
+      skipGlobalErrorHandler: false,
+    }
   )
+
+  return response.data.data
 }

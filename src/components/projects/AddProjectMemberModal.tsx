@@ -1,7 +1,7 @@
 import { Loader2, X } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useUserSearch } from "@/hooks/use-user-search"
 import type { IUserTenantOption } from "@/lib/api/user-project-service"
 
 export type TProjectPermissionCode = 1 | 2 | 4 | 8
@@ -36,16 +36,15 @@ export const PROJECT_PERMISSION_OPTIONS: IProjectPermissionOption[] = [
 ]
 
 export interface IAddProjectMemberSubmitInput {
-  userId: string
+  memberUserId: string
   permission: number
 }
 
 interface IAddProjectMemberModalProps {
   isOpen: boolean
   isSubmitting: boolean
-  isSearchingUsers: boolean
-  userOptions: IUserTenantOption[]
-  onSearchUsers: (keyword: string) => Promise<void>
+  projectName: string
+  fetchUsers: (keyword: string) => Promise<IUserTenantOption[]>
   onClose: () => void
   onSubmit: (input: IAddProjectMemberSubmitInput) => Promise<void>
 }
@@ -59,31 +58,23 @@ const toPermissionBitmask = (permissions: TProjectPermissionCode[]) => {
 export const AddProjectMemberModal = ({
   isOpen,
   isSubmitting,
-  isSearchingUsers,
-  userOptions,
-  onSearchUsers,
+  projectName,
+  fetchUsers,
   onClose,
   onSubmit,
 }: IAddProjectMemberModalProps) => {
   const [selectedUserId, setSelectedUserId] = useState("")
   const [userKeyword, setUserKeyword] = useState("")
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
-  const [isUserTyping, setIsUserTyping] = useState(false)
   const [selectedPermissionCodes, setSelectedPermissionCodes] = useState<TProjectPermissionCode[]>([1])
   const [errorMessage, setErrorMessage] = useState("")
-  const debouncedKeyword = useDebouncedValue(userKeyword, 600)
+
+  // Use custom hook for user search with debouncing and abort controller
+  const { isSearching: isSearchingUsers, results: userOptions, search: searchUsers } = useUserSearch(fetchUsers, 300)
 
   const canSubmit = useMemo(() => {
     return Boolean(selectedUserId.trim() && selectedPermissionCodes.length > 0)
   }, [selectedPermissionCodes.length, selectedUserId])
-
-  useEffect(() => {
-    if (!isOpen || !isUserTyping) {
-      return
-    }
-
-    void onSearchUsers(debouncedKeyword.trim())
-  }, [debouncedKeyword, isOpen, isUserTyping, onSearchUsers])
 
   if (!isOpen) {
     return null
@@ -93,9 +84,9 @@ export const AddProjectMemberModal = ({
     setSelectedUserId("")
     setUserKeyword("")
     setIsUserDropdownOpen(false)
-    setIsUserTyping(false)
     setSelectedPermissionCodes([1])
     setErrorMessage("")
+    searchUsers("") // Reset search
   }
 
   const handleClose = () => {
@@ -121,7 +112,7 @@ export const AddProjectMemberModal = ({
 
   const handleSubmit = async () => {
     if (!selectedUserId.trim()) {
-      setErrorMessage("User is required.")
+      setErrorMessage("User to add is required.")
       return
     }
 
@@ -133,7 +124,7 @@ export const AddProjectMemberModal = ({
     setErrorMessage("")
 
     await onSubmit({
-      userId: selectedUserId,
+      memberUserId: selectedUserId,
       permission: toPermissionBitmask(selectedPermissionCodes),
     })
 
@@ -160,7 +151,10 @@ export const AddProjectMemberModal = ({
         )}
 
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-3xl font-semibold text-slate-900">Add user to project</h3>
+          <div>
+            <h3 className="text-3xl font-semibold text-slate-900">Add user to project</h3>
+            <p className="mt-1 text-sm text-slate-500">Project: {projectName || "-"}</p>
+          </div>
           <button
             type="button"
             className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -172,21 +166,21 @@ export const AddProjectMemberModal = ({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">User *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">User to add *</label>
             <div className="relative">
               <input
                 value={userKeyword}
                 onChange={(event) => {
                   const nextKeyword = event.target.value
                   setUserKeyword(nextKeyword)
+                  void searchUsers(nextKeyword)
                   setSelectedUserId("")
-                  setIsUserTyping(true)
                   setIsUserDropdownOpen(true)
                 }}
                 onFocus={() => {
-                  setIsUserTyping(true)
                   setIsUserDropdownOpen(true)
-                  void onSearchUsers(userKeyword.trim())
+                  // Load initial users when field is focused
+                  void searchUsers("")
                 }}
                 placeholder="Type user name or email"
                 className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 pr-9 text-sm text-slate-800 outline-none focus:border-cyan-500"
@@ -213,13 +207,9 @@ export const AddProjectMemberModal = ({
                         className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
                         onClick={() => {
                           setSelectedUserId(userOption.id)
-                          setIsUserTyping(false)
-                          setUserKeyword(
-                            userOption.email
-                              ? `${userOption.name} (${userOption.email})`
-                              : userOption.name
-                          )
                           setIsUserDropdownOpen(false)
+                          setUserKeyword(userOption.email ? `${userOption.name} (${userOption.email})` : userOption.name)
+                          void searchUsers("") // Clear search
                         }}
                       >
                         <span className="text-sm font-medium text-slate-800">{userOption.name}</span>

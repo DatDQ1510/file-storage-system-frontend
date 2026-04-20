@@ -32,14 +32,6 @@ import type {
   TTenantAdminSection,
 } from "@/pages/tenant-admin/types"
 
-const PROJECT_OWNER_OPTIONS: IProjectOwnerOption[] = [
-  { id: "usr-001", name: "Sarah Jenkins" },
-  { id: "usr-002", name: "Admin David" },
-  { id: "usr-003", name: "Marcus Thorne" },
-  { id: "usr-004", name: "Kevin Art" },
-  { id: "usr-005", name: "Janet Doe" },
-]
-
 const mapProjectStatus = (status?: string): IProjectRecord["status"] => {
   const normalizedStatus = status?.trim().toUpperCase() ?? ""
 
@@ -95,13 +87,7 @@ export const TenantAdminPage = () => {
   const [isAddProjectMemberModalOpen, setIsAddProjectMemberModalOpen] = useState(false)
   const [isSubmittingProject, setIsSubmittingProject] = useState(false)
   const [isSubmittingProjectMember, setIsSubmittingProjectMember] = useState(false)
-  const [projectOwnerOptions, setProjectOwnerOptions] = useState<IProjectOwnerOption[]>(PROJECT_OWNER_OPTIONS)
-  const [projectMemberUserOptions, setProjectMemberUserOptions] = useState<IProjectOwnerOption[]>([])
-  const [isSearchingOwners, setIsSearchingOwners] = useState(false)
-  const [isSearchingProjectMembers, setIsSearchingProjectMembers] = useState(false)
   const [selectedProjectForMember, setSelectedProjectForMember] = useState<IProjectRecord | null>(null)
-  const ownerSearchRequestSequenceRef = useRef(0)
-  const memberSearchRequestSequenceRef = useRef(0)
   const projectLoadRequestSequenceRef = useRef(0)
 
   const loadProjects = useCallback(async (page: number, size: number) => {
@@ -148,7 +134,6 @@ export const TenantAdminPage = () => {
   }, [loadProjects, projectPage, projectSize])
 
   const handleOpenCreateProjectModal = () => {
-    setProjectOwnerOptions(PROJECT_OWNER_OPTIONS)
     setIsCreateProjectModalOpen(true)
   }
 
@@ -165,9 +150,7 @@ export const TenantAdminPage = () => {
 
     try {
       const createdProject = await createProject(input)
-      const ownerName =
-        projectOwnerOptions.find((owner) => owner.id === input.ownerId)?.name ??
-        "Project Owner"
+      const ownerName = createdProject.ownerName?.trim() ?? "Project Owner"
       const fallbackId = `proj-${String(projectRecords.length + 1).padStart(3, "0")}`
 
       setProjectRecords((current) => [
@@ -224,40 +207,44 @@ export const TenantAdminPage = () => {
     setProjectPage((current) => current + 1)
   }
 
-  const handleSearchProjectOwners = useCallback(async (keyword: string) => {
+  // Fetch function for project owners - used by CreateProjectModal
+  const fetchProjectOwners = useCallback(async (keyword: string, signal?: AbortSignal): Promise<IProjectOwnerOption[]> => {
     const normalizedKeyword = keyword.trim()
-    const requestSequence = ownerSearchRequestSequenceRef.current + 1
-    ownerSearchRequestSequenceRef.current = requestSequence
-    setIsSearchingOwners(true)
 
     try {
       const owners = await searchProjectOwners({
         keyword: normalizedKeyword,
         page: 0,
         size: 10,
+        signal,
       })
 
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return
-      }
-
-      setProjectOwnerOptions(owners)
+      return owners
     } catch {
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return
-      }
+      return []
+    }
+  }, [])
 
-      setProjectOwnerOptions([])
-    } finally {
-      if (requestSequence === ownerSearchRequestSequenceRef.current) {
-        setIsSearchingOwners(false)
-      }
+  // Fetch function for project members - used by AddProjectMemberModal
+  const fetchProjectMemberUsers = useCallback(async (keyword: string, signal?: AbortSignal): Promise<IProjectOwnerOption[]> => {
+    const normalizedKeyword = keyword.trim()
+
+    try {
+      const users = await searchProjectOwners({
+        keyword: normalizedKeyword,
+        page: 0,
+        size: 10,
+        signal,
+      })
+
+      return users
+    } catch {
+      return []
     }
   }, [])
 
   const handleOpenAddProjectMemberModal = (project: IProjectRecord) => {
     setSelectedProjectForMember(project)
-    setProjectMemberUserOptions([])
     setIsAddProjectMemberModalOpen(true)
   }
 
@@ -269,37 +256,6 @@ export const TenantAdminPage = () => {
     setIsAddProjectMemberModalOpen(false)
     setSelectedProjectForMember(null)
   }
-
-  const handleSearchProjectMemberUsers = useCallback(async (keyword: string) => {
-    const normalizedKeyword = keyword.trim()
-    const requestSequence = memberSearchRequestSequenceRef.current + 1
-    memberSearchRequestSequenceRef.current = requestSequence
-    setIsSearchingProjectMembers(true)
-
-    try {
-      const users = await searchProjectOwners({
-        keyword: normalizedKeyword,
-        page: 0,
-        size: 10,
-      })
-
-      if (requestSequence !== memberSearchRequestSequenceRef.current) {
-        return
-      }
-
-      setProjectMemberUserOptions(users)
-    } catch {
-      if (requestSequence !== memberSearchRequestSequenceRef.current) {
-        return
-      }
-
-      setProjectMemberUserOptions([])
-    } finally {
-      if (requestSequence === memberSearchRequestSequenceRef.current) {
-        setIsSearchingProjectMembers(false)
-      }
-    }
-  }, [])
 
   const handleAddProjectMember = async (input: IAddProjectMemberRequest) => {
     if (!selectedProjectForMember) {
@@ -433,9 +389,7 @@ export const TenantAdminPage = () => {
             <CreateProjectModal
               isOpen={isCreateProjectModalOpen}
               isSubmitting={isSubmittingProject}
-              isSearchingOwners={isSearchingOwners}
-              owners={projectOwnerOptions}
-              onSearchOwners={handleSearchProjectOwners}
+              fetchOwners={fetchProjectOwners}
               onClose={handleCloseCreateProjectModal}
               onSubmit={handleCreateProject}
             />
@@ -444,9 +398,7 @@ export const TenantAdminPage = () => {
               isOpen={isAddProjectMemberModalOpen}
               projectName={selectedProjectForMember?.name ?? ""}
               isSubmitting={isSubmittingProjectMember}
-              isSearchingUsers={isSearchingProjectMembers}
-              users={projectMemberUserOptions}
-              onSearchUsers={handleSearchProjectMemberUsers}
+              fetchUsers={fetchProjectMemberUsers}
               onClose={handleCloseAddProjectMemberModal}
               onSubmit={handleAddProjectMember}
             />

@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { PROJECT_ITEMS } from "@/constants/projects";
-import { getProjectPath, getProjectFilePath, getProjectFolderPath } from "@/constants/routes";
-import { PROJECT_FILE_ITEMS } from "@/constants/project-files";
+import { getProjectFilePath, getProjectFolderPath } from "@/constants/routes";
 import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
 import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
@@ -14,6 +12,7 @@ import {
 } from "@/components/projects/ProjectFileTypeIcon";
 import { getStoredAuthData } from "@/lib/api/auth-service";
 import {
+  assignProjectMember,
   getTenantUserOptions,
   getUserProjectDetail,
   type IUserProjectDetail,
@@ -38,7 +37,6 @@ interface IProjectFileListItem {
 export const Projects = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const ownerSearchRequestSequenceRef = useRef(0);
   const [createdFoldersByProject, setCreatedFoldersByProject] = useState<Record<string, IProjectFolderListItem[]>>({});
   const [activeFolderId, setActiveFolderId] = useState<string>("");
   const [editingFolderId, setEditingFolderId] = useState<string>("");
@@ -48,16 +46,10 @@ export const Projects = () => {
   const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
-  const [isSearchingTenantUsers, setIsSearchingTenantUsers] = useState(false);
-  const [tenantUserOptions, setTenantUserOptions] = useState<IUserTenantOption[]>([]);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
   const authData = getStoredAuthData();
   const currentUserId = authData?.userId?.trim() ?? "";
-
-  const selectedProject = PROJECT_ITEMS.find((projectItem) => {
-    return projectItem.id === projectId;
-  });
 
   const isCurrentUserProjectOwner = useMemo(() => {
     if (!projectDetail?.ownerId || !currentUserId) {
@@ -67,31 +59,11 @@ export const Projects = () => {
     return projectDetail.ownerId === currentUserId;
   }, [currentUserId, projectDetail?.ownerId]);
 
-  const displayProjectName = projectDetail?.name || selectedProject?.name || "Project Workspace";
-  const displayProjectCategory = projectDetail?.department || selectedProject?.category || "General";
-  const displayProjectLead = projectDetail?.ownerName || selectedProject?.projectLead || "Project Owner";
+  const displayProjectName = projectDetail?.name || "Project Workspace";
+  const displayProjectCategory = projectDetail?.department || "General";
+  const displayProjectLead = projectDetail?.ownerName || "Project Owner";
   const displayProjectStatus =
-    (projectDetail?.status || selectedProject?.status || "active").toString().toUpperCase();
-
-  const projectDetailFile = useMemo(() => {
-    return PROJECT_FILE_ITEMS.find((fileItem) => {
-      return fileItem.projectId === projectId;
-    });
-  }, [projectId]);
-
-  const baseFolderItems = useMemo<IProjectFolderListItem[]>(() => {
-    if (!selectedProject) {
-      return [];
-    }
-
-    return selectedProject.folders.map((folderItem) => {
-      return {
-        id: folderItem.id,
-        name: folderItem.name,
-        filesCount: folderItem.filesCount,
-      };
-    });
-  }, [selectedProject]);
+    (projectDetail?.status || "active").toString().toUpperCase();
 
   const createdFolderItems = useMemo<IProjectFolderListItem[]>(() => {
     if (!projectId) {
@@ -102,8 +74,8 @@ export const Projects = () => {
   }, [createdFoldersByProject, projectId]);
 
   const folderItems = useMemo<IProjectFolderListItem[]>(() => {
-    return [...baseFolderItems, ...createdFolderItems];
-  }, [baseFolderItems, createdFolderItems]);
+    return createdFolderItems;
+  }, [createdFolderItems]);
 
   const selectedFolderId = useMemo(() => {
     const hasActiveFolder = folderItems.some((folderItem) => {
@@ -118,55 +90,12 @@ export const Projects = () => {
   }, [activeFolderId, folderItems]);
 
   const fileItems = useMemo<IProjectFileListItem[]>(() => {
-    const baseFileItems: IProjectFileListItem[] = [
-      {
-        id: "file-1",
-        name: projectDetailFile?.name ?? "Architectural_Brief_v2.pdf",
-        owner: displayProjectLead,
-        lastModified: "Oct 24, 2023",
-        size: "4.2 MB",
-        type: "pdf",
-      },
-      {
-        id: "file-2",
-        name: "Titan_Infrastructure_Status.docx",
-        owner: "Me",
-        lastModified: "2 hours ago",
-        size: "1.8 MB",
-        type: "docx",
-      },
-      {
-        id: "file-3",
-        name: "Budget_Projections_Q4.xlsx",
-        owner: "Finance Dept",
-        lastModified: "Yesterday",
-        size: "850 KB",
-        type: "xlsx",
-      },
-      {
-        id: "file-4",
-        name: "Site_Blueprint_Primary.png",
-        owner: "Me",
-        lastModified: "Oct 20, 2023",
-        size: "12.5 MB",
-        type: "png",
-      },
-    ];
-
     if (!projectId) {
-      return baseFileItems;
+      return [];
     }
 
-    return [
-      ...baseFileItems,
-      ...(uploadedFilesByProject[projectId] ?? []),
-    ];
-  }, [
-    displayProjectLead,
-    projectDetailFile?.name,
-    projectId,
-    uploadedFilesByProject,
-  ]);
+    return uploadedFilesByProject[projectId] ?? [];
+  }, [projectId, uploadedFilesByProject]);
 
   useEffect(() => {
     if (!projectId) {
@@ -195,12 +124,10 @@ export const Projects = () => {
 
         setProjectDetail(null);
       } finally {
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          setHasLoadedProjectDetail(true);
+          setIsLoadingProjectDetail(false);
         }
-
-        setHasLoadedProjectDetail(true);
-        setIsLoadingProjectDetail(false);
       }
     };
 
@@ -211,49 +138,12 @@ export const Projects = () => {
     };
   }, [projectId]);
 
-  useEffect(() => {
-    if (!projectId && PROJECT_ITEMS.length > 0) {
-      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
-      return;
-    }
-
-    if (
-      projectId &&
-      !selectedProject &&
-      hasLoadedProjectDetail &&
-      !projectDetail &&
-      PROJECT_ITEMS.length > 0
-    ) {
-      navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
-    }
-  }, [hasLoadedProjectDetail, navigate, projectDetail, projectId, selectedProject]);
-
-  if (!selectedProject && !projectDetail) {
-    if (isLoadingProjectDetail) {
-      return (
-        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-          Loading project details...
-        </div>
-      );
-    }
-
-    return null;
-  }
-
-  const handleSearchTenantUsers = async (keyword: string) => {
-    const requestSequence = ownerSearchRequestSequenceRef.current + 1;
-    ownerSearchRequestSequenceRef.current = requestSequence;
-    setIsSearchingTenantUsers(true);
-
+  const fetchTenantUsers = useCallback(async (keyword: string): Promise<IUserTenantOption[]> => {
     try {
       const users = await getTenantUserOptions({
         page: 0,
         offset: 100,
       });
-
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return;
-      }
 
       const normalizedKeyword = keyword.trim().toLowerCase();
       const filteredUsers = normalizedKeyword
@@ -265,42 +155,66 @@ export const Projects = () => {
           })
         : users;
 
-      setTenantUserOptions(filteredUsers);
+      return filteredUsers;
     } catch (error) {
-      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
-        return;
-      }
-
-      setTenantUserOptions([]);
-
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Unable to load tenant users.";
-
-      toast.error(errorMessage);
-    } finally {
-      if (requestSequence === ownerSearchRequestSequenceRef.current) {
-        setIsSearchingTenantUsers(false);
-      }
+      toast.error(error instanceof Error ? error.message : "Unable to load tenant users.");
+      return [];
     }
-  };
+  }, []);
 
-  const handleSubmitAddUser = async (input: { userId: string; permission: number }) => {
+  const handleSubmitAddUser = async (input: { memberUserId: string; permission: number }) => {
+    if (!projectId) {
+      toast.error("Project ID is missing");
+      return;
+    }
+
     setIsSubmittingAddUser(true);
 
     try {
-      // Backend endpoint for assigning members was not provided yet.
-      // Keep this ready with selected user + permission bitmask for API wiring.
-      toast.success("Member payload is ready", {
-        description: `userId=${input.userId}, permission=${input.permission}`,
+      const response = await assignProjectMember({
+        projectId,
+        memberUserId: input.memberUserId,
+        permission: input.permission,
+      });
+
+      toast.success("User added to project successfully", {
+        description: `${response.userName} added with permission level ${response.permission}`,
       });
 
       setIsAddUserModalOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to add user to project";
+      toast.error("Failed to add user", {
+        description: errorMessage,
+      });
     } finally {
       setIsSubmittingAddUser(false);
     }
   };
+
+  if (!projectDetail) {
+    if (!projectId) {
+      return null;
+    }
+
+    if (isLoadingProjectDetail) {
+      return (
+        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+          Loading project details...
+        </div>
+      );
+    }
+
+    if (hasLoadedProjectDetail) {
+      return (
+        <div className="rounded-md border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+          Project not found. Please verify the project ID.
+        </div>
+      );
+    }
+
+    return null;
+  }
 
   const handleCreateFolder = () => {
     if (!projectId) {
@@ -407,14 +321,6 @@ export const Projects = () => {
     });
   };
 
-  const handleOpenDetailPage = () => {
-    if (!projectId || !projectDetailFile) {
-      return;
-    }
-
-    navigate(getProjectFilePath(projectId, projectDetailFile.id));
-  };
-
   const handleOpenFolderDetail = (folderItem: IProjectFolderListItem) => {
     if (!projectId) {
       return;
@@ -436,9 +342,6 @@ export const Projects = () => {
           </div>
 
           <ProjectFolderActions
-            onCreateFolder={handleCreateFolder}
-            onUploadFolder={() => folderUploadRef.current?.click()}
-            onUploadFile={() => fileUploadRef.current?.click()}
             showAddUserButton={isCurrentUserProjectOwner}
             onAddUser={() => setIsAddUserModalOpen(true)}
           />
@@ -481,10 +384,11 @@ export const Projects = () => {
           <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-foreground">Folders</h2>
           <button
             type="button"
-            className="text-xs font-semibold text-blue-700"
-            onClick={handleOpenDetailPage}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700"
+            onClick={handleCreateFolder}
           >
-            View All
+            <Plus className="h-4 w-4" />
+            <span>New Folder</span>
           </button>
         </div>
 
@@ -508,7 +412,14 @@ export const Projects = () => {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-foreground">Files</h2>
-          <div />
+          <button
+            type="button"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
+            onClick={() => fileUploadRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload File</span>
+          </button>
         </div>
 
         <div className="flex items-center justify-end">
@@ -556,7 +467,7 @@ export const Projects = () => {
             </thead>
             <tbody>
               {fileItems.map((fileItem) => {
-                const isPreviewFile = fileItem.type === "pdf" && !!projectDetailFile;
+                const isPreviewFile = fileItem.type === "pdf";
 
                 return (
                   <tr
@@ -568,11 +479,11 @@ export const Projects = () => {
                         type="button"
                         className="flex items-center gap-3 text-left"
                         onClick={() => {
-                          if (!isPreviewFile || !projectId || !projectDetailFile) {
+                          if (!isPreviewFile || !projectId || !fileItem.id) {
                             return;
                           }
 
-                          navigate(getProjectFilePath(projectId, projectDetailFile.id));
+                          navigate(getProjectFilePath(projectId, fileItem.id));
                         }}
                       >
                         <ProjectFileTypeIcon fileType={fileItem.type} />
@@ -593,9 +504,8 @@ export const Projects = () => {
       <AddProjectMemberModal
         isOpen={isAddUserModalOpen}
         isSubmitting={isSubmittingAddUser}
-        isSearchingUsers={isSearchingTenantUsers}
-        userOptions={tenantUserOptions}
-        onSearchUsers={handleSearchTenantUsers}
+        projectName={displayProjectName}
+        fetchUsers={fetchTenantUsers}
         onClose={() => setIsAddUserModalOpen(false)}
         onSubmit={handleSubmitAddUser}
       />

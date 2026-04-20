@@ -1,7 +1,7 @@
 import { Loader2, X } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useUserSearch } from "@/hooks/use-user-search"
 import type {
   IProjectOwnerOption,
   IProjectRequest,
@@ -10,9 +10,7 @@ import type {
 interface ICreateProjectModalProps {
   isOpen: boolean
   isSubmitting: boolean
-  isSearchingOwners: boolean
-  owners: IProjectOwnerOption[]
-  onSearchOwners: (keyword: string) => Promise<void>
+  fetchOwners: (keyword: string) => Promise<IProjectOwnerOption[]>
   onClose: () => void
   onSubmit: (input: IProjectRequest) => Promise<void>
 }
@@ -25,18 +23,16 @@ const INITIAL_PROJECT_FORM_STATE: IProjectRequest = {
 export const CreateProjectModal = ({
   isOpen,
   isSubmitting,
-  isSearchingOwners,
-  owners,
-  onSearchOwners,
+  fetchOwners,
   onClose,
   onSubmit,
 }: ICreateProjectModalProps) => {
   const [formState, setFormState] = useState<IProjectRequest>(INITIAL_PROJECT_FORM_STATE)
-  const [ownerKeyword, setOwnerKeyword] = useState("")
   const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false)
-  const [isOwnerTyping, setIsOwnerTyping] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const debouncedOwnerKeyword = useDebouncedValue(ownerKeyword, 1000)
+
+  // Use custom hook for owner search with debouncing and abort controller
+  const { isSearching: isSearchingOwners, results: owners, search: searchOwners } = useUserSearch(fetchOwners, 300)
 
   const canSubmit = useMemo(() => {
     return Boolean(
@@ -45,14 +41,6 @@ export const CreateProjectModal = ({
         formState.ownerId.trim()
     )
   }, [formState])
-
-  useEffect(() => {
-    if (!isOpen || !isOwnerTyping) {
-      return
-    }
-
-    void onSearchOwners(debouncedOwnerKeyword.trim())
-  }, [debouncedOwnerKeyword, isOpen, isOwnerTyping, onSearchOwners])
 
   if (!isOpen) {
     return null
@@ -64,9 +52,8 @@ export const CreateProjectModal = ({
     }
 
     setErrorMessage("")
-    setOwnerKeyword("")
     setIsOwnerDropdownOpen(false)
-    setIsOwnerTyping(false)
+    searchOwners("") // Reset search
     onClose()
   }
 
@@ -94,9 +81,8 @@ export const CreateProjectModal = ({
     setErrorMessage("")
     await onSubmit(normalizedInput)
     setFormState(INITIAL_PROJECT_FORM_STATE)
-    setOwnerKeyword("")
     setIsOwnerDropdownOpen(false)
-    setIsOwnerTyping(false)
+    searchOwners("") // Reset search
   }
 
   return (
@@ -150,21 +136,19 @@ export const CreateProjectModal = ({
             <label className="mb-1.5 block text-sm font-medium text-slate-800">Chủ sở hữu *</label>
             <div className="relative">
               <input
-                value={ownerKeyword}
                 onChange={(event) => {
                   const nextKeyword = event.target.value
-                  setOwnerKeyword(nextKeyword)
+                  searchOwners(nextKeyword)
                   setFormState((current) => ({
                     ...current,
                     ownerId: "",
                   }))
-                  setIsOwnerTyping(true)
                   setIsOwnerDropdownOpen(true)
                 }}
                 onFocus={() => {
-                  setIsOwnerTyping(true)
                   setIsOwnerDropdownOpen(true)
-                  void onSearchOwners(ownerKeyword.trim())
+                  // Load initial owners when field is focused
+                  searchOwners("")
                 }}
                 placeholder="Nhập tên hoặc email chủ sở hữu"
                 className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 pr-9 text-sm text-slate-800 outline-none focus:border-cyan-500"
@@ -181,7 +165,7 @@ export const CreateProjectModal = ({
                 </p>
               )}
 
-              {isOwnerDropdownOpen && (ownerKeyword.trim() || isSearchingOwners || owners.length > 0) && (
+              {isOwnerDropdownOpen && (isSearchingOwners || owners.length > 0) && (
                 <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {isSearchingOwners ? (
                     <p className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
@@ -201,9 +185,8 @@ export const CreateProjectModal = ({
                             ...current,
                             ownerId: owner.id,
                           }))
-                          setIsOwnerTyping(false)
-                          setOwnerKeyword(owner.email ? `${owner.name} (${owner.email})` : owner.name)
                           setIsOwnerDropdownOpen(false)
+                          searchOwners("") // Clear search
                         }}
                       >
                         <span className="text-sm font-medium text-slate-800">{owner.name}</span>

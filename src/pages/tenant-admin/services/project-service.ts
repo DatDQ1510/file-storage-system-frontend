@@ -30,6 +30,7 @@ export const searchProjectOwners = async (input: {
   keyword: string
   page?: number
   size?: number
+  signal?: AbortSignal
 }): Promise<IProjectOwnerOption[]> => {
   return getProjectOwnerOptions(input)
 }

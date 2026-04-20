@@ -168,7 +168,7 @@ export interface IProjectListItemResponse {
 }
 
 export interface IAddProjectMemberRequest {
-  userId: string
+  memberUserId: string
   permission: number
 }
 
