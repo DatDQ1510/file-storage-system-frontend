@@ -14,6 +14,7 @@ export interface ITenantNavGroup {
 export interface IProjectRecord {
   id: string
   name: string
+  ownerId: string
   department: string
   pm: string
   membersCount: number
@@ -152,4 +153,51 @@ export interface IProjectResponse {
   createdAt?: string
   updatedAt?: string
   status?: string
+}
+
+export interface IProjectListItemResponse {
+  id?: string
+  nameProject?: string
+  ownerId?: string
+  ownerName?: string
+  status?: string
+  department?: string
+  membersCount?: number
+  storageUsed?: number | string | null
+  storageTotal?: number | string | null
+}
+
+export interface IAddProjectMemberRequest {
+  userId: string
+  permission: number
+}
+
+export interface IProjectMemberResponse {
+  id?: string
+  projectId?: string
+  userId?: string
+  permission?: number
+  grantedBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface IProjectPageResponse {
+  items: IProjectListItemResponse[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+}
+
+export interface IProjectDirectoryPage {
+  items: IProjectRecord[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
 }

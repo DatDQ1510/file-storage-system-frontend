@@ -1,15 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { LayoutGrid, List } from "lucide-react";
+import { toast } from "sonner";
 import { PROJECT_ITEMS } from "@/constants/projects";
 import { getProjectPath, getProjectFilePath, getProjectFolderPath } from "@/constants/routes";
 import { PROJECT_FILE_ITEMS } from "@/constants/project-files";
+import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
 import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
 import {
   ProjectFileTypeIcon,
   type TProjectFileType,
 } from "@/components/projects/ProjectFileTypeIcon";
+import { getStoredAuthData } from "@/lib/api/auth-service";
+import {
+  getTenantUserOptions,
+  getUserProjectDetail,
+  type IUserProjectDetail,
+  type IUserTenantOption,
+} from "@/lib/api/user-project-service";
 
 interface IProjectFolderListItem {
   id: string;
@@ -29,16 +38,40 @@ interface IProjectFileListItem {
 export const Projects = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const ownerSearchRequestSequenceRef = useRef(0);
   const [createdFoldersByProject, setCreatedFoldersByProject] = useState<Record<string, IProjectFolderListItem[]>>({});
   const [activeFolderId, setActiveFolderId] = useState<string>("");
   const [editingFolderId, setEditingFolderId] = useState<string>("");
   const [uploadedFilesByProject, setUploadedFilesByProject] = useState<Record<string, IProjectFileListItem[]>>({});
+  const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
+  const [hasLoadedProjectDetail, setHasLoadedProjectDetail] = useState(false);
+  const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
+  const [isSearchingTenantUsers, setIsSearchingTenantUsers] = useState(false);
+  const [tenantUserOptions, setTenantUserOptions] = useState<IUserTenantOption[]>([]);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
+  const authData = getStoredAuthData();
+  const currentUserId = authData?.userId?.trim() ?? "";
 
   const selectedProject = PROJECT_ITEMS.find((projectItem) => {
     return projectItem.id === projectId;
   });
+
+  const isCurrentUserProjectOwner = useMemo(() => {
+    if (!projectDetail?.ownerId || !currentUserId) {
+      return false;
+    }
+
+    return projectDetail.ownerId === currentUserId;
+  }, [currentUserId, projectDetail?.ownerId]);
+
+  const displayProjectName = projectDetail?.name || selectedProject?.name || "Project Workspace";
+  const displayProjectCategory = projectDetail?.department || selectedProject?.category || "General";
+  const displayProjectLead = projectDetail?.ownerName || selectedProject?.projectLead || "Project Owner";
+  const displayProjectStatus =
+    (projectDetail?.status || selectedProject?.status || "active").toString().toUpperCase();
 
   const projectDetailFile = useMemo(() => {
     return PROJECT_FILE_ITEMS.find((fileItem) => {
@@ -89,7 +122,7 @@ export const Projects = () => {
       {
         id: "file-1",
         name: projectDetailFile?.name ?? "Architectural_Brief_v2.pdf",
-        owner: selectedProject?.projectLead ?? "Sarah Chen",
+        owner: displayProjectLead,
         lastModified: "Oct 24, 2023",
         size: "4.2 MB",
         type: "pdf",
@@ -129,11 +162,54 @@ export const Projects = () => {
       ...(uploadedFilesByProject[projectId] ?? []),
     ];
   }, [
+    displayProjectLead,
     projectDetailFile?.name,
     projectId,
-    selectedProject?.projectLead,
     uploadedFilesByProject,
   ]);
+
+  useEffect(() => {
+    if (!projectId) {
+      setProjectDetail(null);
+      setHasLoadedProjectDetail(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadProjectDetail = async () => {
+      setIsLoadingProjectDetail(true);
+
+      try {
+        const response = await getUserProjectDetail(projectId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setProjectDetail(response);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setProjectDetail(null);
+      } finally {
+        if (!isMounted) {
+          return;
+        }
+
+        setHasLoadedProjectDetail(true);
+        setIsLoadingProjectDetail(false);
+      }
+    };
+
+    void loadProjectDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [projectId]);
 
   useEffect(() => {
     if (!projectId && PROJECT_ITEMS.length > 0) {
@@ -141,14 +217,90 @@ export const Projects = () => {
       return;
     }
 
-    if (projectId && !selectedProject && PROJECT_ITEMS.length > 0) {
+    if (
+      projectId &&
+      !selectedProject &&
+      hasLoadedProjectDetail &&
+      !projectDetail &&
+      PROJECT_ITEMS.length > 0
+    ) {
       navigate(getProjectPath(PROJECT_ITEMS[0].id), { replace: true });
     }
-  }, [navigate, projectId, selectedProject]);
+  }, [hasLoadedProjectDetail, navigate, projectDetail, projectId, selectedProject]);
 
-  if (!selectedProject) {
+  if (!selectedProject && !projectDetail) {
+    if (isLoadingProjectDetail) {
+      return (
+        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+          Loading project details...
+        </div>
+      );
+    }
+
     return null;
   }
+
+  const handleSearchTenantUsers = async (keyword: string) => {
+    const requestSequence = ownerSearchRequestSequenceRef.current + 1;
+    ownerSearchRequestSequenceRef.current = requestSequence;
+    setIsSearchingTenantUsers(true);
+
+    try {
+      const users = await getTenantUserOptions({
+        page: 0,
+        offset: 100,
+      });
+
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return;
+      }
+
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      const filteredUsers = normalizedKeyword
+        ? users.filter((userItem) => {
+            return (
+              userItem.name.toLowerCase().includes(normalizedKeyword) ||
+              userItem.email.toLowerCase().includes(normalizedKeyword)
+            );
+          })
+        : users;
+
+      setTenantUserOptions(filteredUsers);
+    } catch (error) {
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return;
+      }
+
+      setTenantUserOptions([]);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unable to load tenant users.";
+
+      toast.error(errorMessage);
+    } finally {
+      if (requestSequence === ownerSearchRequestSequenceRef.current) {
+        setIsSearchingTenantUsers(false);
+      }
+    }
+  };
+
+  const handleSubmitAddUser = async (input: { userId: string; permission: number }) => {
+    setIsSubmittingAddUser(true);
+
+    try {
+      // Backend endpoint for assigning members was not provided yet.
+      // Keep this ready with selected user + permission bitmask for API wiring.
+      toast.success("Member payload is ready", {
+        description: `userId=${input.userId}, permission=${input.permission}`,
+      });
+
+      setIsAddUserModalOpen(false);
+    } finally {
+      setIsSubmittingAddUser(false);
+    }
+  };
 
   const handleCreateFolder = () => {
     if (!projectId) {
@@ -279,7 +431,7 @@ export const Projects = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="max-w-[320px] text-4xl font-semibold leading-tight text-blue-700">
-              Architectural Archive
+              {displayProjectName}
             </h1>
           </div>
 
@@ -287,6 +439,8 @@ export const Projects = () => {
             onCreateFolder={handleCreateFolder}
             onUploadFolder={() => folderUploadRef.current?.click()}
             onUploadFile={() => fileUploadRef.current?.click()}
+            showAddUserButton={isCurrentUserProjectOwner}
+            onAddUser={() => setIsAddUserModalOpen(true)}
           />
         </div>
 
@@ -294,28 +448,28 @@ export const Projects = () => {
           <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Project</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{selectedProject.name}</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{displayProjectName}</p>
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Category</p>
-              <p className="mt-1 font-medium text-foreground">{selectedProject.category}</p>
+              <p className="mt-1 font-medium text-foreground">{displayProjectCategory}</p>
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Project Lead</p>
               <div className="mt-1 flex items-center gap-2 text-foreground">
                 <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
-                  {selectedProject.projectLead
+                  {displayProjectLead
                     .split(" ")
                     .map((namePart) => namePart[0])
                     .join("")
                     .slice(0, 2)}
                 </span>
-                <span className="font-medium">{selectedProject.projectLead}</span>
+                <span className="font-medium">{displayProjectLead}</span>
               </div>
             </div>
             <div className="flex sm:justify-start lg:justify-end">
               <span className="inline-flex h-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                {selectedProject.status}
+                {displayProjectStatus}
               </span>
             </div>
           </div>
@@ -435,6 +589,16 @@ export const Projects = () => {
           </table>
         </div>
       </section>
+
+      <AddProjectMemberModal
+        isOpen={isAddUserModalOpen}
+        isSubmitting={isSubmittingAddUser}
+        isSearchingUsers={isSearchingTenantUsers}
+        userOptions={tenantUserOptions}
+        onSearchUsers={handleSearchTenantUsers}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onSubmit={handleSubmitAddUser}
+      />
     </div>
   );
 };

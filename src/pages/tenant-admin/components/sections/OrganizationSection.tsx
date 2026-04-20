@@ -3,10 +3,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Ellipsis,
+  Copy,
+  Mail,
   Plus,
   Search,
   Upload,
   UserCheck,
+  UserRound,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -96,12 +99,142 @@ const STATUS_OPTIONS: Array<TMemberStatus | "all"> = [
   "Suspended",
 ]
 
-const SUMMARY_CARDS = [
-  { label: "Total Members", value: "125", note: "Across all departments" },
-  { label: "Active Accounts", value: "112", note: "Currently enabled users" },
-  { label: "Pending Invites", value: "7", note: "Waiting for acceptance" },
-  { label: "MFA Enabled", value: "104", note: "Protected accounts" },
-]
+const copyTextToClipboard = async (value: string) => {
+  if (!value.trim()) {
+    return false
+  }
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return true
+  }
+
+  return false
+}
+
+interface IMemberRowActionsMenuProps {
+  member: IUserDirectoryRecord
+  onToggleStatus: (memberId: string, nextStatus: TMemberStatus) => void
+}
+
+const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuProps) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) {
+      return
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest(`[data-member-actions="${member.id}"]`)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isOpen, member.id])
+
+  const handleCopyValue = async (value: string, label: string) => {
+    const copied = await copyTextToClipboard(value)
+
+    if (copied) {
+      toast.success(`${label} copied`)
+    } else {
+      toast.error("Unable to copy to clipboard")
+    }
+
+    setIsOpen(false)
+  }
+
+  const handleOpenEmail = () => {
+    if (!member.email.trim()) {
+      toast.error("Member email is unavailable")
+      return
+    }
+
+    window.location.href = `mailto:${member.email}`
+    setIsOpen(false)
+  }
+
+  const nextStatus: TMemberStatus = member.status === "Active" ? "Suspended" : "Active"
+
+  return (
+    <div className="relative inline-flex" data-member-actions={member.id} ref={menuRef}>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        className="text-slate-500"
+        onClick={() => setIsOpen((current) => !current)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+      >
+        <Ellipsis className="h-4 w-4" />
+      </Button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="menu">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={handleOpenEmail}
+            role="menuitem"
+          >
+            <Mail className="h-4 w-4" />
+            Send email
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => void handleCopyValue(member.email, "Email")}
+            role="menuitem"
+          >
+            <Copy className="h-4 w-4" />
+            Copy email
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => {
+              onToggleStatus(member.id, nextStatus)
+              setIsOpen(false)
+            }}
+            role="menuitem"
+          >
+            <UserCheck className="h-4 w-4" />
+            {nextStatus === "Active" ? "Bật user" : "Tắt user"}
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => void handleCopyValue(member.id, "Member ID")}
+            role="menuitem"
+          >
+            <UserRound className="h-4 w-4" />
+            Copy member ID
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export const OrganizationSection = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -178,9 +311,53 @@ export const OrganizationSection = () => {
     })
   }, [members, searchTerm, selectedStatus])
 
+  const summaryCards = useMemo(() => {
+    const activeAccounts = members.filter((member) => member.status === "Active").length
+    const mfaEnabledAccounts = members.filter((member) => member.mfaEnabled).length
+    const suspendedAccounts = members.filter((member) => member.status === "Suspended").length
+
+    return [
+      {
+        label: "Total Members",
+        value: `${totalElements}`,
+        note: "Across tenant directory",
+      },
+      {
+        label: "Active Accounts",
+        value: `${activeAccounts}`,
+        note: "In current page",
+      },
+      {
+        label: "MFA Enabled",
+        value: `${mfaEnabledAccounts}`,
+        note: "In current page",
+      },
+      {
+        label: "Suspended",
+        value: `${suspendedAccounts}`,
+        note: "In current page",
+      },
+    ]
+  }, [members, totalElements])
+
   const handleOpenCreateUserModal = () => {
     setIsCreateUserModalOpen(true)
   }
+
+  const handleToggleMemberStatus = useCallback((memberId: string, nextStatus: TMemberStatus) => {
+    setMembers((current) =>
+      current.map((member) =>
+        member.id === memberId
+          ? {
+              ...member,
+              status: nextStatus,
+            }
+          : member
+      )
+    )
+
+    toast.success(nextStatus === "Active" ? "User đã được bật" : "User đã được tắt")
+  }, [])
 
   const handleCloseCreateUserModal = () => {
     if (isSubmittingCreateUser) {
@@ -283,7 +460,7 @@ export const OrganizationSection = () => {
       </div>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {SUMMARY_CARDS.map((card) => (
+        {summaryCards.map((card) => (
           <Card key={card.label} className="border-slate-200 bg-white/90 shadow-sm">
             <CardHeader className="pb-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.label}</p>
@@ -430,9 +607,7 @@ export const OrganizationSection = () => {
                         <td className="px-3 py-3 text-slate-700">{member.joinedAt}</td>
 
                         <td className="px-3 py-3 text-right">
-                          <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                            <Ellipsis className="h-4 w-4" />
-                          </Button>
+                          <MemberRowActionsMenu member={member} onToggleStatus={handleToggleMemberStatus} />
                         </td>
                       </tr>
                     ))

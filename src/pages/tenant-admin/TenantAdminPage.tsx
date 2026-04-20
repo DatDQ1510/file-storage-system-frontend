@@ -1,26 +1,30 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ChevronRight,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Header } from "@/components/common/Header"
 import { Button } from "@/components/ui/button"
+import { getStoredAuthData } from "@/lib/api/auth-service"
 import { DashboardSection } from "@/pages/tenant-admin/components/sections/DashboardSection"
 import { OrganizationSection } from "@/pages/tenant-admin/components/sections/OrganizationSection"
 import { ProjectsSection } from "@/pages/tenant-admin/components/sections/ProjectsSection"
+import { AddProjectMemberModal } from "@/pages/tenant-admin/components/sections/projects/AddProjectMemberModal"
 import { CreateProjectModal } from "@/pages/tenant-admin/components/sections/projects/CreateProjectModal"
 import { SecuritySection } from "@/pages/tenant-admin/components/sections/SecuritySection"
 import { TenantSidebar } from "@/pages/tenant-admin/components/TenantSidebar"
 import {
-  PROJECT_RECORDS,
   getSectionDescription,
   getSectionTitle,
 } from "@/pages/tenant-admin/constants"
 import {
+  addProjectMember,
   createProject,
+  loadProjectDirectoryPage,
   searchProjectOwners,
 } from "@/pages/tenant-admin/services/project-service"
 import type {
+  IAddProjectMemberRequest,
   IProjectOwnerOption,
   IProjectRecord,
   IProjectRequest,
@@ -52,6 +56,7 @@ const mapProjectStatus = (status?: string): IProjectRecord["status"] => {
 
 const mapCreatedProjectToRecord = (
   project: IProjectResponse,
+  ownerId: string,
   ownerName: string,
   fallbackId: string
 ): IProjectRecord => {
@@ -60,6 +65,7 @@ const mapCreatedProjectToRecord = (
   return {
     id: project.id?.trim() ? project.id : fallbackId,
     name: project.nameProject?.trim() ? project.nameProject : "Untitled Project",
+    ownerId: project.ownerId?.trim() ? project.ownerId : ownerId,
     department: "General",
     pm: project.ownerName?.trim() ? project.ownerName : ownerName,
     membersCount: 1,
@@ -74,13 +80,72 @@ const mapCreatedProjectToRecord = (
 }
 
 export const TenantAdminPage = () => {
+  const currentUserId = getStoredAuthData()?.userId?.trim() ?? ""
   const [activeSection, setActiveSection] = useState<TTenantAdminSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [projectRecords, setProjectRecords] = useState<IProjectRecord[]>(PROJECT_RECORDS)
+  const [projectRecords, setProjectRecords] = useState<IProjectRecord[]>([])
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [projectPage, setProjectPage] = useState(0)
+  const [projectSize] = useState(10)
+  const [projectTotalElements, setProjectTotalElements] = useState(0)
+  const [projectTotalPages, setProjectTotalPages] = useState(1)
+  const [projectHasNext, setProjectHasNext] = useState(false)
+  const [projectHasPrevious, setProjectHasPrevious] = useState(false)
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false)
+  const [isAddProjectMemberModalOpen, setIsAddProjectMemberModalOpen] = useState(false)
   const [isSubmittingProject, setIsSubmittingProject] = useState(false)
+  const [isSubmittingProjectMember, setIsSubmittingProjectMember] = useState(false)
   const [projectOwnerOptions, setProjectOwnerOptions] = useState<IProjectOwnerOption[]>(PROJECT_OWNER_OPTIONS)
+  const [projectMemberUserOptions, setProjectMemberUserOptions] = useState<IProjectOwnerOption[]>([])
   const [isSearchingOwners, setIsSearchingOwners] = useState(false)
+  const [isSearchingProjectMembers, setIsSearchingProjectMembers] = useState(false)
+  const [selectedProjectForMember, setSelectedProjectForMember] = useState<IProjectRecord | null>(null)
+  const ownerSearchRequestSequenceRef = useRef(0)
+  const memberSearchRequestSequenceRef = useRef(0)
+  const projectLoadRequestSequenceRef = useRef(0)
+
+  const loadProjects = useCallback(async (page: number, size: number) => {
+    const requestSequence = projectLoadRequestSequenceRef.current + 1
+    projectLoadRequestSequenceRef.current = requestSequence
+    setIsLoadingProjects(true)
+
+    try {
+      const projectPageResponse = await loadProjectDirectoryPage({
+        page,
+        size,
+      })
+
+      if (requestSequence !== projectLoadRequestSequenceRef.current) {
+        return
+      }
+
+      setProjectRecords(projectPageResponse.items)
+      setProjectPage(projectPageResponse.page)
+      setProjectTotalElements(projectPageResponse.totalElements)
+      setProjectTotalPages(Math.max(projectPageResponse.totalPages, 1))
+      setProjectHasNext(projectPageResponse.hasNext)
+      setProjectHasPrevious(projectPageResponse.hasPrevious)
+    } catch (error) {
+      if (requestSequence !== projectLoadRequestSequenceRef.current) {
+        return
+      }
+
+      setProjectRecords([])
+      setProjectTotalElements(0)
+      setProjectTotalPages(1)
+      setProjectHasNext(false)
+      setProjectHasPrevious(page > 0)
+      toast.error(error instanceof Error ? error.message : "Không thể tải danh sách dự án")
+    } finally {
+      if (requestSequence === projectLoadRequestSequenceRef.current) {
+        setIsLoadingProjects(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadProjects(projectPage, projectSize)
+  }, [loadProjects, projectPage, projectSize])
 
   const handleOpenCreateProjectModal = () => {
     setProjectOwnerOptions(PROJECT_OWNER_OPTIONS)
@@ -106,12 +171,18 @@ export const TenantAdminPage = () => {
       const fallbackId = `proj-${String(projectRecords.length + 1).padStart(3, "0")}`
 
       setProjectRecords((current) => [
-        mapCreatedProjectToRecord(createdProject, ownerName, fallbackId),
+        mapCreatedProjectToRecord(createdProject, input.ownerId, ownerName, fallbackId),
         ...current,
       ])
 
       setIsCreateProjectModalOpen(false)
       toast.success("Tạo dự án thành công")
+
+      if (projectPage !== 0) {
+        setProjectPage(0)
+      } else {
+        void loadProjects(0, projectSize)
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể tạo dự án")
     } finally {
@@ -119,8 +190,44 @@ export const TenantAdminPage = () => {
     }
   }
 
+  const handleUpdateProjectStatus = useCallback(
+    (projectId: string, nextStatus: IProjectRecord["status"]) => {
+      setProjectRecords((current) =>
+        current.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                status: nextStatus,
+              }
+            : project
+        )
+      )
+
+      toast.success(`Đã cập nhật trạng thái dự án sang ${nextStatus}`)
+    },
+    []
+  )
+
+  const handlePreviousProjectPage = () => {
+    if (!projectHasPrevious || isLoadingProjects) {
+      return
+    }
+
+    setProjectPage((current) => Math.max(current - 1, 0))
+  }
+
+  const handleNextProjectPage = () => {
+    if (!projectHasNext || isLoadingProjects) {
+      return
+    }
+
+    setProjectPage((current) => current + 1)
+  }
+
   const handleSearchProjectOwners = useCallback(async (keyword: string) => {
     const normalizedKeyword = keyword.trim()
+    const requestSequence = ownerSearchRequestSequenceRef.current + 1
+    ownerSearchRequestSequenceRef.current = requestSequence
     setIsSearchingOwners(true)
 
     try {
@@ -129,13 +236,100 @@ export const TenantAdminPage = () => {
         page: 0,
         size: 10,
       })
+
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return
+      }
+
       setProjectOwnerOptions(owners)
     } catch {
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return
+      }
+
       setProjectOwnerOptions([])
     } finally {
-      setIsSearchingOwners(false)
+      if (requestSequence === ownerSearchRequestSequenceRef.current) {
+        setIsSearchingOwners(false)
+      }
     }
   }, [])
+
+  const handleOpenAddProjectMemberModal = (project: IProjectRecord) => {
+    setSelectedProjectForMember(project)
+    setProjectMemberUserOptions([])
+    setIsAddProjectMemberModalOpen(true)
+  }
+
+  const handleCloseAddProjectMemberModal = () => {
+    if (isSubmittingProjectMember) {
+      return
+    }
+
+    setIsAddProjectMemberModalOpen(false)
+    setSelectedProjectForMember(null)
+  }
+
+  const handleSearchProjectMemberUsers = useCallback(async (keyword: string) => {
+    const normalizedKeyword = keyword.trim()
+    const requestSequence = memberSearchRequestSequenceRef.current + 1
+    memberSearchRequestSequenceRef.current = requestSequence
+    setIsSearchingProjectMembers(true)
+
+    try {
+      const users = await searchProjectOwners({
+        keyword: normalizedKeyword,
+        page: 0,
+        size: 10,
+      })
+
+      if (requestSequence !== memberSearchRequestSequenceRef.current) {
+        return
+      }
+
+      setProjectMemberUserOptions(users)
+    } catch {
+      if (requestSequence !== memberSearchRequestSequenceRef.current) {
+        return
+      }
+
+      setProjectMemberUserOptions([])
+    } finally {
+      if (requestSequence === memberSearchRequestSequenceRef.current) {
+        setIsSearchingProjectMembers(false)
+      }
+    }
+  }, [])
+
+  const handleAddProjectMember = async (input: IAddProjectMemberRequest) => {
+    if (!selectedProjectForMember) {
+      toast.error("Không tìm thấy dự án để thêm thành viên")
+      return
+    }
+
+    setIsSubmittingProjectMember(true)
+
+    try {
+      await addProjectMember({
+        projectId: selectedProjectForMember.id,
+        request: input,
+      })
+
+      toast.success("Thêm thành viên vào dự án thành công")
+      setIsAddProjectMemberModalOpen(false)
+      setSelectedProjectForMember(null)
+
+      if (projectPage !== 0) {
+        setProjectPage(0)
+      } else {
+        void loadProjects(0, projectSize)
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể thêm thành viên vào dự án")
+    } finally {
+      setIsSubmittingProjectMember(false)
+    }
+  }
 
   return (
     <div
@@ -216,7 +410,23 @@ export const TenantAdminPage = () => {
             </div>
 
             {activeSection === "dashboard" && <DashboardSection />}
-            {activeSection === "projects" && <ProjectsSection projectRecords={projectRecords} />}
+            {activeSection === "projects" && (
+              <ProjectsSection
+                projectRecords={projectRecords}
+                currentUserId={currentUserId}
+                isLoadingProjects={isLoadingProjects}
+                page={projectPage}
+                size={projectSize}
+                totalPages={projectTotalPages}
+                totalElements={projectTotalElements}
+                hasNext={projectHasNext}
+                hasPrevious={projectHasPrevious}
+                onPreviousPage={handlePreviousProjectPage}
+                onNextPage={handleNextProjectPage}
+                onOpenAddMemberModal={handleOpenAddProjectMemberModal}
+                onUpdateProjectStatus={handleUpdateProjectStatus}
+              />
+            )}
             {activeSection === "organization" && <OrganizationSection />}
             {activeSection === "security" && <SecuritySection />}
 
@@ -228,6 +438,17 @@ export const TenantAdminPage = () => {
               onSearchOwners={handleSearchProjectOwners}
               onClose={handleCloseCreateProjectModal}
               onSubmit={handleCreateProject}
+            />
+
+            <AddProjectMemberModal
+              isOpen={isAddProjectMemberModalOpen}
+              projectName={selectedProjectForMember?.name ?? ""}
+              isSubmitting={isSubmittingProjectMember}
+              isSearchingUsers={isSearchingProjectMembers}
+              users={projectMemberUserOptions}
+              onSearchUsers={handleSearchProjectMemberUsers}
+              onClose={handleCloseAddProjectMemberModal}
+              onSubmit={handleAddProjectMember}
             />
 
           </main>

@@ -154,16 +154,16 @@ export const CreateProjectModal = ({
                 onChange={(event) => {
                   const nextKeyword = event.target.value
                   setOwnerKeyword(nextKeyword)
-                  setIsOwnerTyping(true)
                   setFormState((current) => ({
                     ...current,
                     ownerId: "",
                   }))
+                  setIsOwnerTyping(true)
                   setIsOwnerDropdownOpen(true)
                 }}
                 onFocus={() => {
+                  setIsOwnerTyping(true)
                   setIsOwnerDropdownOpen(true)
-                  setIsOwnerTyping(false)
                   void onSearchOwners(ownerKeyword.trim())
                 }}
                 placeholder="Nhập tên hoặc email chủ sở hữu"

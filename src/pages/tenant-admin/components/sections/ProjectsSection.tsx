@@ -1,19 +1,26 @@
+import { useEffect, useState } from "react"
 import {
   Building2,
   ChevronDown,
   ChevronRight,
   Cloud,
+  Copy,
+  Check,
   Ellipsis,
+  ExternalLink,
   Filter,
   FolderKanban,
   Landmark,
   Search,
   Users,
 } from "lucide-react"
+import { useNavigate } from "react-router"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getProjectPath } from "@/constants/routes"
 import { cn } from "@/lib/utils"
-import { PROJECT_RECORDS, getProjectStatusClassName } from "@/pages/tenant-admin/constants"
+import { getProjectStatusClassName } from "@/pages/tenant-admin/constants"
 import type { IProjectRecord } from "@/pages/tenant-admin/types"
 
 const PROJECT_ICON_MAP = {
@@ -24,19 +31,186 @@ const PROJECT_ICON_MAP = {
   account_balance: Landmark,
 } as const
 
-interface IProjectsSectionProps {
-  projectRecords?: IProjectRecord[]
+const copyTextToClipboard = async (value: string) => {
+  if (!value.trim()) {
+    return false
+  }
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return true
+  }
+
+  return false
 }
 
-export const ProjectsSection = ({ projectRecords = PROJECT_RECORDS }: IProjectsSectionProps) => {
+interface IProjectRowActionsMenuProps {
+  project: IProjectRecord
+  onUpdateStatus: (projectId: string, nextStatus: IProjectRecord["status"]) => void
+}
+
+const ProjectRowActionsMenu = ({ project, onUpdateStatus }: IProjectRowActionsMenuProps) => {
+  const navigate = useNavigate()
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest(`[data-project-actions="${project.id}"]`)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isOpen, project.id])
+
+  const handleCopyValue = async (value: string, label: string) => {
+    const copied = await copyTextToClipboard(value)
+
+    if (copied) {
+      toast.success(`${label} copied`)
+    } else {
+      toast.error("Unable to copy to clipboard")
+    }
+
+    setIsOpen(false)
+  }
+
+  const handleOpenProject = () => {
+    navigate(getProjectPath(project.id))
+    setIsOpen(false)
+  }
+
+  const statusOptions: IProjectRecord["status"][] = ["Active", "Planning", "Archived"]
+
+  return (
+    <div className="relative inline-flex" data-project-actions={project.id}>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        className="text-slate-500"
+        onClick={() => setIsOpen((current) => !current)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+      >
+        <Ellipsis className="h-4 w-4" />
+      </Button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="menu">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={handleOpenProject}
+            role="menuitem"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Open project
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => void handleCopyValue(project.id, "Project ID")}
+            role="menuitem"
+          >
+            <Copy className="h-4 w-4" />
+            Copy project ID
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => void handleCopyValue(project.name, "Project name")}
+            role="menuitem"
+          >
+            <Copy className="h-4 w-4" />
+            Copy project name
+          </button>
+          <div className="my-1 border-t border-slate-200" />
+          {statusOptions.map((statusOption) => (
+            <button
+              key={statusOption}
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={() => {
+                onUpdateStatus(project.id, statusOption)
+                setIsOpen(false)
+              }}
+              role="menuitem"
+            >
+              <Check className="h-4 w-4" />
+              Set {statusOption}
+              {project.status === statusOption && <span className="ml-auto text-xs text-cyan-700">Current</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface IProjectsSectionProps {
+  projectRecords: IProjectRecord[]
+  currentUserId: string
+  isLoadingProjects: boolean
+  page: number
+  size: number
+  totalPages: number
+  totalElements: number
+  hasNext: boolean
+  hasPrevious: boolean
+  onPreviousPage: () => void
+  onNextPage: () => void
+  onOpenAddMemberModal: (project: IProjectRecord) => void
+  onUpdateProjectStatus: (projectId: string, nextStatus: IProjectRecord["status"]) => void
+}
+
+export const ProjectsSection = ({
+  projectRecords,
+  currentUserId,
+  isLoadingProjects,
+  page,
+  size,
+  totalPages,
+  totalElements,
+  hasNext,
+  hasPrevious,
+  onPreviousPage,
+  onNextPage,
+  onOpenAddMemberModal,
+  onUpdateProjectStatus,
+}: IProjectsSectionProps) => {
+  const activeProjects = projectRecords.filter((project) => project.status === "Active").length
+  const planningProjects = projectRecords.filter((project) => project.status === "Planning").length
+  const archivedProjects = projectRecords.filter((project) => project.status === "Archived").length
+  const visibleFrom = projectRecords.length > 0 ? page * size + 1 : 0
+  const visibleTo = projectRecords.length > 0
+    ? Math.min(page * size + projectRecords.length, totalElements)
+    : 0
+
   return (
     <div className="space-y-5">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Total Projects", value: "124", foot: "+8 new this month" },
-          { label: "Active Delivery", value: "78", foot: "steady velocity" },
-          { label: "Planning", value: "31", foot: "resource alignment" },
-          { label: "Archived", value: "15", foot: "retention ready" },
+          { label: "Total Projects", value: `${totalElements}`, foot: "tenant portfolio" },
+          { label: "Active Delivery", value: `${activeProjects}`, foot: "in current page" },
+          { label: "Planning", value: `${planningProjects}`, foot: "in current page" },
+          { label: "Archived", value: `${archivedProjects}`, foot: "in current page" },
         ].map((summary) => (
           <Card key={summary.label} className="border-slate-200 bg-white">
             <CardHeader className="pb-1">
@@ -77,7 +251,6 @@ export const ProjectsSection = ({ projectRecords = PROJECT_RECORDS }: IProjectsS
             <thead>
               <tr className="border-b border-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-500">
                 <th className="py-3">Project</th>
-                <th className="py-3">Department</th>
                 <th className="py-3">Members</th>
                 <th className="py-3">Storage</th>
                 <th className="py-3">Status</th>
@@ -86,69 +259,93 @@ export const ProjectsSection = ({ projectRecords = PROJECT_RECORDS }: IProjectsS
             </thead>
 
             <tbody>
-              {projectRecords.map((project) => {
-                const Icon = PROJECT_ICON_MAP[project.icon as keyof typeof PROJECT_ICON_MAP] ?? FolderKanban
+              {isLoadingProjects ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-sm text-slate-500">
+                    Loading projects...
+                  </td>
+                </tr>
+              ) : projectRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-sm text-slate-500">
+                    No projects found.
+                  </td>
+                </tr>
+              ) : (
+                projectRecords.map((project) => {
+                  const Icon = PROJECT_ICON_MAP[project.icon as keyof typeof PROJECT_ICON_MAP] ?? FolderKanban
+                  const canManageMembers =
+                    Boolean(currentUserId.trim()) &&
+                    Boolean(project.ownerId.trim()) &&
+                    project.ownerId.trim() === currentUserId.trim()
 
-                return (
-                  <tr key={project.id} className="border-b border-slate-100 last:border-none">
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("grid h-10 w-10 place-items-center rounded-lg", project.iconBg, project.iconColor)}>
-                          <Icon className="h-5 w-5" />
+                  return (
+                    <tr key={project.id} className="border-b border-slate-100 last:border-none">
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("grid h-10 w-10 place-items-center rounded-lg", project.iconBg, project.iconColor)}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900">{project.name}</p>
+                            <p className="text-xs text-slate-500">PM: {project.pm}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">{project.name}</p>
-                          <p className="text-xs text-slate-500">PM: {project.pm}</p>
+                      </td>
+                      <td>
+                        <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          <Users className="h-3.5 w-3.5" />
+                          {project.membersCount} members
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="text-slate-700">{project.department}</td>
-
-                    <td>
-                      <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        <Users className="h-3.5 w-3.5" />
-                        {project.membersCount} members
-                      </div>
-                    </td>
-
-                    <td>
-                      <div className="w-32">
-                        <p className="mb-1 text-xs font-semibold text-slate-700">{project.storageUsed} / {project.storageTotal}</p>
-                        <div className="h-2 rounded-full bg-slate-200">
-                          <div className="h-2 rounded-full bg-cyan-600" style={{ width: `${project.storagePercent}%` }} />
+                      <td>
+                        <div className="w-32">
+                          <p className="mb-1 text-xs font-semibold text-slate-700">{project.storageUsed} / {project.storageTotal}</p>
+                          <div className="h-2 rounded-full bg-slate-200">
+                            <div className="h-2 rounded-full bg-cyan-600" style={{ width: `${project.storagePercent}%` }} />
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td>
-                      <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getProjectStatusClassName(project.status))}>
-                        {project.status}
-                      </span>
-                    </td>
+                      <td>
+                        <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getProjectStatusClassName(project.status))}>
+                          {project.status}
+                        </span>
+                      </td>
 
-                    <td className="text-right">
-                      <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                        <Ellipsis className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                )
-              })}
+                      <td className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {canManageMembers && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                              onClick={() => onOpenAddMemberModal(project)}
+                            >
+                              Add user in project
+                            </Button>
+                          )}
+                          <ProjectRowActionsMenu project={project} onUpdateStatus={onUpdateProjectStatus} />
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
 
           <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
-            <p className="text-slate-500">Showing 1 to 10 of 124 projects</p>
+            <p className="text-slate-500">Showing {visibleFrom} to {visibleTo} of {totalElements} projects</p>
             <div className="flex items-center gap-1">
-              <Button size="sm" variant="ghost" className="text-slate-500">
+              <Button size="sm" variant="ghost" className="text-slate-500" onClick={onPreviousPage} disabled={!hasPrevious || isLoadingProjects}>
                 <ChevronRight className="h-4 w-4 rotate-180" />
                 Prev
               </Button>
-              <Button size="sm" className="bg-cyan-700 text-white hover:bg-cyan-800">1</Button>
-              <Button size="sm" variant="outline" className="border-slate-300">2</Button>
-              <Button size="sm" variant="outline" className="border-slate-300">3</Button>
-              <Button size="sm" variant="ghost" className="text-slate-500">
+              <span className="px-2 text-xs text-slate-600">Page {page + 1}/{totalPages}</span>
+              <Button size="sm" variant="ghost" className="text-slate-500" onClick={onNextPage} disabled={!hasNext || isLoadingProjects}>
                 Next
                 <ChevronRight className="h-4 w-4" />
               </Button>

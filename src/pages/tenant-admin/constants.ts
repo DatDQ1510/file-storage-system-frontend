@@ -44,6 +44,7 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
   {
     id: "proj-001",
     name: "Project Orion",
+    ownerId: "usr-001",
     department: "Marketing",
     pm: "Sarah Jenkins",
     membersCount: 12,
@@ -58,6 +59,7 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
   {
     id: "proj-002",
     name: "Cloud Infrastructure",
+    ownerId: "usr-002",
     department: "IT Operations",
     pm: "Admin David",
     membersCount: 8,
@@ -72,6 +74,7 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
   {
     id: "proj-003",
     name: "Compliance Review",
+    ownerId: "usr-003",
     department: "Legal",
     pm: "Marcus Thorne",
     membersCount: 4,
@@ -86,6 +89,7 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
   {
     id: "proj-004",
     name: "Brand Refresh",
+    ownerId: "usr-004",
     department: "Design",
     pm: "Kevin Art",
     membersCount: 6,
@@ -100,6 +104,7 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
   {
     id: "proj-005",
     name: "Internal Audit",
+    ownerId: "usr-005",
     department: "Finance",
     pm: "Janet Doe",
     membersCount: 2,

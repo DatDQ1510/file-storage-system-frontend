@@ -124,5 +124,5 @@ export const PROJECT_ITEMS: IProjectItem[] = [
         updatedLabel: "5 mo ago",
       },
     ],
-  },
+  }, 
 ];

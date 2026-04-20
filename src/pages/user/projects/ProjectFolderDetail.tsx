@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { LayoutGrid, List } from "lucide-react";
+import { toast } from "sonner";
 import { PROJECT_ITEMS } from "@/constants/projects";
 import { getProjectPath, getProjectFilePath } from "@/constants/routes";
 import { PROJECT_FILE_ITEMS } from "@/constants/project-files";
+import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
 import { ProjectFileTypeIcon, type TProjectFileType } from "@/components/projects/ProjectFileTypeIcon";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
+import { getStoredAuthData } from "@/lib/api/auth-service";
+import {
+  getTenantUserOptions,
+  getUserProjectDetail,
+  type IUserProjectDetail,
+  type IUserTenantOption,
+} from "@/lib/api/user-project-service";
 
 interface IProjectFileListItem {
   id: string;
@@ -19,9 +28,18 @@ interface IProjectFileListItem {
 export const ProjectFolderDetail = () => {
   const navigate = useNavigate();
   const { projectId, folderId } = useParams();
+  const ownerSearchRequestSequenceRef = useRef(0);
   const [uploadedFilesByProject, setUploadedFilesByProject] = useState<Record<string, IProjectFileListItem[]>>({});
+  const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
+  const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
+  const [isSearchingTenantUsers, setIsSearchingTenantUsers] = useState(false);
+  const [tenantUserOptions, setTenantUserOptions] = useState<IUserTenantOption[]>([]);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
+  const authData = getStoredAuthData();
+  const currentUserId = authData?.userId?.trim() ?? "";
 
   const selectedProject = PROJECT_ITEMS.find((projectItem) => {
     return projectItem.id === projectId;
@@ -31,10 +49,53 @@ export const ProjectFolderDetail = () => {
     return folderItem.id === folderId;
   });
 
+  const isCurrentUserProjectOwner = useMemo(() => {
+    if (!projectDetail?.ownerId || !currentUserId) {
+      return false;
+    }
+
+    return projectDetail.ownerId === currentUserId;
+  }, [currentUserId, projectDetail?.ownerId]);
+
   const projectDetailFile = useMemo(() => {
     return PROJECT_FILE_ITEMS.find((fileItem) => {
       return fileItem.projectId === projectId;
     });
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) {
+      setProjectDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadProjectDetail = async () => {
+      setIsLoadingProjectDetail(true);
+
+      try {
+        const response = await getUserProjectDetail(projectId);
+
+        if (isMounted) {
+          setProjectDetail(response);
+        }
+      } catch {
+        if (isMounted) {
+          setProjectDetail(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingProjectDetail(false);
+        }
+      }
+    };
+
+    void loadProjectDetail();
+
+    return () => {
+      isMounted = false;
+    };
   }, [projectId]);
 
   const fileItems = useMemo<IProjectFileListItem[]>(() => {
@@ -97,6 +158,14 @@ export const ProjectFolderDetail = () => {
   }, [folderId, navigate, projectId, selectedFolder, selectedProject]);
 
   if (!selectedProject || !selectedFolder) {
+    if (isLoadingProjectDetail) {
+      return (
+        <div className="rounded-md border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+          Loading project details...
+        </div>
+      );
+    }
+
     return null;
   }
 
@@ -154,6 +223,59 @@ export const ProjectFolderDetail = () => {
     });
   };
 
+  const handleSearchTenantUsers = async (keyword: string) => {
+    const requestSequence = ownerSearchRequestSequenceRef.current + 1;
+    ownerSearchRequestSequenceRef.current = requestSequence;
+    setIsSearchingTenantUsers(true);
+
+    try {
+      const users = await getTenantUserOptions({
+        page: 0,
+        offset: 100,
+      });
+
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return;
+      }
+
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      const filteredUsers = normalizedKeyword
+        ? users.filter((userItem) => {
+            return (
+              userItem.name.toLowerCase().includes(normalizedKeyword) ||
+              userItem.email.toLowerCase().includes(normalizedKeyword)
+            );
+          })
+        : users;
+
+      setTenantUserOptions(filteredUsers);
+    } catch (error) {
+      if (requestSequence !== ownerSearchRequestSequenceRef.current) {
+        return;
+      }
+
+      setTenantUserOptions([]);
+      toast.error(error instanceof Error ? error.message : "Unable to load tenant users.");
+    } finally {
+      if (requestSequence === ownerSearchRequestSequenceRef.current) {
+        setIsSearchingTenantUsers(false);
+      }
+    }
+  };
+
+  const handleSubmitAddUser = async () => {
+    setIsSubmittingAddUser(true);
+
+    try {
+      toast.success("Ready to add member", {
+        description: "Backend add-member endpoint is wired in tenant-admin flow.",
+      });
+      setIsAddUserModalOpen(false);
+    } finally {
+      setIsSubmittingAddUser(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <section className="space-y-4">
@@ -169,6 +291,8 @@ export const ProjectFolderDetail = () => {
             onCreateFolder={handleCreateFolder}
             onUploadFolder={() => folderUploadRef.current?.click()}
             onUploadFile={() => fileUploadRef.current?.click()}
+            showAddUserButton={isCurrentUserProjectOwner}
+            onAddUser={() => setIsAddUserModalOpen(true)}
           />
         </div>
       </section>
@@ -206,6 +330,16 @@ export const ProjectFolderDetail = () => {
             event.currentTarget.value = "";
           }}
           {...({ webkitdirectory: "" } as unknown as Record<string, string>)}
+        />
+
+        <AddProjectMemberModal
+          isOpen={isAddUserModalOpen}
+          isSubmitting={isSubmittingAddUser}
+          isSearchingUsers={isSearchingTenantUsers}
+          userOptions={tenantUserOptions}
+          onSearchUsers={handleSearchTenantUsers}
+          onClose={() => setIsAddUserModalOpen(false)}
+          onSubmit={handleSubmitAddUser}
         />
 
         <div className="overflow-hidden rounded-md border border-border bg-card">
