@@ -1,30 +1,37 @@
-import type { ReactNode } from "react"
+import { Suspense, lazy, type ReactNode } from "react"
 import { Navigate, Route, Routes } from "react-router"
 import { ROUTES } from "@/constants/routes"
 import { Layout } from "@/layout"
-import {
-  Dashboard,
-  ForgotPassword,
-  Forbidden,
-  ProjectFileDetail,
-  ProjectFolderDetail,
-  Projects,
-  RecycleBin,
-  Recent,
-  SignIn,
-  SignUp,
-  SetupPassword,
-  Starred,
-  TotpSignIn,
-} from "@/pages/user"
-import { SystemAdminPage } from "@/pages/system-admin/SystemAdminPage"
-import { CreatePlanPage } from "@/pages/system-admin/pages/CreatePlanPage"
-import { TenantAdminPage } from "@/pages/tenant-admin/TenantAdminPage"
 import { isAuthenticated } from "@/lib/api/auth-service"
+
+const Dashboard = lazy(() => import("@/pages/user/Dashboard").then((module) => ({ default: module.Dashboard })))
+const ForgotPassword = lazy(() => import("@/pages/user/ForgotPassword").then((module) => ({ default: module.ForgotPassword })))
+const Forbidden = lazy(() => import("@/pages/user/Forbidden").then((module) => ({ default: module.Forbidden })))
+const ProjectFileDetail = lazy(() => import("@/pages/user/projects").then((module) => ({ default: module.ProjectFileDetail })))
+const ProjectFolderDetail = lazy(() => import("@/pages/user/projects").then((module) => ({ default: module.ProjectFolderDetail })))
+const Projects = lazy(() => import("@/pages/user/projects").then((module) => ({ default: module.Projects })))
+const RecycleBin = lazy(() => import("@/pages/user/recycle-bin").then((module) => ({ default: module.RecycleBin })))
+const Recent = lazy(() => import("@/pages/user/recent").then((module) => ({ default: module.Recent })))
+const SignIn = lazy(() => import("@/pages/user/SignIn").then((module) => ({ default: module.SignIn })))
+const SignUp = lazy(() => import("@/pages/user/SignUp").then((module) => ({ default: module.SignUp })))
+const SetupPassword = lazy(() => import("@/pages/user/SetupPassword").then((module) => ({ default: module.SetupPassword })))
+const Starred = lazy(() => import("@/pages/user/starred").then((module) => ({ default: module.Starred })))
+const TotpSignIn = lazy(() => import("@/pages/user/TotpSignIn").then((module) => ({ default: module.TotpSignIn })))
+const SystemAdminPage = lazy(() => import("@/pages/system-admin/SystemAdminPage").then((module) => ({ default: module.SystemAdminPage })))
+const CreatePlanPage = lazy(() => import("@/pages/system-admin/pages/CreatePlanPage").then((module) => ({ default: module.CreatePlanPage })))
+const TenantAdminPage = lazy(() => import("@/pages/tenant-admin/TenantAdminPage").then((module) => ({ default: module.TenantAdminPage })))
 
 interface IRouteConfig {
   path: string
   element: ReactNode
+}
+
+const withSuspense = (element: ReactNode) => {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-slate-500">Loading...</div>}>
+      {element}
+    </Suspense>
+  )
 }
 
 const renderRouteConfigs = (routeConfigs: IRouteConfig[]) => {
@@ -53,35 +60,35 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 const AUTH_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.SIGN_IN,
-    element: <PublicOnlyRoute><SignIn /></PublicOnlyRoute>,
+    element: <PublicOnlyRoute>{withSuspense(<SignIn />)}</PublicOnlyRoute>,
   },
   {
     path: ROUTES.TOTP_SIGN_IN,
-    element: <PublicOnlyRoute><TotpSignIn /></PublicOnlyRoute>,
+    element: <PublicOnlyRoute>{withSuspense(<TotpSignIn />)}</PublicOnlyRoute>,
   },
   {
     path: ROUTES.SIGN_UP,
-    element: <PublicOnlyRoute><SignUp /></PublicOnlyRoute>,
+    element: <PublicOnlyRoute>{withSuspense(<SignUp />)}</PublicOnlyRoute>,
   },
   {
     path: ROUTES.FORGOT_PASSWORD,
-    element: <PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>,
+    element: <PublicOnlyRoute>{withSuspense(<ForgotPassword />)}</PublicOnlyRoute>,
   },
   {
     path: ROUTES.SETUP_PASSWORD,
-    element: <SetupPassword />,
+    element: withSuspense(<SetupPassword />),
   },
-  { path: ROUTES.FORBIDDEN, element: <Forbidden /> },
+  { path: ROUTES.FORBIDDEN, element: withSuspense(<Forbidden />) },
 ]
 
 const DASHBOARD_ENTRY_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.HOME,
-    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+    element: <ProtectedRoute>{withSuspense(<Dashboard />)}</ProtectedRoute>,
   },
   {
     path: ROUTES.DASHBOARD,
-    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+    element: <ProtectedRoute>{withSuspense(<Dashboard />)}</ProtectedRoute>,
   },
 ]
 
@@ -111,15 +118,15 @@ const LEGACY_REDIRECT_ROUTES: IRouteConfig[] = [
 const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.SYSTEM_ADMIN_DASHBOARD,
-    element: <ProtectedRoute><SystemAdminPage /></ProtectedRoute>,
+    element: <ProtectedRoute>{withSuspense(<SystemAdminPage />)}</ProtectedRoute>,
   },
   {
     path: ROUTES.SYSTEM_ADMIN_CREATE_PLAN,
-    element: <ProtectedRoute><CreatePlanPage /></ProtectedRoute>,
+    element: <ProtectedRoute>{withSuspense(<CreatePlanPage />)}</ProtectedRoute>,
   },
   {
     path: ROUTES.TENANT_ADMIN_DASHBOARD,
-    element: <ProtectedRoute><TenantAdminPage /></ProtectedRoute>,
+    element: <ProtectedRoute>{withSuspense(<TenantAdminPage />)}</ProtectedRoute>,
   },
   {
     path: ROUTES.USER_DASHBOARD,
@@ -130,35 +137,35 @@ const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
 const APP_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.RECENT,
-    element: <ProtectedRoute><Layout><Recent /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Recent />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.STARRED,
-    element: <ProtectedRoute><Layout><Starred /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Starred />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.PROJECTS,
-    element: <ProtectedRoute><Layout><Projects /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Projects />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.PROJECT_DETAIL,
-    element: <ProtectedRoute><Layout><Projects /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Projects />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.PROJECT_FOLDER_DETAIL,
-    element: <ProtectedRoute><Layout><ProjectFolderDetail /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<ProjectFolderDetail />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.PROJECT_FILE_DETAIL,
-    element: <ProtectedRoute><Layout><ProjectFileDetail /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<ProjectFileDetail />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.RECYCLE_BIN,
-    element: <ProtectedRoute><Layout><RecycleBin /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<RecycleBin />)}</Layout></ProtectedRoute>,
   },
   {
     path: ROUTES.SUPPORT,
-    element: <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Dashboard />)}</Layout></ProtectedRoute>,
   },
 ]
 
