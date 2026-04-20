@@ -19,7 +19,7 @@ export const SystemAdminSectionActions = ({
 
         <Button className="bg-blue-700 text-white hover:bg-blue-800" onClick={onOpenRegisterTenant}>
           <Plus className="h-4 w-4" />
-          Register New Tenant
+          Đăng ký tenant mới
         </Button>
       </div>
     )
@@ -28,7 +28,7 @@ export const SystemAdminSectionActions = ({
   if (activeSection === "billing") {
     return (
       <Button className="bg-blue-700 text-white hover:bg-blue-800" onClick={onCreatePlan}>
-        + Create New Plan
+        + Tạo gói mới
       </Button>
     )
   }

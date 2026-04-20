@@ -20,33 +20,38 @@ export const ProfileDetailsForm = ({
   onSubmit,
 }: IProfileDetailsFormProps) => {
   return (
-    <form className="grid gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+    <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Username</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Tên đăng nhập</span>
         <input
-          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
+          id="system-admin-username"
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          placeholder="Nhập tên đăng nhập"
           value={username}
           onChange={(event) => onUsernameChange(event.target.value)}
         />
       </label>
       <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Email Address</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Địa chỉ email</span>
         <input
-          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
+          id="system-admin-email"
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          placeholder="admin@company.com"
+          type="email"
           value={emailAddress}
           onChange={(event) => onEmailAddressChange(event.target.value)}
         />
       </label>
 
-      <div className="md:col-span-2 flex justify-end pt-1">
+      <div className="flex justify-end pt-1 md:col-span-2">
         <Button type="submit" className="h-9 bg-blue-700 text-white hover:bg-blue-800" disabled={isSavingProfile}>
           {isSavingProfile ? (
             <>
               <LoaderCircle className="h-4 w-4 animate-spin" />
-              Saving Changes
+              Đang lưu hồ sơ
             </>
           ) : (
-            "Save Changes"
+            "Lưu thay đổi"
           )}
         </Button>
       </div>

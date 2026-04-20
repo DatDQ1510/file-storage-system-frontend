@@ -7,10 +7,10 @@ import { loadArchivePlanCards, loadPlanCards } from "@/pages/system-admin/servic
 import type { IPlanCard } from "@/pages/system-admin/types"
 
 const BILLING_SUMMARY = [
-  { label: "Revenue Run Rate", value: "$2.4M", note: "Annualized growth +24%", icon: TrendingUp },
-  { label: "Active Plans", value: "04", note: "Current published tiers", icon: CreditCard },
-  { label: "Billing Rules", value: "3", note: "Policy controls active", icon: ReceiptText },
-  { label: "Payment Health", value: "98%", note: "No critical failures", icon: ShieldCheck },
+  { label: "Tốc độ doanh thu", value: "$2.4M", note: "Tăng trưởng quy đổi năm +24%", icon: TrendingUp },
+  { label: "Gói đang áp dụng", value: "04", note: "Số bậc gói hiện hành", icon: CreditCard },
+  { label: "Quy tắc thanh toán", value: "3", note: "Chính sách đang hoạt động", icon: ReceiptText },
+  { label: "Sức khỏe thanh toán", value: "98%", note: "Không có lỗi nghiêm trọng", icon: ShieldCheck },
 ]
 
 const getStorageLimit = (plan: IPlanCard) => {
@@ -24,23 +24,23 @@ const getStorageLimit = (plan: IPlanCard) => {
   const name = plan.name.toLowerCase()
   if (name.includes("starter")) return "50 GB"
   if (name.includes("professional")) return "500 GB"
-  if (name.includes("enterprise")) return "Unlimited"
-  return "Flexible"
+    if (name.includes("enterprise")) return "Không giới hạn"
+    return "Linh hoạt"
 }
 
 const getMaxUsers = (plan: IPlanCard) => {
   if (plan.maxUsers !== undefined) {
     if (typeof plan.maxUsers === "number") {
-      return `${plan.maxUsers} Users`
+      return `${plan.maxUsers} người dùng`
     }
     return plan.maxUsers
   }
 
   const name = plan.name.toLowerCase()
-  if (name.includes("starter")) return "5 Users"
-  if (name.includes("professional")) return "25 Users"
-  if (name.includes("enterprise")) return "Unlimited"
-  return "Custom"
+  if (name.includes("starter")) return "5 người dùng"
+  if (name.includes("professional")) return "25 người dùng"
+  if (name.includes("enterprise")) return "Không giới hạn"
+  return "Tùy chỉnh"
 }
 
 export const BillingSection = () => {
@@ -82,8 +82,8 @@ export const BillingSection = () => {
       <Card className="border-slate-200 bg-white">
         <CardHeader className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Subscription Plans Management</CardTitle>
-            <p className="mt-1 text-sm text-slate-500">Manage service tiers, pricing, and resource limits for your tenants.</p>
+            <CardTitle className="text-lg font-semibold text-slate-900">Quản lý gói dịch vụ</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">Quản lý bậc gói, mức giá và giới hạn tài nguyên cho tenant.</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -96,7 +96,7 @@ export const BillingSection = () => {
               )}
               onClick={() => setActiveTab("active")}
             >
-              Active Plans
+              Gói đang hoạt động
             </button>
             <button
               type="button"
@@ -108,7 +108,7 @@ export const BillingSection = () => {
               )}
               onClick={() => setActiveTab("inactive")}
             >
-              Inactive Plans
+              Gói ngừng hoạt động
             </button>
           </div>
         </CardHeader>
@@ -117,13 +117,13 @@ export const BillingSection = () => {
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                <th className="py-3">Plan Name</th>
-                <th className="py-3">Price (USD)</th>
-                <th className="py-3">Billing Cycle</th>
-                <th className="py-3">Storage Limit</th>
-                <th className="py-3">Max Users</th>
-                <th className="py-3">Status</th>
-                <th className="py-3 text-right">Actions</th>
+                <th className="py-3">Tên gói</th>
+                <th className="py-3">Giá (USD)</th>
+                <th className="py-3">Chu kỳ</th>
+                <th className="py-3">Giới hạn lưu trữ</th>
+                <th className="py-3">Người dùng tối đa</th>
+                <th className="py-3">Trạng thái</th>
+                <th className="py-3 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -139,12 +139,12 @@ export const BillingSection = () => {
                   <td className="py-4 text-slate-700">{getMaxUsers(plan)}</td>
                   <td className="py-4">
                     <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
-                      {activeTab === "active" ? "ACTIVE" : "INACTIVE"}
+                      {activeTab === "active" ? "ĐANG HOẠT ĐỘNG" : "NGỪNG HOẠT ĐỘNG"}
                     </span>
                   </td>
                   <td className="py-4 text-right">
                     <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                      View
+                      Xem
                     </Button>
                   </td>
                 </tr>

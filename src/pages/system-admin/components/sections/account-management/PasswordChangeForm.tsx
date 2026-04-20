@@ -29,25 +29,28 @@ export const PasswordChangeForm = ({
   isNewPasswordVisible,
   setIsNewPasswordVisible,
   isConfirmPasswordVisible,
-  setIsConfirmPasswordVisible,  
+  setIsConfirmPasswordVisible,
 }: IPasswordChangeFormProps) => {
-
   return (
-    <form className="grid max-w-2xl gap-3 md:grid-cols-2" onSubmit={onSubmit}>
+    <form className="grid max-w-2xl gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <label className="space-y-2 md:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Current Password</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Mật khẩu hiện tại</span>
         <input
-          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-600"
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          id="system-admin-current-password"
+          placeholder="Nhập mật khẩu hiện tại"
           type="password"
           value={currentPassword}
           onChange={(event) => onCurrentPasswordChange(event.target.value)}
         />
       </label>
       <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">New Password</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Mật khẩu mới</span>
         <div className="relative">
           <input
-            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            id="system-admin-new-password"
+            placeholder="Tối thiểu 8 ký tự"
             type={isNewPasswordVisible ? "text" : "password"}
             value={newPassword}
             onChange={(event) => onNewPasswordChange(event.target.value)}
@@ -57,17 +60,19 @@ export const PasswordChangeForm = ({
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1 h-8 w-8 text-slate-500"
-            onClick={() => setIsNewPasswordVisible((previous : boolean) => !previous)}
+            onClick={() => setIsNewPasswordVisible((previous) => !previous)}
           >
             {isNewPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
         </div>
       </label>
       <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Confirm New Password</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Xác nhận mật khẩu mới</span>
         <div className="relative">
           <input
-            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-10 text-sm outline-none focus:border-blue-600"
+            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            id="system-admin-confirm-password"
+            placeholder="Nhập lại mật khẩu mới"
             type={isConfirmPasswordVisible ? "text" : "password"}
             value={confirmPassword}
             onChange={(event) => onConfirmPasswordChange(event.target.value)}
@@ -77,21 +82,21 @@ export const PasswordChangeForm = ({
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1 h-8 w-8 text-slate-500"
-            onClick={() => setIsConfirmPasswordVisible((previous: boolean) => !previous)}
+            onClick={() => setIsConfirmPasswordVisible((previous) => !previous)}
           >
             {isConfirmPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
         </div>
       </label>
-      <div className="pt-1 md:col-span-2">
+      <div className="flex justify-end pt-1 md:col-span-2">
         <Button type="submit" className="h-9 bg-blue-700 text-white hover:bg-blue-800" disabled={isChangingPassword}>
           {isChangingPassword ? (
             <>
               <LoaderCircle className="h-4 w-4 animate-spin" />
-              Updating Password
+              Đang cập nhật mật khẩu
             </>
           ) : (
-            "Update Password"
+            "Cập nhật mật khẩu"
           )}
         </Button>
       </div>

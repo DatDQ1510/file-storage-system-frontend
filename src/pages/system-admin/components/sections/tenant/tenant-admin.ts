@@ -4,9 +4,9 @@ import type {
 } from "@/pages/system-admin/components/sections/tenant/types"
 
 export const TENANT_PROVISION_STEP_LABELS = [
-  "Create Tenant",
-  "Create Admin Account",
-  "Register Plan & Provision",
+  "Tạo tenant",
+  "Tạo tài khoản quản trị",
+  "Đăng ký gói & cấp phát",
 ] as const
 
 export const INITIAL_TENANT_PROVISION_FORM_STATE: ITenantProvisionFormState = {

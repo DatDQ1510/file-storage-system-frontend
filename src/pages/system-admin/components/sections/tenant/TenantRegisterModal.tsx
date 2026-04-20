@@ -40,7 +40,7 @@ export const TenantRegisterModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-3 py-3 sm:px-4 sm:py-8">
       <button
-        aria-label="Close tenant provisioning modal"
+        aria-label="Đóng hộp thoại cấp phát tenant"
         className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
         onClick={onClose}
         type="button"
@@ -53,14 +53,14 @@ export const TenantRegisterModal = ({
           <div className="relative space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
               <Sparkles className="h-3.5 w-3.5" />
-              Tenant Provision Wizard
+              Trình hướng dẫn cấp phát tenant
             </div>
             <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
-              Create Organization, Admin, and Plan
+              Tạo tổ chức, tài khoản quản trị và gói dịch vụ
             </h3>
             <p className="max-w-2xl text-sm text-slate-500">
-              Complete the three-step flow, then submit one payload to provision
-              the tenant, admin account, plan, and storage resources.
+              Hoàn tất quy trình 3 bước, sau đó gửi một gói dữ liệu để cấp phát
+              tenant, tài khoản quản trị, gói dịch vụ và tài nguyên lưu trữ.
             </p>
           </div>
 
@@ -123,7 +123,7 @@ export const TenantRegisterModal = ({
               disabled={currentStep === 1 || isSubmitting}
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              Quay lại
             </Button>
 
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -133,9 +133,9 @@ export const TenantRegisterModal = ({
                 className="text-slate-600"
                 onClick={onClose}
                 disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+                >
+                  Hủy
+                </Button>
 
               {currentStep < 3 ? (
                 <Button
@@ -144,7 +144,7 @@ export const TenantRegisterModal = ({
                   onClick={onNext}
                   disabled={isSubmitting || isCheckingSubdomain || isCheckingAdminAvailability}
                 >
-                  Continue
+                  Tiếp tục
                 </Button>
               ) : (
                 <Button
@@ -154,7 +154,7 @@ export const TenantRegisterModal = ({
                     isSubmitting || !selectedPlan || !isStepTwoValid || !isStepOneValid
                   }
                 >
-                  {isSubmitting ? "Provisioning..." : "Register & Provision"}
+                  {isSubmitting ? "Đang cấp phát..." : "Đăng ký & cấp phát"}
                 </Button>
               )}
             </div>

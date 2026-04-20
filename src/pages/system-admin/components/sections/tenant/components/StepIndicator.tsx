@@ -37,7 +37,7 @@ export const StepIndicator = ({
         {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : step}
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#44546F]">Step {step}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#44546F]">Bước {step}</p>
         <p className="text-sm font-medium">{label}</p>
       </div>
     </div>

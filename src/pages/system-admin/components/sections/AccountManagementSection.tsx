@@ -21,7 +21,7 @@ interface IAccountManagementSectionProps {
 
 export const AccountManagementSection = ({ initialUser }: IAccountManagementSectionProps) => {
   const [currentUser, setCurrentUser] = useState<IAuthUser | undefined>(initialUser)
-  const [username, setUsername] = useState(initialUser?.username ?? "Inter Admin")
+  const [username, setUsername] = useState(initialUser?.username ?? "Quản trị viên")
   const [emailAddress, setEmailAddress] = useState(initialUser?.email ?? "admin@sovereign.arch")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -44,7 +44,7 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
         setEmailAddress(fetchedCurrentUser.email)
         setAvatarPreview(fetchedCurrentUser.avatar ?? "")
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load account information")
+        toast.error(error instanceof Error ? error.message : "Không thể tải thông tin tài khoản")
       }
     }
 
@@ -52,7 +52,7 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
   }, [initialUser])
 
   const initials = useMemo(() => {
-    const sourceName = username.trim() || "Admin User"
+    const sourceName = username.trim() || "Quản trị viên"
     return sourceName
       .split(" ")
       .slice(0, 2)
@@ -80,9 +80,9 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
         username: username.trim(),
         email: emailAddress.trim(),
       })
-      toast.success("Profile updated successfully")
+      toast.success("Cập nhật hồ sơ thành công")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile")
+      toast.error(error instanceof Error ? error.message : "Không thể cập nhật hồ sơ")
     } finally {
       setIsSavingProfile(false)
     }
@@ -90,7 +90,7 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
 
   const handleUpdateAvatar = async () => {
     if (!selectedAvatarFile) {
-      toast.error("Please choose an avatar image first")
+      toast.error("Vui lòng chọn ảnh đại diện trước")
       return
     }
 
@@ -98,10 +98,10 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
 
     try {
       await updateAvatar(selectedAvatarFile)
-      toast.success("Avatar updated successfully")
+      toast.success("Cập nhật ảnh đại diện thành công")
       setSelectedAvatarFile(null)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update avatar")
+      toast.error(error instanceof Error ? error.message : "Không thể cập nhật ảnh đại diện")
     } finally {
       setIsUpdatingAvatar(false)
     }
@@ -119,65 +119,74 @@ export const AccountManagementSection = ({ initialUser }: IAccountManagementSect
       }
 
       await changePassword(passwordInput)
-      toast.success("Password updated successfully")
+      toast.success("Cập nhật mật khẩu thành công")
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update password")
+      toast.error(error instanceof Error ? error.message : "Không thể cập nhật mật khẩu")
     } finally {
       setIsChangingPassword(false)
     }
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="border-b border-slate-200/80 pb-3">
+        <CardHeader className="border-b border-slate-200/80 pb-4">
           <CardTitle className="text-lg font-semibold text-slate-900">Cập nhật thông tin cá nhân</CardTitle>
+          <p className="text-sm text-slate-600">
+            Cập nhật hồ sơ quản trị viên và ảnh đại diện sử dụng trong toàn bộ trang quản trị hệ thống.
+          </p>
         </CardHeader>
-        <CardContent className="p-4 md:p-5">
-          <div className="grid gap-4 xl:grid-cols-[200px_minmax(0,1fr)]">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
             <ProfileAvatarUploader
               avatarPreview={avatarPreview}
               initials={initials}
+              hasPendingAvatar={Boolean(selectedAvatarFile)}
               isUpdatingAvatar={isUpdatingAvatar}
               onAvatarChange={handleAvatarChange}
               onUpdateAvatar={handleUpdateAvatar}
             />
 
-            <ProfileDetailsForm
-              username={username}
-              emailAddress={emailAddress}
-              isSavingProfile={isSavingProfile}
-              onUsernameChange={setUsername}
-              onEmailAddressChange={setEmailAddress}
-              onSubmit={handleSaveProfile}
-            />
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:p-5">
+              <ProfileDetailsForm
+                username={username}
+                emailAddress={emailAddress}
+                isSavingProfile={isSavingProfile}
+                onUsernameChange={setUsername}
+                onEmailAddressChange={setEmailAddress}
+                onSubmit={handleSaveProfile}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-slate-200/80 pb-3">
+          <CardHeader className="border-b border-slate-200/80 pb-4">
             <CardTitle className="text-lg font-semibold text-slate-900">Đổi mật khẩu</CardTitle>
+            <p className="text-sm text-slate-600">Sử dụng mật khẩu mạnh để tăng cường bảo mật tài khoản quản trị.</p>
           </CardHeader>
           <CardContent className="p-4 md:p-5">
-            <PasswordChangeForm
-              currentPassword={currentPassword}
-              newPassword={newPassword}
-              confirmPassword={confirmPassword}
-              isChangingPassword={isChangingPassword}
-              onCurrentPasswordChange={setCurrentPassword}
-              onNewPasswordChange={setNewPassword}
-              onConfirmPasswordChange={setConfirmPassword}
-              onSubmit={handleChangePassword}
-              isNewPasswordVisible={isNewPasswordVisible}
-              setIsNewPasswordVisible={setIsNewPasswordVisible}
-              isConfirmPasswordVisible={isConfirmPasswordVisible}
-              setIsConfirmPasswordVisible={setIsConfirmPasswordVisible}
-            />
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <PasswordChangeForm
+                currentPassword={currentPassword}
+                newPassword={newPassword}
+                confirmPassword={confirmPassword}
+                isChangingPassword={isChangingPassword}
+                onCurrentPasswordChange={setCurrentPassword}
+                onNewPasswordChange={setNewPassword}
+                onConfirmPasswordChange={setConfirmPassword}
+                onSubmit={handleChangePassword}
+                isNewPasswordVisible={isNewPasswordVisible}
+                setIsNewPasswordVisible={setIsNewPasswordVisible}
+                isConfirmPasswordVisible={isConfirmPasswordVisible}
+                setIsConfirmPasswordVisible={setIsConfirmPasswordVisible}
+              />
+            </div>
           </CardContent>
         </Card>
 
