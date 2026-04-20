@@ -9,12 +9,12 @@ import type { INewPlanInput, TBillingCycle, TBillingStatus } from "@/pages/syste
 const BILLING_CYCLES: TBillingCycle[] = ["Monthly", "Quarterly", "Yearly"]
 const BILLING_STATUS: TBillingStatus[] = ["Active", "Inactive"]
 const DEFAULT_FEATURES = [
-  "SSO Authentication",
-  "API Access",
-  "24/7 Priority Support",
-  "Advanced Analytics",
-  "Custom Domain",
-  "Audit Logs",
+  "Xác thực SSO",
+  "Truy cập API",
+  "Hỗ trợ ưu tiên 24/7",
+  "Phân tích nâng cao",
+  "Tên miền tùy chỉnh",
+  "Nhật ký kiểm toán",
 ]
 
 export const CreatePlanPage = () => {
@@ -78,12 +78,12 @@ export const CreatePlanPage = () => {
             className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:opacity-80"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Billing
+            Quay lại trang gói cước
           </button>
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-slate-950">Create New Subscription Plan</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-slate-950">Tạo gói dịch vụ mới</h1>
             <p className="text-base text-slate-600">
-              Define a new tier for the Sovereign Architect ecosystem. Ensure all resource limits are balanced.
+              Thiết lập bậc gói mới cho hệ thống. Đảm bảo giới hạn tài nguyên phù hợp với mục tiêu vận hành.
             </p>
           </div>
         </div>
@@ -94,13 +94,13 @@ export const CreatePlanPage = () => {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-lg">
             <form className="space-y-10 p-10" onSubmit={handleSubmit}>
-              {/* Plan Name & Status */}
+              {/* Tên gói & trạng thái */}
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <label className="space-y-3">
-                  <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Plan Name</span>
+                  <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Tên gói</span>
                   <input
                     className={inputClass}
-                    placeholder="e.g., Enterprise Plus"
+                    placeholder="VD: Enterprise Plus"
                     value={formState.name}
                     onChange={handleChange("name")}
                     required
@@ -108,7 +108,7 @@ export const CreatePlanPage = () => {
                   />
                 </label>
                 <label className="space-y-3">
-                  <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Plan Status</span>
+                  <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Trạng thái gói</span>
                   <select
                     className={inputClass}
                     value={formState.status}
@@ -116,39 +116,39 @@ export const CreatePlanPage = () => {
                   >
                     {BILLING_STATUS.map((status) => (
                       <option key={status} value={status}>
-                        {status.toUpperCase()}
+                        {status === "Active" ? "ĐANG HOẠT ĐỘNG" : "NGỪNG HOẠT ĐỘNG"}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
 
-              {/* Description */}
+              {/* Mô tả */}
               <label className="space-y-3">
-                <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Description</span>
+                <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Mô tả</span>
                 <textarea
                   className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 resize-none"
-                  placeholder="Briefly describe the target audience or key benefits"
+                  placeholder="Mô tả ngắn đối tượng sử dụng hoặc lợi ích chính của gói"
                   value={formState.description}
                   onChange={handleChange("description")}
                   rows={4}
                 />
               </label>
 
-              {/* Resource Configuration */}
+              {/* Cấu hình tài nguyên */}
               <div className="border-t border-slate-200 pt-8">
                 <div className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-600">
                   <Settings2 className="h-5 w-5 text-slate-500" />
-                  Resource Configuration
+                  Cấu hình tài nguyên
                 </div>
 
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
                   <label className="space-y-3">
-                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Storage Limit (GB)</span>
+                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Giới hạn lưu trữ (GB)</span>
                     <div className="relative">
                       <input
                         className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500"
-                        placeholder="e.g., 500"
+                          placeholder="VD: 500"
                         value={formState.storageLimit || ""}
                         onChange={handleChange("storageLimit")}
                         type="number"
@@ -158,10 +158,10 @@ export const CreatePlanPage = () => {
                   </label>
 
                   <label className="space-y-3">
-                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Max Users</span>
+                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Người dùng tối đa</span>
                     <input
                       className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500"
-                      placeholder="e.g., 50"
+                      placeholder="VD: 50"
                       value={formState.maxUsers || ""}
                       onChange={handleChange("maxUsers")}
                       type="number"
@@ -170,7 +170,7 @@ export const CreatePlanPage = () => {
                   </label>
 
                   <label className="space-y-3">
-                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Billing Cycle</span>
+                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Chu kỳ thanh toán</span>
                     <select
                       className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white px-4 py-3 text-slate-900"
                       value={formState.billingCycle}
@@ -178,19 +178,19 @@ export const CreatePlanPage = () => {
                     >
                       {BILLING_CYCLES.map((cycle) => (
                         <option key={cycle} value={cycle}>
-                          {cycle.toUpperCase()}
+                          {(cycle === "Monthly" ? "Hàng tháng" : cycle === "Quarterly" ? "Hàng quý" : "Hàng năm").toUpperCase()}
                         </option>
                       ))}
                     </select>
                   </label>
 
                   <label className="space-y-3">
-                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Price ($)</span>
+                    <span className="block text-sm font-bold uppercase tracking-wider text-slate-600">Giá ($)</span>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">$</span>
                       <input
                         className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white pl-8 pr-4 py-3 text-slate-900 placeholder:text-slate-500"
-                        placeholder="e.g., 199.00"
+                         placeholder="VD: 199.00"
                         value={formState.price || ""}
                         onChange={handleChange("price")}
                         type="number"
@@ -202,12 +202,12 @@ export const CreatePlanPage = () => {
                 </div>
               </div>
 
-              {/* Features */}
+              {/* Tính năng */}
               <div className="border-t border-slate-200 pt-8">
                 <div className="mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-600">
                     <ShieldCheck className="h-5 w-5 text-slate-500" />
-                    Plan Entitlements & Features
+                    Quyền lợi & tính năng gói
                   </div>
                   <button
                     type="button"
@@ -220,7 +220,7 @@ export const CreatePlanPage = () => {
                     }}
                   >
                     <Plus className="h-4 w-4" />
-                    Add Custom Feature
+                    Thêm tính năng tùy chỉnh
                   </button>
                 </div>
 
@@ -251,11 +251,11 @@ export const CreatePlanPage = () => {
                   })}
                 </div>
 
-                {/* Custom Feature Input */}
+                {/* Nhập tính năng tùy chỉnh */}
                 <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-[1.7fr_0.9fr]">
                   <input
                     className="create-plan-input w-full rounded-t-md border-b-2 border-transparent border-b-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500"
-                    placeholder="Add a custom feature"
+                    placeholder="Thêm tính năng tùy chỉnh"
                     value={customFeature}
                     onChange={(event) => setCustomFeature(event.target.value)}
                     type="text"
@@ -271,14 +271,14 @@ export const CreatePlanPage = () => {
                       }
                     }}
                   >
-                    Add Feature
+                    Thêm tính năng
                   </Button>
                 </div>
 
-                {/* Display custom features */}
+                {/* Hiển thị tính năng tùy chỉnh */}
                 {formState.features.some((f) => !DEFAULT_FEATURES.includes(f)) && (
                   <div className="mt-6">
-                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">Custom Features</p>
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">Tính năng tùy chỉnh</p>
                     <div className="flex flex-wrap gap-2">
                       {formState.features
                         .filter((f) => !DEFAULT_FEATURES.includes(f))
@@ -298,7 +298,7 @@ export const CreatePlanPage = () => {
                 )}
               </div>
 
-              {/* Actions */}
+              {/* Thao tác */}
               <div className="flex justify-end gap-4 border-t border-slate-200 pt-8">
                 <Button
                   type="button"
@@ -306,14 +306,14 @@ export const CreatePlanPage = () => {
                   className="rounded-md border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                   onClick={() => navigate(-1)}
                 >
-                  Cancel
+                  Hủy
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmitting}
                   className="rounded-md bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-700/20 transition-all hover:shadow-blue-700/30 disabled:opacity-70"
                 >
-                  {isSubmitting ? "Creating..." : "Create & Publish Plan"}
+                  {isSubmitting ? "Đang tạo..." : "Tạo & xuất bản gói"}
                 </Button>
               </div>
             </form>

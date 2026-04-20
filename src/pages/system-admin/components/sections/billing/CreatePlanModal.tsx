@@ -19,12 +19,12 @@ interface ICreatePlanModalProps {
 const BILLING_CYCLES: TBillingCycle[] = ["Monthly", "Quarterly", "Yearly"]
 const BILLING_STATUS: TBillingStatus[] = ["Active", "Inactive"]
 const DEFAULT_FEATURES = [
-  "SSO Authentication",
-  "API Access",
-  "24/7 Priority Support",
-  "Advanced Analytics",
-  "Custom Domain",
-  "Audit Logs",
+  "Xác thực SSO",
+  "Truy cập API",
+  "Hỗ trợ ưu tiên 24/7",
+  "Phân tích nâng cao",
+  "Tên miền tùy chỉnh",
+  "Nhật ký kiểm toán",
 ]
 
 export const CreatePlanModal = ({
@@ -47,7 +47,7 @@ export const CreatePlanModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-4 sm:py-8">
       <button
-        aria-label="Close create plan modal"
+        aria-label="Đóng hộp thoại tạo gói"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
         onClick={onClose}
         type="button"
@@ -56,8 +56,8 @@ export const CreatePlanModal = ({
       <div className="relative z-10 my-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <h3 className="text-xl font-semibold text-slate-900">Create New Subscription Plan</h3>
-            <p className="mt-1 text-sm text-slate-500">Define a new tier with resources, features, and pricing.</p>
+            <h3 className="text-xl font-semibold text-slate-900">Tạo gói dịch vụ mới</h3>
+            <p className="mt-1 text-sm text-slate-500">Thiết lập bậc gói mới với tài nguyên, tính năng và mức giá.</p>
           </div>
           <button
             className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
@@ -72,13 +72,13 @@ export const CreatePlanModal = ({
           className="grid max-h-[calc(100vh-9rem)] gap-4 overflow-y-auto px-6 py-5 md:max-h-[calc(100vh-11rem)] md:grid-cols-2"
           onSubmit={onSubmit}
         >
-          {/* Plan Name & Status */}
+          {/* Tên gói & trạng thái */}
           <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Plan Name</span>
+              <span className="text-sm font-medium text-slate-700">Tên gói</span>
               <input
                 className={inputClass}
-                placeholder="e.g., Enterprise Plus"
+                placeholder="VD: Enterprise Plus"
                 value={formState.name}
                 onChange={onChange("name")}
                 required
@@ -86,34 +86,34 @@ export const CreatePlanModal = ({
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Status</span>
+              <span className="text-sm font-medium text-slate-700">Trạng thái</span>
               <select className={inputClass} value={formState.status} onChange={onChange("status")}>
                 {BILLING_STATUS.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {status === "Active" ? "Đang hoạt động" : "Ngừng hoạt động"}
                   </option>
                 ))}
               </select>
             </label>
           </div>
 
-          {/* Description */}
+          {/* Mô tả */}
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Mô tả</span>
             <textarea
               className="h-20 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-600 resize-none"
-              placeholder="Briefly describe the plan"
+              placeholder="Mô tả ngắn gọn về gói"
               value={formState.description}
               onChange={onChange("description")}
             />
           </label>
 
-          {/* Resource Configuration */}
+          {/* Cấu hình tài nguyên */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 md:col-span-2">
-            <h4 className="mb-3 text-sm font-semibold text-slate-900">Resource Configuration</h4>
+            <h4 className="mb-3 text-sm font-semibold text-slate-900">Cấu hình tài nguyên</h4>
             <div className="grid gap-3 md:grid-cols-4">
               <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Storage (GB)</span>
+                <span className="text-xs font-medium text-slate-600">Lưu trữ (GB)</span>
                 <input
                   className={inputClass}
                   placeholder="500"
@@ -124,7 +124,7 @@ export const CreatePlanModal = ({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Max Users</span>
+                <span className="text-xs font-medium text-slate-600">Người dùng tối đa</span>
                 <input
                   className={inputClass}
                   placeholder="50"
@@ -135,17 +135,17 @@ export const CreatePlanModal = ({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Billing Cycle</span>
+                <span className="text-xs font-medium text-slate-600">Chu kỳ thanh toán</span>
                 <select className={inputClass} value={formState.billingCycle} onChange={onChange("billingCycle")}>
                   {BILLING_CYCLES.map((cycle) => (
                     <option key={cycle} value={cycle}>
-                      {cycle}
+                      {cycle === "Monthly" ? "Hàng tháng" : cycle === "Quarterly" ? "Hàng quý" : "Hàng năm"}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Price ($)</span>
+                <span className="text-xs font-medium text-slate-600">Giá ($)</span>
                 <input
                   className={inputClass}
                   placeholder="199.00"
@@ -159,10 +159,10 @@ export const CreatePlanModal = ({
             </div>
           </div>
 
-          {/* Features */}
+          {/* Tính năng */}
           <div className="md:col-span-2">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-900">Features</span>
+              <span className="text-sm font-semibold text-slate-900">Tính năng</span>
               <button
                 type="button"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
@@ -174,7 +174,7 @@ export const CreatePlanModal = ({
                 }}
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add Custom
+                Thêm tùy chỉnh
               </button>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
@@ -196,11 +196,11 @@ export const CreatePlanModal = ({
               })}
             </div>
 
-            {/* Custom Feature Input */}
+            {/* Nhập tính năng tùy chỉnh */}
             <div className="mt-3 flex gap-2">
               <input
                 className={inputClass}
-                placeholder="Custom feature name"
+                placeholder="Tên tính năng tùy chỉnh"
                 value={customFeature}
                 onChange={(event) => onCustomFeatureChange(event.target.value)}
                 type="text"
@@ -215,24 +215,24 @@ export const CreatePlanModal = ({
                     onCustomFeatureChange("")
                   }
                 }}
-              >
-                Add
+                >
+                Thêm
               </Button>
             </div>
           </div>
 
-          {/* Info Box */}
+          {/* Hộp thông tin */}
           <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-xs text-blue-800 md:col-span-2">
-            The plan will be created with the specified name, status, resources, and features. All settings can be modified later.
+            Gói sẽ được tạo theo tên, trạng thái, tài nguyên và tính năng đã chọn. Bạn có thể chỉnh sửa lại toàn bộ thiết lập sau đó.
           </div>
 
-          {/* Actions */}
+          {/* Thao tác */}
           <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-4 md:col-span-2">
             <Button type="button" variant="ghost" className="text-slate-600" onClick={onClose}>
-              Cancel
+              Hủy
             </Button>
             <Button className="bg-blue-700 text-white hover:bg-blue-800" type="submit">
-              Create Plan
+              Tạo gói
             </Button>
           </div>
         </form>

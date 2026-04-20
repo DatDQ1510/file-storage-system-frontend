@@ -4,7 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Power, Search } fr
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getTenantStatusClassName } from "@/pages/system-admin/constants"
+import { getTenantStatusClassName, getTenantStatusLabel } from "@/pages/system-admin/constants"
 import { TenantRegisterModal } from "@/pages/system-admin/components/sections/tenant/TenantRegisterModal"
 import type {
   ITenantProvisionFormState,
@@ -97,7 +97,7 @@ export const TenantsSection = ({
       setHasPrevious(tenantPage.hasPrevious)
       setIsUsingMockData(Boolean(tenantPage.isMockData))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load tenant list")
+      toast.error(error instanceof Error ? error.message : "Không thể tải danh sách tenant")
     } finally {
       setIsLoadingTenants(false)
     }
@@ -118,7 +118,7 @@ export const TenantsSection = ({
           name: plan.name,
           storageQuota:
             plan.storageLimit === undefined || plan.storageLimit === null
-              ? "N/A"
+              ? "Không có"
               : typeof plan.storageLimit === "number"
                 ? `${plan.storageLimit} GB`
                 : String(plan.storageLimit),
@@ -148,7 +148,7 @@ export const TenantsSection = ({
           })
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load subscription plans")
+          toast.error(error instanceof Error ? error.message : "Không thể tải danh sách gói dịch vụ")
       } finally {
         setIsLoadingPlans(false)
       }
@@ -164,13 +164,13 @@ export const TenantsSection = ({
     const infrastructureLoad = Math.round(
       tenants.length > 0 ? (totalQuotaPercent / (tenants.length * 100)) * 100 : 0
     )
-    const revenueRunRate = `$${(tenants.filter((tenant) => tenant.status === "Active").length * 0.8 + 1.6).toFixed(1)}M`
+      const revenueRunRate = `$${(tenants.filter((tenant) => tenant.status === "Active").length * 0.8 + 1.6).toFixed(1)}M`
 
     return [
-      { label: "Total Enterprises", value: totalEnterprises.toLocaleString("en-US"), foot: "+12% this month" },
-      { label: "Active Trials", value: activeTrials.toString(), foot: "pending conversion" },
-      { label: "Infrastructure Load", value: `${Math.min(infrastructureLoad, 100)}%`, foot: "stable across clusters" },
-      { label: "Revenue Run Rate", value: revenueRunRate, foot: "annualized growth +24%" },
+      { label: "Tổng doanh nghiệp", value: totalEnterprises.toLocaleString("vi-VN"), foot: "+12% trong tháng này" },
+      { label: "Tenant dùng thử", value: activeTrials.toString(), foot: "đang chờ chuyển đổi" },
+      { label: "Mức tải hạ tầng", value: `${Math.min(infrastructureLoad, 100)}%`, foot: "ổn định trên các cụm" },
+      { label: "Tốc độ doanh thu", value: revenueRunRate, foot: "tăng trưởng quy đổi năm +24%" },
     ]
   }, [tenants])
 
@@ -231,12 +231,12 @@ export const TenantsSection = ({
   const handleNextStep = async () => {
     if (currentStep === 1) {
       if (!formState.companyName.trim()) {
-        toast.error("Please enter company name.")
+        toast.error("Vui lòng nhập tên công ty.")
         return
       }
 
       if (!formState.subdomain.trim()) {
-        toast.error("Please enter tenant domain.")
+        toast.error("Vui lòng nhập domain tenant.")
         return
       }
 
@@ -247,11 +247,11 @@ export const TenantsSection = ({
         setSubdomainAvailability(availability)
 
         if (!availability.isAvailable) {
-          toast.error(availability.message || "Domain tenant already exists")
+          toast.error(availability.message || "Domain tenant đã tồn tại")
           return
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to verify tenant domain."
+        const message = error instanceof Error ? error.message : "Không thể kiểm tra domain tenant."
         setSubdomainAvailability({
           subdomain: normalizeSubdomainValue(formState.subdomain),
           isAvailable: false,
@@ -266,7 +266,7 @@ export const TenantsSection = ({
 
     if (currentStep === 2) {
       if (!formState.adminFullName.trim() || !formState.adminEmail.trim() || !formState.adminPhoneNumber.trim()) {
-        toast.error("Please complete the admin information first.")
+        toast.error("Vui lòng hoàn tất thông tin quản trị viên trước.")
         return
       }
 
@@ -281,11 +281,11 @@ export const TenantsSection = ({
         setAdminAvailability(availability)
 
         if (!availability.available) {
-          toast.error(availability.message || "Email or phone number already exists")
+          toast.error(availability.message || "Email hoặc số điện thoại đã tồn tại")
           return
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to verify tenant admin."
+        const message = error instanceof Error ? error.message : "Không thể kiểm tra tài khoản quản trị viên tenant."
         setAdminAvailability({
           available: false,
           message,
@@ -319,31 +319,31 @@ export const TenantsSection = ({
     event.preventDefault()
 
     if (!formState.companyName.trim()) {
-      toast.error("Please enter company name.")
+      toast.error("Vui lòng nhập tên công ty.")
       setCurrentStep(1)
       return
     }
 
     if (!formState.subdomain.trim()) {
-      toast.error("Please enter tenant domain.")
+      toast.error("Vui lòng nhập domain tenant.")
       setCurrentStep(1)
       return
     }
 
     if (!formState.adminFullName.trim() || !formState.adminEmail.trim() || !formState.adminPhoneNumber.trim()) {
-      toast.error("Please complete the admin information first.")
+      toast.error("Vui lòng hoàn tất thông tin quản trị viên trước.")
       setCurrentStep(2)
       return
     }
 
     if (formState.adminFullName.trim().length > 100) {
-      toast.error("Username must be at most 100 characters.")
+      toast.error("Tên đăng nhập tối đa 100 ký tự.")
       setCurrentStep(2)
       return
     }
 
     if (!selectedPlan.id?.trim()) {
-      toast.error("Selected plan is invalid. Please reload subscription plans and try again.")
+      toast.error("Gói đã chọn không hợp lệ. Vui lòng tải lại danh sách gói và thử lại.")
       setCurrentStep(3)
       return
     }
@@ -363,7 +363,7 @@ export const TenantsSection = ({
     setIsConfirmingProvision(true)
     return
 
-    // The actual provisioning request is handled when the user confirms the modal.
+    // Yêu cầu cấp phát thực tế sẽ được thực hiện sau khi người dùng xác nhận hộp thoại.
   }
 
   const handleCancelProvision = () => {
@@ -377,7 +377,7 @@ export const TenantsSection = ({
     }
 
     if (!pendingProvisionInput.plan.id?.trim()) {
-      toast.error("Missing planId. Please re-select a valid subscription plan.")
+      toast.error("Thiếu planId. Vui lòng chọn lại gói dịch vụ hợp lệ.")
       setIsConfirmingProvision(false)
       setCurrentStep(3)
       return
@@ -397,8 +397,8 @@ export const TenantsSection = ({
           plan: pendingProvisionInput.plan.name,
           quotaUsed: pendingProvisionInput.plan.storageQuota,
           quotaPercent: 0,
-          createdDate: new Date().toLocaleDateString("en-US", {
-            month: "short",
+          createdDate: new Date().toLocaleDateString("vi-VN", {
+            month: "2-digit",
             day: "2-digit",
             year: "numeric",
           }),
@@ -408,8 +408,8 @@ export const TenantsSection = ({
         },
         ...current,
       ])
-      toast.success("Tenant provisioned successfully.", {
-        description: `Domain: ${provisionResult.tenantDomain}`,
+      toast.success("Cấp phát tenant thành công.", {
+        description: `Tên miền: ${provisionResult.tenantDomain}`,
       })
 
       setFormState(INITIAL_TENANT_PROVISION_FORM_STATE)
@@ -420,7 +420,7 @@ export const TenantsSection = ({
       onCloseRegisterTenant()
       setTotalElements((current) => current + 1)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to provision tenant")
+      toast.error(error instanceof Error ? error.message : "Không thể cấp phát tenant")
     } finally {
       setIsSubmitting(false)
     }
@@ -453,11 +453,11 @@ export const TenantsSection = ({
 
       toast.success(
         nextStatus === "Suspended"
-          ? "Tenant status changed to Suspended"
-          : "Tenant status changed to Active"
+          ? "Đã chuyển trạng thái tenant sang Tạm ngưng"
+          : "Đã chuyển trạng thái tenant sang Đang hoạt động"
       )
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update tenant status")
+      toast.error(error instanceof Error ? error.message : "Không thể cập nhật trạng thái tenant")
     } finally {
       setUpdatingTenantId(null)
     }
@@ -509,11 +509,11 @@ export const TenantsSection = ({
       <Card className="border-slate-200 bg-white">
         <CardHeader className="flex-row items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Active Enterprise Tenants</CardTitle>
-            <p className="mt-1 text-xs text-slate-500">Monitor tenant status, plan usage, and onboarding date in one table.</p>
+            <CardTitle className="text-lg font-semibold text-slate-900">Danh sách tenant doanh nghiệp</CardTitle>
+            <p className="mt-1 text-xs text-slate-500">Theo dõi trạng thái, mức sử dụng gói và thời điểm khởi tạo tenant trong một bảng.</p>
             {isUsingMockData && (
               <p className="mt-1 text-xs font-semibold text-amber-600">
-                Using mock tenant data because tenant listing API is unavailable.
+                Đang dùng dữ liệu tenant mẫu vì API danh sách tenant chưa khả dụng.
               </p>
             )}
           </div>
@@ -523,7 +523,7 @@ export const TenantsSection = ({
               <Search className="h-4 w-4 text-slate-500" />
               <input
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                placeholder="Search tenants..."
+                placeholder="Tìm tenant..."
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -535,10 +535,10 @@ export const TenantsSection = ({
               onChange={(event) => setSelectedStatus(event.target.value as TTenantStatus | "all")}
               value={selectedStatus}
             >
-              <option value="all">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Trial">Trial</option>
-              <option value="Suspended">Suspended</option>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="Active">Đang hoạt động</option>
+              <option value="Trial">Dùng thử</option>
+              <option value="Suspended">Tạm ngưng</option>
             </select>
 
             <Button
@@ -552,7 +552,7 @@ export const TenantsSection = ({
               }}
             >
               <Filter className="h-4 w-4" />
-              Reset
+              Đặt lại
               <ChevronDown className="h-4 w-4" />
             </Button>
 
@@ -561,10 +561,10 @@ export const TenantsSection = ({
               onChange={handleOffsetChange}
               value={offset}
             >
-              <option value={5}>5 / page</option>
-              <option value={10}>10 / page</option>
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
+              <option value={5}>5 / trang</option>
+              <option value={10}>10 / trang</option>
+              <option value={20}>20 / trang</option>
+              <option value={50}>50 / trang</option>
             </select>
 
           </div>
@@ -574,27 +574,27 @@ export const TenantsSection = ({
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                <th className="py-3">Business Name</th>
-                <th className="py-3">Admin Contact</th>
-                <th className="py-3">Status</th>
-                <th className="py-3">Plan</th>
-                <th className="py-3">Quota Used</th>
-                <th className="py-3">Region</th>
-                <th className="py-3">Created Date</th>
-                <th className="py-3 text-center">Actions</th>
+                <th className="py-3">Tên doanh nghiệp</th>
+                <th className="py-3">Liên hệ quản trị</th>
+                <th className="py-3">Trạng thái</th>
+                <th className="py-3">Gói</th>
+                <th className="py-3">Dung lượng đã dùng</th>
+                <th className="py-3">Khu vực</th>
+                <th className="py-3">Ngày tạo</th>
+                <th className="py-3 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {isLoadingTenants ? (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
-                    Loading tenants...
+                    Đang tải danh sách tenant...
                   </td>
                 </tr>
               ) : filteredTenants.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
-                    No tenants found for the current filter.
+                    Không tìm thấy tenant phù hợp bộ lọc hiện tại.
                   </td>
                 </tr>
               ) : (
@@ -610,7 +610,7 @@ export const TenantsSection = ({
                     </td>
                     <td>
                       <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getTenantStatusClassName(tenant.status))}>
-                        {tenant.status}
+                        {getTenantStatusLabel(tenant.status)}
                       </span>
                     </td>
                     <td className="text-slate-700">{tenant.plan}</td>
@@ -633,7 +633,7 @@ export const TenantsSection = ({
                           onClick={() => handleViewTenantDetail(tenant)}
                         >
                           <Eye className="h-4 w-4" />
-                          Detail
+                          Chi tiết
                         </Button>
                         <Button
                           size="sm"
@@ -643,7 +643,7 @@ export const TenantsSection = ({
                           disabled={updatingTenantId === (tenant.id ?? tenant.businessName)}
                         >
                           <Power className="h-4 w-4" />
-                          {tenant.status === "Suspended" ? "Activate" : "Disable"}
+                          {tenant.status === "Suspended" ? "Kích hoạt" : "Tạm ngưng"}
                         </Button>
                       </div>
                     </td>
@@ -655,7 +655,7 @@ export const TenantsSection = ({
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <p>
-              Showing page <span className="font-semibold text-slate-900">{page + 1}</span> / {totalPages} - total tenants: {totalElements}
+              Trang <span className="font-semibold text-slate-900">{page + 1}</span> / {totalPages} - tổng tenant: {totalElements}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -666,7 +666,7 @@ export const TenantsSection = ({
                 disabled={!hasPrevious || isLoadingTenants}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Prev
+                Trước
               </Button>
               <Button
                 size="sm"
@@ -675,7 +675,7 @@ export const TenantsSection = ({
                 onClick={handleNextPage}
                 disabled={!hasNext || isLoadingTenants}
               >
-                Next
+                Sau
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -707,10 +707,10 @@ export const TenantsSection = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-              <h3 className="text-lg font-semibold text-slate-900">Xác nhận Provision Tenant</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Vui lòng kiểm tra lại thông tin tenant trước khi gửi yêu cầu provisioning.
-              </p>
+              <h3 className="text-lg font-semibold text-slate-900">Xác nhận cấp phát tenant</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Vui lòng kiểm tra lại thông tin tenant trước khi gửi yêu cầu cấp phát.
+                </p>
             </div>
 
             <div className="space-y-4 p-6 text-sm text-slate-700">
@@ -720,11 +720,11 @@ export const TenantsSection = ({
                   <p className="font-medium text-slate-900">{pendingProvisionInput.companyName}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Domain tenant</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tên miền tenant</p>
                   <p className="font-medium text-slate-900">{pendingProvisionInput.subdomain}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Root admin</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quản trị viên</p>
                   <p className="font-medium text-slate-900">{pendingProvisionInput.admin.fullName}</p>
                 </div>
                 <div>
@@ -752,7 +752,7 @@ export const TenantsSection = ({
                 onClick={handleConfirmProvision}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Provisioning..." : "Xác nhận & Provision"}
+                  {isSubmitting ? "Đang cấp phát..." : "Xác nhận & cấp phát"}
               </Button>
             </div>
           </div>
@@ -763,56 +763,56 @@ export const TenantsSection = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-              <h3 className="text-lg font-semibold text-slate-900">Tenant Detail</h3>
-              <p className="mt-1 text-sm text-slate-600">Tenant information and current plan snapshot.</p>
+              <h3 className="text-lg font-semibold text-slate-900">Chi tiết tenant</h3>
+              <p className="mt-1 text-sm text-slate-600">Thông tin tenant và ảnh chụp nhanh trạng thái gói hiện tại.</p>
             </div>
 
             <div className="grid gap-4 p-6 text-sm text-slate-700 sm:grid-cols-2">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tenant Name</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tên tenant</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.businessName}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Domain</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tên miền</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.nodeCode}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quản trị viên</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.adminName}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin Email</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Email quản trị viên</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.adminEmail}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin Phone</p>
-                <p className="font-medium text-slate-900">{selectedTenantDetail.adminPhoneNumber ?? "N/A"}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Số điện thoại quản trị viên</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.adminPhoneNumber ?? "Không có"}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Status</p>
-                <p className="font-medium text-slate-900">{selectedTenantDetail.status}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Trạng thái</p>
+                <p className="font-medium text-slate-900">{getTenantStatusLabel(selectedTenantDetail.status)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Plan</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Gói dịch vụ</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.plan}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quota Used</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Dung lượng đã dùng</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.quotaUsed}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Created Date</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Ngày tạo</p>
                 <p className="font-medium text-slate-900">{selectedTenantDetail.createdDate}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Plan Status</p>
-                <p className="font-medium text-slate-900">{selectedTenantDetail.tenantPlanStatus ?? "N/A"}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Trạng thái gói</p>
+                <p className="font-medium text-slate-900">{selectedTenantDetail.tenantPlanStatus ?? "Không có"}</p>
               </div>
             </div>
 
             <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
               <Button type="button" variant="ghost" onClick={handleCloseTenantDetail}>
-                Close
+                Đóng
               </Button>
             </div>
           </div>

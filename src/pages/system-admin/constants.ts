@@ -15,16 +15,16 @@ import type {
 
 export const SYSTEM_NAV_GROUPS: ISystemNavGroup[] = [
   {
-    title: "Operations",
+    title: "Vận hành",
     items: [
-      { label: "Dashboard", icon: Activity, section: "dashboard" },
-      { label: "Tenant Management", icon: Building2, section: "tenants" },
-      { label: "Billing & Plans", icon: CreditCard, section: "billing" },
+      { label: "Tổng quan", icon: Activity, section: "dashboard" },
+      { label: "Quản lý tenant", icon: Building2, section: "tenants" },
+      { label: "Gói cước & thanh toán", icon: CreditCard, section: "billing" },
     ],
   },
   {
-    title: "Settings",
-    items: [{ label: "Account Management", icon: UserCog, section: "account-management" }],
+    title: "Thiết lập",
+    items: [{ label: "Quản lý tài khoản", icon: UserCog, section: "account-management" }],
   },
 ]
 
@@ -36,8 +36,8 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     plan: "Enterprise Plus",
     quotaUsed: "8.2 TB",
     quotaPercent: 82,
-    createdDate: "Oct 24, 2023",
-    region: "Vietnam",
+    createdDate: "24/10/2023",
+    region: "Việt Nam",
     adminName: "Minh Nguyen",
     adminEmail: "minh.nguyen@vintech.vn",
   },
@@ -48,8 +48,8 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     plan: "Professional",
     quotaUsed: "0.4 TB",
     quotaPercent: 8,
-    createdDate: "Jan 12, 2024",
-    region: "Vietnam",
+    createdDate: "12/01/2024",
+    region: "Việt Nam",
     adminName: "Linh Tran",
     adminEmail: "linh.tran@aether.media",
   },
@@ -60,8 +60,8 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
     plan: "Enterprise",
     quotaUsed: "5.1 TB",
     quotaPercent: 51,
-    createdDate: "Aug 05, 2022",
-    region: "Vietnam",
+    createdDate: "05/08/2022",
+    region: "Việt Nam",
     adminName: "David Hoang",
     adminEmail: "david.hoang@globaldynamics.io",
   },
@@ -69,42 +69,42 @@ export const TENANT_TABLE_DATA: ITenantRecord[] = [
 
 export const PLAN_CARDS: IPlanCard[] = [
   {
-    tier: "Tier 01",
-    name: "Free",
+    tier: "Bậc 01",
+    name: "Miễn phí",
     price: "$0",
-    period: "/month",
+    period: "/tháng",
     features: [
-      "Up to 3 active tenants",
-      "5GB shared storage",
-      "Basic audit logs (7 days)",
-      "Custom subdomains",
+      "Tối đa 3 tenant đang hoạt động",
+      "5GB dung lượng dùng chung",
+      "Nhật ký kiểm toán cơ bản (7 ngày)",
+      "Hỗ trợ subdomain tùy chỉnh",
     ],
     tenants: "1,248",
   },
   {
-    tier: "Tier 02",
-    name: "Professional",
+    tier: "Bậc 02",
+    name: "Chuyên nghiệp",
     price: "$49",
-    period: "/month",
+    period: "/tháng",
     isHighlighted: true,
     features: [
-      "Up to 25 active tenants",
-      "100GB shared storage",
-      "Custom subdomains & SSL",
-      "Standard support (24h)",
+      "Tối đa 25 tenant đang hoạt động",
+      "100GB dung lượng dùng chung",
+      "Subdomain tùy chỉnh & SSL",
+      "Hỗ trợ tiêu chuẩn (24 giờ)",
     ],
     tenants: "856",
   },
   {
-    tier: "Tier 03",
-    name: "Enterprise",
+    tier: "Bậc 03",
+    name: "Doanh nghiệp",
     price: "$199",
-    period: "/month",
+    period: "/tháng",
     features: [
-      "Unlimited tenants",
-      "1TB storage + Auto-scale",
-      "SAML/SSO integration",
-      "Priority support (1h)",
+      "Không giới hạn tenant",
+      "1TB lưu trữ + tự động mở rộng",
+      "Tích hợp SAML/SSO",
+      "Hỗ trợ ưu tiên (1 giờ)",
     ],
     tenants: "142",
   },
@@ -115,49 +115,49 @@ export const TENANT_PROVISION_PLANS: ITenantProvisionPlan[] = [
     name: "Basic",
     storageQuota: "100 GB",
     maxUsers: 20,
-    description: "Entry plan for small internal teams and pilot tenant deployments.",
+    description: "Gói khởi điểm cho đội nhóm nhỏ và các tenant triển khai thử nghiệm.",
   },
   {
     name: "Pro",
     storageQuota: "1 TB",
     maxUsers: 100,
-    description: "Balanced provisioning for growing organizations that need stronger throughput.",
+    description: "Gói cân bằng cho tổ chức đang tăng trưởng, cần thông lượng ổn định.",
   },
   {
     name: "Enterprise",
     storageQuota: "10 TB",
     maxUsers: 500,
-    description: "Full-scale provisioning with dedicated capacity and advanced governance.",
+    description: "Gói toàn diện với tài nguyên chuyên biệt và chính sách quản trị nâng cao.",
   },
 ]
 
 export const getSectionTitle = (section: TSystemSection) => {
   switch (section) {
     case "dashboard":
-      return "Dashboard"
+      return "Tổng quan"
     case "tenants":
-      return "Tenant Management"
+      return "Quản lý tenant"
     case "billing":
-      return "Quản lý Gói cước"
+      return "Quản lý gói cước"
     case "account-management":
-      return "Account Management"
+      return "Quản lý tài khoản"
   }
 }
 
 export const getSectionDescription = (section: TSystemSection) => {
   if (section === "dashboard") {
-    return "Monitor health, infrastructure throughput, and critical security signals across all regions."
+    return "Theo dõi sức khỏe hệ thống, năng lực hạ tầng và các tín hiệu bảo mật trọng yếu trên toàn nền tảng."
   }
 
   if (section === "tenants") {
-    return "Manage enterprise tenants, register new workspaces, and monitor workspace usage trends."
+    return "Quản lý tenant doanh nghiệp, đăng ký workspace mới và theo dõi xu hướng sử dụng tài nguyên."
   }
 
   if (section === "account-management") {
-    return "Update personal details, avatar, and password with a dedicated admin settings screen."
+    return "Cập nhật thông tin cá nhân, ảnh đại diện, mật khẩu và thiết lập bảo mật cho tài khoản quản trị."
   }
 
-  return "Define pricing tiers, billing safeguards, and platform-wide revenue control settings."
+  return "Thiết lập gói dịch vụ, quy tắc thanh toán và các thông số kiểm soát doanh thu toàn hệ thống."
 }
 
 export const getTenantStatusClassName = (status: TTenantStatus) => {
@@ -170,4 +170,10 @@ export const getTenantStatusClassName = (status: TTenantStatus) => {
   }
 
   return "bg-red-100 text-red-700"
+}
+
+export const getTenantStatusLabel = (status: TTenantStatus) => {
+  if (status === "Active") return "Đang hoạt động"
+  if (status === "Trial") return "Dùng thử"
+  return "Tạm ngưng"
 }

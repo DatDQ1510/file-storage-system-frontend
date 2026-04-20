@@ -13,25 +13,25 @@ import { cn } from "@/lib/utils"
 
 const DASHBOARD_SUMMARY = [
   {
-    label: "Total Tenants",
+    label: "Tổng tenant",
     value: "1,248",
-    note: "+34 this month",
+    note: "+34 trong tháng này",
     trend: "+2.8%",
     icon: Building2,
     tone: "text-blue-700 bg-blue-100",
   },
   {
-    label: "Active Subscriptions",
+    label: "Gói đang hoạt động",
     value: "1,102",
-    note: "88.3% tenant base",
+    note: "88.3% tổng số tenant",
     trend: "+1.6%",
     icon: CreditCard,
     tone: "text-emerald-700 bg-emerald-100",
   },
   {
-    label: "Trial Conversion",
+    label: "Tỷ lệ chuyển đổi dùng thử",
     value: "31.6%",
-    note: "Last 30 days",
+    note: "30 ngày gần nhất",
     trend: "+4.2%",
     icon: TrendingUp,
     tone: "text-cyan-700 bg-cyan-100",
@@ -39,7 +39,7 @@ const DASHBOARD_SUMMARY = [
   {
     label: "MRR",
     value: "$482K",
-    note: "Net monthly recurring revenue",
+    note: "Doanh thu định kỳ ròng theo tháng",
     trend: "+8.4%",
     icon: BarChart3,
     tone: "text-amber-700 bg-amber-100",
@@ -47,52 +47,52 @@ const DASHBOARD_SUMMARY = [
 ]
 
 const PLAN_DISTRIBUTION = [
-  { label: "Basic", tenants: 468, percent: 38, color: "bg-slate-500" },
-  { label: "Pro", tenants: 592, percent: 47, color: "bg-blue-500" },
-  { label: "Enterprise", tenants: 188, percent: 15, color: "bg-emerald-500" },
+  { label: "Cơ bản", tenants: 468, percent: 38, color: "bg-slate-500" },
+  { label: "Chuyên nghiệp", tenants: 592, percent: 47, color: "bg-blue-500" },
+  { label: "Doanh nghiệp", tenants: 188, percent: 15, color: "bg-emerald-500" },
 ]
 
 const TENANT_LIFECYCLE = [
   {
-    stage: "Trial Started",
+    stage: "Bắt đầu dùng thử",
     count: "312",
     percent: 100,
     color: "bg-slate-500",
-    note: "All new tenant signups",
+    note: "Toàn bộ tenant đăng ký mới",
   },
   {
-    stage: "Activated",
+    stage: "Đã kích hoạt",
     count: "225",
     percent: 72,
     color: "bg-blue-600",
-    note: "Setup password completed",
+    note: "Đã hoàn tất đặt mật khẩu",
   },
   {
-    stage: "Paid Conversion",
+    stage: "Chuyển đổi trả phí",
     count: "99",
     percent: 31.6,
     color: "bg-emerald-500",
-    note: "Converted from trial",
+    note: "Chuyển đổi từ gói dùng thử",
   },
 ]
 
 const EXECUTIVE_ALERTS = [
   {
-    title: "Renewals in next 7 days",
-    value: "48 tenants",
-    description: "Focus account team on high-MRR renewals to reduce churn risk.",
+    title: "Gia hạn trong 7 ngày tới",
+    value: "48 tenant",
+    description: "Ưu tiên nhóm chăm sóc khách hàng cho các hợp đồng MRR cao để giảm rủi ro rời bỏ.",
     tone: "border-amber-200 bg-amber-50 text-amber-900",
   },
   {
-    title: "Tenants near user limit",
-    value: "27 tenants",
-    description: "Strong upsell candidates for plan upgrade campaigns.",
+    title: "Tenant gần chạm giới hạn người dùng",
+    value: "27 tenant",
+    description: "Nhóm khách hàng tiềm năng cho chiến dịch nâng cấp gói.",
     tone: "border-blue-200 bg-blue-50 text-blue-900",
   },
   {
-    title: "Plan downgrade signals",
-    value: "12 tenants",
-    description: "Usage dropped below 40% for two consecutive billing cycles.",
+    title: "Tín hiệu hạ cấp gói",
+    value: "12 tenant",
+    description: "Mức sử dụng giảm dưới 40% trong hai chu kỳ thanh toán liên tiếp.",
     tone: "border-rose-200 bg-rose-50 text-rose-900",
   },
 ]
@@ -105,29 +105,28 @@ export const DashboardSection = () => {
           <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-cyan-400/20 blur-3xl" />
           <CardHeader className="pb-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200/90">
-              Portfolio Overview
+              Tổng quan danh mục
             </p>
             <CardTitle className="text-2xl font-bold tracking-tight">
-              Tenant & Subscription Performance
+              Hiệu suất tenant & gói đăng ký
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="max-w-2xl text-sm text-slate-200">
-              Revenue growth remains stable with strong Pro plan adoption. Immediate
-              focus should be trial-to-paid acceleration and enterprise renewal
-              protection.
+              Tăng trưởng doanh thu đang ổn định với tỷ lệ dùng gói Pro cao. Trọng tâm trước mắt là
+              tăng tốc chuyển đổi từ dùng thử sang trả phí và bảo toàn các hợp đồng gia hạn doanh nghiệp.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">ARR Projection</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Dự báo ARR</p>
                 <p className="mt-1 text-xl font-semibold">$5.78M</p>
               </div>
               <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Net Revenue Retention</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Tỷ lệ giữ chân doanh thu ròng</p>
                 <p className="mt-1 text-xl font-semibold">116%</p>
               </div>
               <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Avg. Contract Value</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Giá trị hợp đồng trung bình</p>
                 <p className="mt-1 text-xl font-semibold">$438</p>
               </div>
             </div>
@@ -136,13 +135,13 @@ export const DashboardSection = () => {
 
         <Card className="border-slate-200 bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-semibold text-slate-900">This Quarter Focus</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Trọng tâm quý này</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              { label: "Plan Upgrade Campaign", owner: "Growth Team", due: "Apr 18" },
-              { label: "Enterprise Renewal Review", owner: "Account Team", due: "Apr 22" },
-              { label: "Trial Onboarding Optimization", owner: "Product Team", due: "Apr 29" },
+              { label: "Chiến dịch nâng cấp gói", owner: "Nhóm tăng trưởng", due: "18/04" },
+              { label: "Rà soát gia hạn doanh nghiệp", owner: "Nhóm chăm sóc khách hàng", due: "22/04" },
+              { label: "Tối ưu onboarding dùng thử", owner: "Nhóm sản phẩm", due: "29/04" },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-sm font-semibold text-slate-900">{item.label}</p>
@@ -184,7 +183,7 @@ export const DashboardSection = () => {
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Tenant Distribution by Plans</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Phân bổ tenant theo gói</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="h-3 overflow-hidden rounded-full bg-slate-100">
@@ -202,7 +201,7 @@ export const DashboardSection = () => {
                     <p className="text-sm font-semibold text-slate-900">{plan.label}</p>
                     <span className="text-xs font-semibold text-slate-500">{plan.percent}%</span>
                   </div>
-                  <p className="text-xs text-slate-500">{plan.tenants.toLocaleString("en-US")} tenants</p>
+                  <p className="text-xs text-slate-500">{plan.tenants.toLocaleString("vi-VN")} tenant</p>
                 </div>
               ))}
             </div>
@@ -211,7 +210,7 @@ export const DashboardSection = () => {
 
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Tenant Lifecycle Funnel</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Phễu vòng đời tenant</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {TENANT_LIFECYCLE.map((stage) => (
@@ -233,35 +232,35 @@ export const DashboardSection = () => {
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Revenue & Tenant Momentum</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Động lực doanh thu & tenant</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             {[
               {
-                title: "New Tenant Acquisition",
+                title: "Tenant mới",
                 value: "82",
-                note: "This month",
+                note: "Trong tháng này",
                 icon: Users,
                 tone: "bg-blue-100 text-blue-700",
               },
               {
-                title: "Expansion MRR",
+                title: "MRR mở rộng",
                 value: "$96K",
-                note: "Upsell + add-ons",
+                note: "Bán nâng cấp + tiện ích bổ sung",
                 icon: ArrowUpRight,
                 tone: "bg-emerald-100 text-emerald-700",
               },
               {
-                title: "Churned Tenants",
+                title: "Tenant rời bỏ",
                 value: "11",
-                note: "0.9% monthly",
+                note: "0.9% theo tháng",
                 icon: TrendingUp,
                 tone: "bg-amber-100 text-amber-700",
               },
               {
-                title: "Retention Health",
-                value: "Strong",
-                note: "Enterprise stable",
+                title: "Sức khỏe giữ chân",
+                value: "Tốt",
+                note: "Nhóm doanh nghiệp ổn định",
                 icon: ShieldCheck,
                 tone: "bg-cyan-100 text-cyan-700",
               },
@@ -282,7 +281,7 @@ export const DashboardSection = () => {
 
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Executive Alerts</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Cảnh báo điều hành</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {EXECUTIVE_ALERTS.map((alert) => (

@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react"
 import { useLocation, useNavigate } from "react-router"
 import { Header } from "@/components/common/Header"
 import { ROUTES } from "@/constants/routes"
+import { getStoredAuthData } from "@/lib/api/auth-service"
 import {
   getSectionDescription,
   getSectionTitle,
@@ -16,8 +17,14 @@ import { TenantsSection } from "@/pages/system-admin/components/sections/Tenants
 import { SystemAdminSectionActions } from "@/pages/system-admin/components/SystemAdminSectionActions"
 import { addPlanCard } from "@/pages/system-admin/services/billing-service"
 import type { INewPlanInput, TSystemSection } from "@/pages/system-admin/types"
+import type { TUserRole } from "@/types/auth"
 
 const SYSTEM_ADMIN_SECTION_QUERY_KEY = "section"
+const SYSTEM_ADMIN_ROLE_LABELS: Record<TUserRole, string> = {
+  SYSTEM_ADMIN: "Quản trị viên hệ thống",
+  TENANT_ADMIN: "Quản trị viên tenant",
+  USER: "Người dùng",
+}
 
 const isSystemAdminSection = (value: string | null): value is TSystemSection => {
   return (
@@ -42,6 +49,7 @@ export const SystemAdminPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const activeSection = getSectionFromSearch(location.search)
+  const authData = getStoredAuthData()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false)
@@ -56,6 +64,14 @@ export const SystemAdminPage = () => {
     features: [],
   })
   const [customFeature, setCustomFeature] = useState("")
+  const accountName =
+    authData?.userDisplayName?.trim() ||
+    authData?.username?.trim() ||
+    "Quản trị viên hệ thống"
+  const accountEmail = authData?.email?.trim() || "admin@sovereign.arch"
+  const accountRole = authData?.role
+    ? SYSTEM_ADMIN_ROLE_LABELS[authData.role]
+    : "Kiến trúc sư hệ thống"
 
   const handleSelectSection = (section: TSystemSection) => {
     const search = section === "dashboard" ? "" : `?${SYSTEM_ADMIN_SECTION_QUERY_KEY}=${section}`
@@ -98,24 +114,24 @@ export const SystemAdminPage = () => {
 
   return (
     <div
-      className="admin-shell relative min-h-screen overflow-hidden bg-background text-foreground"
+      className="admin-shell relative h-screen overflow-hidden bg-background text-foreground"
       style={{ fontFamily: '"Geist Variable", "IBM Plex Sans", "Segoe UI", sans-serif' }}
     >
       <div className="admin-shell-ambient pointer-events-none absolute inset-0" />
 
-      <div className="relative flex min-h-screen">
-        <div className="hidden xl:block">
+      <div className="relative flex h-screen">
+        <div className="hidden xl:block xl:h-screen">
           <SidebarNavigation activeSection={activeSection} onSelectSection={handleSelectSection} />
         </div>
 
         {isSidebarOpen && (
           <div className="fixed inset-0 z-40 xl:hidden">
-            <button
-              aria-label="Close navigation"
-              className="absolute inset-0 bg-slate-950/35"
-              onClick={() => setIsSidebarOpen(false)}
-              type="button"
-            />
+              <button
+                aria-label="Đóng điều hướng"
+                className="absolute inset-0 bg-slate-950/35"
+                onClick={() => setIsSidebarOpen(false)}
+                type="button"
+              />
             <div className="relative h-full w-72 max-w-[88vw] shadow-2xl">
               <SidebarNavigation
                 activeSection={activeSection}
@@ -128,18 +144,18 @@ export const SystemAdminPage = () => {
           </div>
         )}
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <Header
             accountAccentClassName="bg-blue-100 text-blue-700"
-            accountEmail="admin@sovereign.arch"
-            accountName="Admin User"
-            accountRole="System Architect"
+            accountEmail={accountEmail}
+            accountName={accountName}
+            accountRole={accountRole}
             containerClassName="sticky top-0 z-30 border-b border-border/80 bg-card/85 backdrop-blur"
             innerClassName="px-4 py-3 md:px-6 xl:px-8"
             leadingContent={
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span>Sovereign Architect</span>
+                  <span>Quản trị hệ thống</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                   <span className="truncate font-semibold text-slate-700">{getSectionTitle(activeSection)}</span>
                 </div>
@@ -149,7 +165,7 @@ export const SystemAdminPage = () => {
             onMenuClick={() => setIsSidebarOpen(true)}
             onOpenAccount={() => handleSelectSection("account-management")}
             onOpenSettings={() => handleSelectSection("account-management")}
-            searchPlaceholder="Search resources..."
+            searchPlaceholder="Tìm kiếm tài nguyên..."
             showAccountAction={true}
           />
 

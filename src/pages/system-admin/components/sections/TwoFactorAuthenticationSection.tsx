@@ -40,7 +40,7 @@ export const TwoFactorAuthenticationSection = ({
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardContent className="flex items-center gap-2 p-6 text-slate-600">
           <LoaderCircle className="h-4 w-4 animate-spin" />
-          Loading two-factor status...
+          Đang tải trạng thái xác thực hai lớp...
         </CardContent>
       </Card>
     )
@@ -52,12 +52,12 @@ export const TwoFactorAuthenticationSection = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
             {isTwoFactorEnabled ? <ShieldCheck className="h-5 w-5 text-emerald-600" /> : <ShieldOff className="h-5 w-5 text-amber-600" />}
-            Two-Factor Authentication (2FA)
+            Xác thực hai lớp (2FA)
           </CardTitle>
 
           <button
             type="button"
-            aria-label="Toggle two-factor authentication"
+            aria-label="Bật hoặc tắt xác thực hai lớp"
             className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${isTwoFactorEnabled ? "bg-emerald-600" : "bg-slate-300"}`}
             disabled={isBusy}
             onClick={openToggleConfirmation}
@@ -71,8 +71,8 @@ export const TwoFactorAuthenticationSection = ({
       <CardContent className="space-y-4 p-4 md:p-5">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           {isTwoFactorEnabled
-            ? "2FA is currently enabled. You can disable it if needed."
-            : "2FA is currently disabled. Turn it on and verify a one-time code to enable stronger account protection."}
+            ? "2FA hiện đang bật. Bạn có thể tắt nếu cần."
+            : "2FA hiện đang tắt. Hãy bật và xác minh mã dùng một lần để tăng cường bảo mật tài khoản."}
         </div>
 
         {(setupData || isTwoFactorEnabled) && (
@@ -80,20 +80,20 @@ export const TwoFactorAuthenticationSection = ({
             <div className="grid gap-3 rounded-xl border border-slate-200 p-3 lg:grid-cols-[180px_minmax(0,1fr)]">
               <div className="flex justify-center rounded-lg border border-slate-200 bg-white p-2">
                 {qrCodeSrc ? (
-                  <img alt="2FA QR code" className="h-36 w-36 object-contain" src={qrCodeSrc} />
+                  <img alt="Mã QR 2FA" className="h-36 w-36 object-contain" src={qrCodeSrc} />
                 ) : (
-                  <p className="text-xs text-slate-500">No QR code available</p>
+                  <p className="text-xs text-slate-500">Không có mã QR khả dụng</p>
                 )}
               </div>
 
               <div className="space-y-3">
                 <p className="text-sm text-slate-700">
-                  Scan this QR code in Google Authenticator or Authy, then enter the 6-digit code to verify.
+                  Quét mã QR bằng Google Authenticator hoặc Authy, sau đó nhập mã 6 chữ số để xác minh.
                 </p>
 
                 {manualEntryKey && (
                   <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Manual entry key</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Khóa nhập thủ công</p>
                     <p className="font-mono text-sm font-semibold text-slate-800">{manualEntryKey}</p>
                   </div>
                 )}
@@ -102,7 +102,7 @@ export const TwoFactorAuthenticationSection = ({
                   <>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700" htmlFor="two-fa-verification-code">
-                        Verification Code
+                        Mã xác minh
                       </label>
                       <input
                         id="two-fa-verification-code"
@@ -124,10 +124,10 @@ export const TwoFactorAuthenticationSection = ({
                       {isVerifying ? (
                         <>
                           <LoaderCircle className="h-4 w-4 animate-spin" />
-                          Verifying
+                          Đang xác minh
                         </>
                       ) : (
-                        "Verify & Enable 2FA"
+                        "Xác minh & bật 2FA"
                       )}
                     </Button>
                   </>
@@ -147,10 +147,10 @@ export const TwoFactorAuthenticationSection = ({
             {isSettingUp ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                Preparing setup
+                Đang chuẩn bị thiết lập
               </>
             ) : (
-              "Enable 2FA"
+              "Bật 2FA"
             )}
           </Button>
         )}
@@ -159,17 +159,17 @@ export const TwoFactorAuthenticationSection = ({
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
             <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
               <h3 className="text-lg font-semibold text-slate-900">
-                {pendingAction === "enable" ? "Enable Two-Factor Authentication?" : "Disable Two-Factor Authentication?"}
-              </h3>
-              <p className="mt-2 text-sm text-slate-600">
-                {pendingAction === "enable"
-                  ? "After enabling, please scan QR code and verify the 6-digit code to complete setup."
-                  : "Disabling 2FA will remove authenticator verification during login."}
-              </p>
+                  {pendingAction === "enable" ? "Bật xác thực hai lớp?" : "Tắt xác thực hai lớp?"}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  {pendingAction === "enable"
+                    ? "Sau khi bật, vui lòng quét mã QR và xác minh mã 6 chữ số để hoàn tất thiết lập."
+                    : "Tắt 2FA sẽ bỏ qua bước xác minh ứng dụng xác thực khi đăng nhập."}
+                </p>
 
               <div className="mt-5 flex items-center justify-end gap-2">
                 <Button type="button" variant="outline" onClick={closeToggleConfirmation}>
-                  Cancel
+                  Hủy
                 </Button>
                 <Button
                   type="button"
@@ -177,7 +177,7 @@ export const TwoFactorAuthenticationSection = ({
                   onClick={confirmToggleAction}
                   disabled={isDisabling || isSettingUp}
                 >
-                  {pendingAction === "enable" && isSettingUp ? "Preparing..." : pendingAction === "disable" && isDisabling ? "Disabling..." : "Confirm"}
+                  {pendingAction === "enable" && isSettingUp ? "Đang chuẩn bị..." : pendingAction === "disable" && isDisabling ? "Đang tắt..." : "Xác nhận"}
                 </Button>
               </div>
             </div>
