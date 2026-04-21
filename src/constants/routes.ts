@@ -11,6 +11,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   SYSTEM_ADMIN_DASHBOARD: "/dashboard/system-admin",
   SYSTEM_ADMIN_CREATE_PLAN: "/dashboard/system-admin/billing/create-plan",
+  SYSTEM_ADMIN_PLAN_DETAIL: "/dashboard/system-admin/billing/plans/:planId",
   TENANT_ADMIN_DASHBOARD: "/dashboard/tenant-admin",
   USER_DASHBOARD: "/dashboard/user",
   RECENT: "/recent",
@@ -77,4 +78,8 @@ export const getProjectFolderPath = (projectId: string, folderId: string) => {
 
 export const getProjectFilePath = (projectId: string, fileId: string) => {
   return `/projects/${projectId}/files/${fileId}`
+}
+
+export const getSystemAdminPlanDetailPath = (planId: string) => {
+  return `/dashboard/system-admin/billing/plans/${planId}`
 }

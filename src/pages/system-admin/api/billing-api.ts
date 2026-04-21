@@ -1,36 +1,9 @@
 import { api } from "@/lib/api/axios-client"
 import type { IApiResponse } from "@/types/auth"
 import type { IPlanCard, INewPlanInput, TBillingCycle } from "@/pages/system-admin/types"
-import { PLAN_CARDS } from "@/pages/system-admin/constants"
-
-const ARCHIVE_PLAN_CARDS: IPlanCard[] = [
-  {
-    tier: "Legacy",
-    name: "Beta Preview Plan",
-    price: "$0.00",
-    period: "Lifetime",
-    features: ["Limited tenant capacity", "Legacy support model", "No SLA"],
-    tenants: "128",
-  },
-  {
-    tier: "Legacy",
-    name: "Legacy Small Business",
-    price: "$29.00",
-    period: "/month",
-    features: ["5 active tenants", "20GB storage", "Email support"],
-    tenants: "54",
-  },
-]
-
-export const fetchPlanCards = async (): Promise<IPlanCard[]> => {
-  return Promise.resolve(PLAN_CARDS)
-}
-
-export const fetchArchivePlanCards = async (): Promise<IPlanCard[]> => {
-  return Promise.resolve(ARCHIVE_PLAN_CARDS)
-}
 
 export type TSubscriptionPlanBillingCycle = "MONTHLY" | "QUARTERLY" | "YEARLY"
+export type TSubscriptionPlanStatus = "ACTIVE" | "INACTIVE"
 
 export interface ISubscriptionPlanRequest {
   namePlan: string
@@ -39,6 +12,7 @@ export interface ISubscriptionPlanRequest {
   maxUsers: number
   price: number
   billingCycle: TSubscriptionPlanBillingCycle
+  planStatus: TSubscriptionPlanStatus
   features: Record<string, unknown>
 }
 
@@ -50,6 +24,7 @@ export interface ISubscriptionPlanResponse {
   maxUsers: number
   price: number
   billingCycle: TSubscriptionPlanBillingCycle
+  planStatus: TSubscriptionPlanStatus
   features: Record<string, unknown>
   createdAt: string
   updatedAt: string
@@ -78,7 +53,7 @@ const mapSubscriptionPlanToPlanCard = (plan: ISubscriptionPlanResponse): IPlanCa
   name: plan.namePlan,
   price: `$${plan.price}`,
   period: formatBillingCycle(plan.billingCycle),
-  status: "Active",
+  status: plan.planStatus === "INACTIVE" ? "Inactive" : "Active",
   description: plan.description,
   storageLimit:
     typeof plan.baseStorageLimit === "string"
@@ -89,9 +64,12 @@ const mapSubscriptionPlanToPlanCard = (plan: ISubscriptionPlanResponse): IPlanCa
   tenants: `${plan.maxUsers}`,
 })
 
-export const fetchSubscriptionPlans = async (): Promise<IPlanCard[]> => {
+export const fetchSubscriptionPlans = async (
+  status?: TSubscriptionPlanStatus
+): Promise<IPlanCard[]> => {
   const response = await api.get<IApiResponse<ISubscriptionPlanResponse[]>>(
-    "/subscription-plans"
+    "/subscription-plans",
+    status ? { params: { status } } : undefined
   )
 
   return response.data.data.map(mapSubscriptionPlanToPlanCard)
@@ -106,6 +84,34 @@ export const createSubscriptionPlan = async (
   )
 
   return response.data.data
+}
+
+export const fetchSubscriptionPlanById = async (
+  subscriptionPlanId: string
+): Promise<ISubscriptionPlanResponse> => {
+  const response = await api.get<IApiResponse<ISubscriptionPlanResponse>>(
+    `/subscription-plans/${subscriptionPlanId}`
+  )
+
+  return response.data.data
+}
+
+export const updateSubscriptionPlan = async (
+  subscriptionPlanId: string,
+  input: ISubscriptionPlanRequest
+): Promise<ISubscriptionPlanResponse> => {
+  const response = await api.put<IApiResponse<ISubscriptionPlanResponse>>(
+    `/subscription-plans/${subscriptionPlanId}`,
+    input
+  )
+
+  return response.data.data
+}
+
+export const deleteSubscriptionPlan = async (
+  subscriptionPlanId: string
+): Promise<void> => {
+  await api.delete(`/subscription-plans/${subscriptionPlanId}`)
 }
 
 const normalizeBillingCycleValue = (
@@ -123,36 +129,28 @@ const normalizeBillingCycleValue = (
   }
 }
 
+const normalizePlanStatusValue = (status: INewPlanInput["status"]): TSubscriptionPlanStatus => {
+  return status === "Inactive" ? "INACTIVE" : "ACTIVE"
+}
+
 export const createPlanCard = async (input: INewPlanInput): Promise<IPlanCard> => {
-  const payload: ISubscriptionPlanRequest = {
+  const payload = toSubscriptionPlanPayload(input)
+  const created = await createSubscriptionPlan(payload)
+  return mapSubscriptionPlanToPlanCard(created)
+}
+
+export const toSubscriptionPlanPayload = (input: INewPlanInput): ISubscriptionPlanRequest => {
+  return {
     namePlan: input.name,
     description: input.description,
     baseStorageLimit: input.storageLimit,
     maxUsers: input.maxUsers,
     price: input.price,
     billingCycle: normalizeBillingCycleValue(input.billingCycle),
+    planStatus: normalizePlanStatusValue(input.status),
     features: input.features.reduce<Record<string, boolean>>((acc, feature) => {
       acc[feature] = true
       return acc
     }, {}),
-  }
-
-  await createSubscriptionPlan(payload)
-
-  return {
-    tier: input.name.includes("Enterprise")
-      ? "Tier 03"
-      : input.name.includes("Professional")
-      ? "Tier 02"
-      : "Tier 01",
-    name: input.name,
-    price: `$${input.price}`,
-    period: input.billingCycle,
-    status: input.status,
-    description: input.description,
-    storageLimit: input.storageLimit,
-    maxUsers: input.maxUsers,
-    features: input.features,
-    tenants: `${input.maxUsers}`,
   }
 }

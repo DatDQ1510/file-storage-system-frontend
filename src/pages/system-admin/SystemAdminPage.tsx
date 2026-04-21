@@ -217,8 +217,11 @@ export const SystemAdminPage = () => {
         onCustomFeatureChange={setCustomFeature}
         onSubmit={async (event) => {
           event.preventDefault()
-          await addPlanCard(createPlanForm)
+          const created = await addPlanCard(createPlanForm)
           handleCloseCreatePlan()
+          if (created.id) {
+            navigate(ROUTES.SYSTEM_ADMIN_PLAN_DETAIL.replace(":planId", created.id))
+          }
         }}
       />
 

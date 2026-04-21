@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router"
 import { Check, ChevronLeft, Plus, Settings2, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ROUTES } from "@/constants/routes"
 import { addPlanCard } from "@/pages/system-admin/services/billing-service"
 import type { INewPlanInput, TBillingCycle, TBillingStatus } from "@/pages/system-admin/types"
 
@@ -61,8 +62,12 @@ export const CreatePlanPage = () => {
     setIsSubmitting(true)
 
     try {
-      await addPlanCard(formState)
-      navigate(-1)
+      const created = await addPlanCard(formState)
+      if (created.id) {
+        navigate(ROUTES.SYSTEM_ADMIN_PLAN_DETAIL.replace(":planId", created.id))
+      } else {
+        navigate(-1)
+      }
     } finally {
       setIsSubmitting(false)
     }

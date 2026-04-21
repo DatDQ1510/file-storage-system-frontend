@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useNavigate } from "react-router"
 import { CreditCard, ReceiptText, ShieldCheck, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ROUTES } from "@/constants/routes"
 import { cn } from "@/lib/utils"
-import { loadArchivePlanCards, loadPlanCards } from "@/pages/system-admin/services/billing-service"
+import { loadArchivePlanCards, loadPlanCards, removeSubscriptionPlan } from "@/pages/system-admin/services/billing-service"
 import type { IPlanCard } from "@/pages/system-admin/types"
 
 const BILLING_SUMMARY = [
@@ -44,23 +46,41 @@ const getMaxUsers = (plan: IPlanCard) => {
 }
 
 export const BillingSection = () => {
+  const navigate = useNavigate()
   const [planCards, setPlanCards] = useState<IPlanCard[]>([])
   const [archivePlans, setArchivePlans] = useState<IPlanCard[]>([])
   const [activeTab, setActiveTab] = useState<"active" | "inactive">("active")
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null)
+
+  const loadPlans = useCallback(async () => {
+    try {
+      const [plans, archived] = await Promise.all([loadPlanCards(), loadArchivePlanCards()])
+      setPlanCards(plans)
+      setArchivePlans(archived)
+    } catch (error) {
+      console.error(error)
+    }
+  }, [])
 
   useEffect(() => {
-    const loadPlans = async () => {
-      try {
-        const [plans, archived] = await Promise.all([loadPlanCards(), loadArchivePlanCards()])
-        setPlanCards(plans)
-        setArchivePlans(archived)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-
     void loadPlans()
-  }, [])
+  }, [loadPlans])
+
+  const handleDelete = async (plan: IPlanCard) => {
+    if (!plan.id) return
+    const confirmed = window.confirm(`Bạn có chắc muốn xóa gói "${plan.name}"?`)
+    if (!confirmed) return
+
+    setDeletingPlanId(plan.id)
+    try {
+      await removeSubscriptionPlan(plan.id)
+      await loadPlans()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setDeletingPlanId(null)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -143,9 +163,29 @@ export const BillingSection = () => {
                     </span>
                   </td>
                   <td className="py-4 text-right">
-                    <Button size="icon-sm" variant="ghost" className="text-slate-500">
-                      Xem
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-slate-500"
+                        disabled={!plan.id}
+                          onClick={() => {
+                            if (!plan.id) return
+                            navigate(ROUTES.SYSTEM_ADMIN_PLAN_DETAIL.replace(":planId", plan.id))
+                          }}
+                        >
+                        Xem
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700"
+                        disabled={!plan.id || deletingPlanId === plan.id}
+                        onClick={() => void handleDelete(plan)}
+                      >
+                        {deletingPlanId === plan.id ? "..." : "Xóa"}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -19,6 +19,7 @@ const Starred = lazy(() => import("@/pages/user/starred").then((module) => ({ de
 const TotpSignIn = lazy(() => import("@/pages/user/TotpSignIn").then((module) => ({ default: module.TotpSignIn })))
 const SystemAdminPage = lazy(() => import("@/pages/system-admin/SystemAdminPage").then((module) => ({ default: module.SystemAdminPage })))
 const CreatePlanPage = lazy(() => import("@/pages/system-admin/pages/CreatePlanPage").then((module) => ({ default: module.CreatePlanPage })))
+const PlanDetailPage = lazy(() => import("@/pages/system-admin/pages/PlanDetailPage").then((module) => ({ default: module.PlanDetailPage })))
 const TenantAdminPage = lazy(() => import("@/pages/tenant-admin/TenantAdminPage").then((module) => ({ default: module.TenantAdminPage })))
 
 interface IRouteConfig {
@@ -123,6 +124,10 @@ const ROLE_DASHBOARD_ROUTES: IRouteConfig[] = [
   {
     path: ROUTES.SYSTEM_ADMIN_CREATE_PLAN,
     element: <ProtectedRoute>{withSuspense(<CreatePlanPage />)}</ProtectedRoute>,
+  },
+  {
+    path: ROUTES.SYSTEM_ADMIN_PLAN_DETAIL,
+    element: <ProtectedRoute>{withSuspense(<PlanDetailPage />)}</ProtectedRoute>,
   },
   {
     path: ROUTES.TENANT_ADMIN_DASHBOARD,
