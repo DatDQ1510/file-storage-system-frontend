@@ -5,6 +5,7 @@ import type { INewPlanInput, TBillingCycle, TBillingStatus } from "@/pages/syste
 
 interface ICreatePlanModalProps {
   isOpen: boolean
+  isSubmitting?: boolean
   formState: INewPlanInput
   customFeature: string
   onClose: () => void
@@ -29,6 +30,7 @@ const DEFAULT_FEATURES = [
 
 export const CreatePlanModal = ({
   isOpen,
+  isSubmitting = false,
   formState,
   customFeature,
   onClose,
@@ -231,8 +233,8 @@ export const CreatePlanModal = ({
             <Button type="button" variant="ghost" className="text-slate-600" onClick={onClose}>
               Hủy
             </Button>
-            <Button className="bg-blue-700 text-white hover:bg-blue-800" type="submit">
-              Tạo gói
+            <Button className="bg-blue-700 text-white hover:bg-blue-800" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Đang tạo..." : "Tạo gói"}
             </Button>
           </div>
         </form>

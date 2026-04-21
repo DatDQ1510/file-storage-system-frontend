@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 import { useLocation, useNavigate } from "react-router"
+import { toast } from "sonner"
 import { Header } from "@/components/common/Header"
 import { ROUTES } from "@/constants/routes"
 import { getStoredAuthData } from "@/lib/api/auth-service"
@@ -53,6 +54,8 @@ export const SystemAdminPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRegisterTenantOpen, setIsRegisterTenantOpen] = useState(false)
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false)
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false)
+  const [billingRefreshToken, setBillingRefreshToken] = useState(0)
   const [createPlanForm, setCreatePlanForm] = useState<INewPlanInput>({
     name: "",
     status: "Active",
@@ -188,7 +191,7 @@ export const SystemAdminPage = () => {
                 onOpenRegisterTenant={handleOpenRegisterTenant}
               />
             )}
-            {activeSection === "billing" && <BillingSection />}
+            {activeSection === "billing" && <BillingSection refreshToken={billingRefreshToken} />}
 
           </main>
         </div>
@@ -196,6 +199,7 @@ export const SystemAdminPage = () => {
 
       <CreatePlanModal
         isOpen={isCreatePlanOpen}
+        isSubmitting={isCreatingPlan}
         formState={createPlanForm}
         customFeature={customFeature}
         onClose={handleCloseCreatePlan}
@@ -217,10 +221,14 @@ export const SystemAdminPage = () => {
         onCustomFeatureChange={setCustomFeature}
         onSubmit={async (event) => {
           event.preventDefault()
-          const created = await addPlanCard(createPlanForm)
-          handleCloseCreatePlan()
-          if (created.id) {
-            navigate(ROUTES.SYSTEM_ADMIN_PLAN_DETAIL.replace(":planId", created.id))
+          setIsCreatingPlan(true)
+          try {
+            await addPlanCard(createPlanForm)
+            toast.success("Tạo gói dịch vụ thành công")
+            setBillingRefreshToken((prev) => prev + 1)
+            handleCloseCreatePlan()
+          } finally {
+            setIsCreatingPlan(false)
           }
         }}
       />
