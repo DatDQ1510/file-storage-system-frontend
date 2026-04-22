@@ -32,6 +32,9 @@ interface ICreateProjectFolderModalProps {
   projectId: string
   isOpen: boolean
   isSubmitting: boolean
+  /** Khi được truyền vào, đây là id của folder cha (tạo subfolder).
+   *  Khi undefined/null → tạo ở root (path browser hiển thị để chọn parent). */
+  parentFolderId?: string | null
   onClose: () => void
   onSubmit: (request: ICreateFolderWithAclRequest) => Promise<void>
 }
@@ -174,7 +177,7 @@ const PermissionCheckboxes = ({
 // ─── Main modal ──────────────────────────────────────────────────────────────
 
 export const CreateProjectFolderModal = ({
-  projectId, isOpen, isSubmitting, onClose, onSubmit,
+  projectId, isOpen, isSubmitting, parentFolderId, onClose, onSubmit,
 }: ICreateProjectFolderModalProps) => {
   const [folderName, setFolderName] = useState("")
   const [selectedPath, setSelectedPath] = useState("/")
@@ -269,7 +272,18 @@ export const CreateProjectFolderModal = ({
     const aclEntries: IFolderAclItemRequest[] = aclDrafts
       .filter((d) => d.userId.trim() && d.permission >= 1)
       .map((d) => ({ userId: d.userId, permission: d.permission }))
-    await onSubmit({ nameFolder: folderName.trim(), path: selectedPath, aclEntries: aclEntries.length ? aclEntries : undefined })
+
+    // Khi có parentFolderId (tạo subfolder) → truyền trực tiếp, bỏ qua selectedPath
+    // Khi không có (tạo ở root) → dùng selectedPath từ path browser
+    const request: ICreateFolderWithAclRequest = {
+      nameFolder: folderName.trim(),
+      ...(parentFolderId
+        ? { parentFolderId }
+        : { path: selectedPath }
+      ),
+      aclEntries: aclEntries.length ? aclEntries : undefined,
+    }
+    await onSubmit(request)
     resetForm()
   }
 
@@ -291,8 +305,14 @@ export const CreateProjectFolderModal = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
-            <h3 className="text-2xl font-semibold text-slate-900">Create Folder</h3>
-            <p className="mt-0.5 text-sm text-slate-500">Set a name, path, and optional access permissions</p>
+            <h3 className="text-2xl font-semibold text-slate-900">
+              {parentFolderId ? "Create Sub-folder" : "Create Folder"}
+            </h3>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {parentFolderId
+                ? "Create a new folder inside the current folder"
+                : "Set a name, path, and optional access permissions"}
+            </p>
           </div>
           <button type="button" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100" onClick={handleClose}>
             <X className="h-5 w-5" />
@@ -315,7 +335,8 @@ export const CreateProjectFolderModal = ({
             />
           </div>
 
-          {/* Path Browser */}
+          {/* Path Browser – chỉ hiển thị khi tạo folder ở root (không có parentFolderId) */}
+          {!parentFolderId ? (
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-800">Path</label>
             <div className="mb-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
@@ -385,6 +406,18 @@ export const CreateProjectFolderModal = ({
               )}
             </div>
           </div>
+          ) : (
+            /* Banner: tạo subfolder bên trong folder hiện tại */
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <FolderOpen className="h-5 w-5 flex-shrink-0 text-amber-500" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">Creating inside current folder</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  The new folder will be created as a sub-folder of the currently open folder.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Folder ACL */}
           <div className="rounded-lg border border-slate-200 p-4 space-y-3">

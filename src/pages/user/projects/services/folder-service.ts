@@ -4,11 +4,13 @@ import {
   getChildFolderPathsApi,
   searchFolderPathsApi,
   getProjectMembersForAclApi,
+  getChildFoldersByParentIdApi,
 } from "@/pages/user/projects/api/folder-api"
 import type {
   ICreateFolderWithAclRequest,
   ICreateFolderWithAclResponse,
   IFolderPathNode,
+  IFolderResponse,
   IProjectFolderItem,
   IProjectMemberForAcl,
 } from "@/pages/user/projects/types/folder"
@@ -41,7 +43,6 @@ export const getProjectFolders = async (
       fallbackIndex: index + 1,
     })
   )
-  // No virtual folders – return empty array if API returns nothing
 }
 
 export const createProjectFolderWithAcl = async (input: {
@@ -70,4 +71,15 @@ export const getProjectMembersForAcl = async (
   projectId: string
 ): Promise<IProjectMemberForAcl[]> => {
   return getProjectMembersForAclApi(projectId)
+}
+
+/**
+ * Lấy danh sách folder con trực tiếp theo parentId (id-based).
+ * Dùng trong folder detail page để hiển thị subfolders.
+ */
+export const getFoldersByParentId = async (
+  projectId: string,
+  parentFolderId: string
+): Promise<IFolderResponse[]> => {
+  return getChildFoldersByParentIdApi(parentFolderId, projectId)
 }

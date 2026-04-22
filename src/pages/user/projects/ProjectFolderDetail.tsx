@@ -17,12 +17,12 @@ import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
 import { CreateProjectFolderModal } from "@/pages/user/projects/components/CreateProjectFolderModal";
 import { useProjectFolders } from "@/pages/user/projects/hooks/use-project-folders";
 import {
-  getChildFolderPathsApi,
   getFolderByIdApi,
   renameFolderApi,
   deleteFolderByActorApi,
+  getChildFoldersByParentIdApi,
 } from "@/pages/user/projects/api/folder-api";
-import type { IProjectFolderItem, IFolderPathNode } from "@/pages/user/projects/types/folder";
+import type { IProjectFolderItem, IFolderResponse } from "@/pages/user/projects/types/folder";
 import { getUserProjectDetail, type IUserProjectDetail } from "@/lib/api/user-project-service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,36 +41,37 @@ interface IProjectFileListItem {
 const SubFolderSection = ({
   projectId,
   folderId,
-  folderPath,
   projectDetail,
+  refreshKey,
   onRefresh,
 }: {
   projectId: string;
   folderId: string;
-  folderPath: string;
   projectDetail: IUserProjectDetail | null;
+  /** Tăng giá trị này để trigger reload danh sách subfolder */
+  refreshKey: number;
   onRefresh: () => void;
 }) => {
-  const [subFolders, setSubFolders] = useState<IFolderPathNode[]>([]);
+  const [subFolders, setSubFolders] = useState<IFolderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const loadSubFolders = useCallback(async () => {
-    if (!folderPath) return;
     setIsLoading(true);
     try {
-      const children = await getChildFolderPathsApi(projectId, folderPath);
+      const children = await getChildFoldersByParentIdApi(folderId, projectId);
       setSubFolders(children);
     } catch {
       setSubFolders([]);
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, folderPath]);
+  }, [projectId, folderId]);
 
+  // Re-fetch mỗi khi refreshKey thay đổi (do parent tạo subfolder mới)
   useEffect(() => {
     void loadSubFolders();
-  }, [loadSubFolders]);
+  }, [loadSubFolders, refreshKey]);
 
   const handleRenameSubFolder = async (subFolderId: string, newName: string) => {
     try {
@@ -116,22 +117,22 @@ const SubFolderSection = ({
         </h2>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {subFolders.map((node) => {
+        {subFolders.map((folder) => {
           const folderItem: IProjectFolderItem = {
-            id: node.folderId,
-            name: node.nameFolder,
+            id: folder.id,
+            name: folder.nameFolder,
             filesCount: 0,
             parentFolderId: folderId,
           };
           return (
             <ProjectFolderCard
-              key={node.folderId}
-              folderId={node.folderId}
-              name={node.nameFolder}
+              key={folder.id}
+              folderId={folder.id}
+              name={folder.nameFolder}
               filesCount={0}
-              onClick={() => navigate(`/projects/${projectId}/folders/${node.folderId}`)}
+              onClick={() => navigate(`/projects/${projectId}/folders/${folder.id}`)}
               menuActions={{
-                folderId: node.folderId,
+                folderId: folder.id,
                 canWrite: isTenantAdmin || isOwner,
                 canDelete: isTenantAdmin || isOwner,
                 onRename: handleRenameSubFolder,
@@ -153,10 +154,11 @@ export const ProjectFolderDetail = () => {
 
   const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
   const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
-  const [folderPath, setFolderPath] = useState<string>("");
   const [folderName, setFolderName] = useState<string>("");
   const [isCreateSubFolderModalOpen, setIsCreateSubFolderModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<IProjectFileListItem[]>([]);
+  /** Tăng giá trị để trigger SubFolderSection tự reload */
+  const [subFolderRefreshKey, setSubFolderRefreshKey] = useState(0);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
 
   const { createFolder, isCreatingFolder, loadFolders } = useProjectFolders(projectId);
@@ -174,17 +176,15 @@ export const ProjectFolderDetail = () => {
     return () => { mounted = false; };
   }, [projectId]);
 
-  // ─── Load current folder info (path / name from API children of parent) ────
+  // ─── Load current folder info (name) ────────────────────────────────────────
 
   useEffect(() => {
     if (!projectId || !folderId) return;
     const fetchFolderInfo = async () => {
       try {
         const folder = await getFolderByIdApi(folderId);
-        setFolderPath(folder.path ?? "/");
         setFolderName(folder.nameFolder ?? folderId);
       } catch {
-        setFolderPath("/");
         setFolderName(folderId);
       }
     };
@@ -221,20 +221,19 @@ export const ProjectFolderDetail = () => {
 
   // ─── Create sub-folder ──────────────────────────────────────────────────────
 
+  // Modal đã tự gắn parentFolderId vào request (vì prop parentFolderId={folderId} được truyền vào modal)
   const handleCreateSubFolder = async (request: Parameters<typeof createFolder>[0]) => {
     try {
-      await createFolder({
-        ...request,
-        path: folderPath || "/",
-        parentFolderId: folderId,
-      });
-      toast.success("Sub-folder created successfully");
-      setIsCreateSubFolderModalOpen(false);
-      void loadFolders();
+      await createFolder(request)
+      toast.success("Sub-folder created successfully")
+      setIsCreateSubFolderModalOpen(false)
+      // Tăng refreshKey để SubFolderSection tự reload danh sách ngay lập tức
+      setSubFolderRefreshKey((prev) => prev + 1)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create sub-folder");
+      toast.error(error instanceof Error ? error.message : "Failed to create sub-folder")
+      throw error
     }
-  };
+  }
 
   // ─── Guards ─────────────────────────────────────────────────────────────────
 
@@ -311,16 +310,14 @@ export const ProjectFolderDetail = () => {
         onChange={(e) => { handleUploadFiles(e.target.files); e.currentTarget.value = ""; }}
       />
 
-      {/* Sub-folders */}
-      {folderPath && (
-        <SubFolderSection
-          projectId={projectId}
-          folderId={folderId}
-          folderPath={folderPath}
-          projectDetail={projectDetail}
-          onRefresh={() => void loadFolders()}
-        />
-      )}
+      {/* Sub-folders – reload tự động khi subFolderRefreshKey thay đổi */}
+      <SubFolderSection
+        projectId={projectId}
+        folderId={folderId}
+        projectDetail={projectDetail}
+        refreshKey={subFolderRefreshKey}
+        onRefresh={() => void loadFolders()}
+      />
 
       {/* Files */}
       <section className="space-y-4">
@@ -383,9 +380,10 @@ export const ProjectFolderDetail = () => {
         </div>
       </section>
 
-      {/* Create sub-folder modal */}
+      {/* Create sub-folder modal – truyền parentFolderId để modal biết đang tạo subfolder */}
       <CreateProjectFolderModal
         projectId={projectId}
+        parentFolderId={folderId}
         isOpen={isCreateSubFolderModalOpen}
         isSubmitting={isCreatingFolder}
         onClose={() => setIsCreateSubFolderModalOpen(false)}
