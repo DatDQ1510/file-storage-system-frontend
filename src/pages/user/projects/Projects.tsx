@@ -4,26 +4,28 @@ import { LayoutGrid, List, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { getProjectFilePath, getProjectFolderPath } from "@/constants/routes";
 import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
+import { ProjectMembersModal } from "@/components/projects/ProjectMembersModal";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
 import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
 import {
   ProjectFileTypeIcon,
   type TProjectFileType,
 } from "@/components/projects/ProjectFileTypeIcon";
-import { getStoredAuthData } from "@/lib/api/auth-service";
+import { CreateProjectFolderModal } from "@/pages/user/projects/components/CreateProjectFolderModal";
+import { useProjectFolders } from "@/pages/user/projects/hooks/use-project-folders";
+import type { IProjectFolderItem } from "@/pages/user/projects/types/folder";
+import { renameFolderApi, deleteFolderByActorApi } from "@/pages/user/projects/api/folder-api";
 import {
   assignProjectMember,
+  getProjectMembers,
   getTenantUserOptions,
   getUserProjectDetail,
+  removeProjectMember,
+  updateProjectMemberPermission,
+  type IProjectMemberItem,
   type IUserProjectDetail,
   type IUserTenantOption,
 } from "@/lib/api/user-project-service";
-
-interface IProjectFolderListItem {
-  id: string;
-  name: string;
-  filesCount: number;
-}
 
 interface IProjectFileListItem {
   id: string;
@@ -37,45 +39,31 @@ interface IProjectFileListItem {
 export const Projects = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const [createdFoldersByProject, setCreatedFoldersByProject] = useState<Record<string, IProjectFolderListItem[]>>({});
   const [activeFolderId, setActiveFolderId] = useState<string>("");
-  const [editingFolderId, setEditingFolderId] = useState<string>("");
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [uploadedFilesByProject, setUploadedFilesByProject] = useState<Record<string, IProjectFileListItem[]>>({});
   const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
   const [hasLoadedProjectDetail, setHasLoadedProjectDetail] = useState(false);
   const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
+  const [isProjectMembersModalOpen, setIsProjectMembersModalOpen] = useState(false);
+  const [isSubmittingMemberAction, setIsSubmittingMemberAction] = useState(false);
+  const [projectMembers, setProjectMembers] = useState<IProjectMemberItem[]>([]);
+  const {
+    folders: folderItems,
+    isCreatingFolder,
+    loadFolders,
+    createFolder,
+  } = useProjectFolders(projectId);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
-  const authData = getStoredAuthData();
-  const currentUserId = authData?.userId?.trim() ?? "";
-
-  const isCurrentUserProjectOwner = useMemo(() => {
-    if (!projectDetail?.ownerId || !currentUserId) {
-      return false;
-    }
-
-    return projectDetail.ownerId === currentUserId;
-  }, [currentUserId, projectDetail?.ownerId]);
 
   const displayProjectName = projectDetail?.name || "Project Workspace";
   const displayProjectCategory = projectDetail?.department || "General";
   const displayProjectLead = projectDetail?.ownerName || "Project Owner";
   const displayProjectStatus =
     (projectDetail?.status || "active").toString().toUpperCase();
-
-  const createdFolderItems = useMemo<IProjectFolderListItem[]>(() => {
-    if (!projectId) {
-      return [];
-    }
-
-    return createdFoldersByProject[projectId] ?? [];
-  }, [createdFoldersByProject, projectId]);
-
-  const folderItems = useMemo<IProjectFolderListItem[]>(() => {
-    return createdFolderItems;
-  }, [createdFolderItems]);
 
   const selectedFolderId = useMemo(() => {
     const hasActiveFolder = folderItems.some((folderItem) => {
@@ -138,6 +126,16 @@ export const Projects = () => {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    if (!projectId) {
+      return;
+    }
+
+    void loadFolders().catch((error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to load project folders.");
+    });
+  }, [loadFolders, projectId]);
+
   const fetchTenantUsers = useCallback(async (keyword: string): Promise<IUserTenantOption[]> => {
     try {
       const users = await getTenantUserOptions({
@@ -148,11 +146,11 @@ export const Projects = () => {
       const normalizedKeyword = keyword.trim().toLowerCase();
       const filteredUsers = normalizedKeyword
         ? users.filter((userItem) => {
-            return (
-              userItem.name.toLowerCase().includes(normalizedKeyword) ||
-              userItem.email.toLowerCase().includes(normalizedKeyword)
-            );
-          })
+          return (
+            userItem.name.toLowerCase().includes(normalizedKeyword) ||
+            userItem.email.toLowerCase().includes(normalizedKeyword)
+          );
+        })
         : users;
 
       return filteredUsers;
@@ -161,6 +159,26 @@ export const Projects = () => {
       return [];
     }
   }, []);
+
+  const handleRenameFolder = async (folderId: string, newName: string) => {
+    try {
+      await renameFolderApi(folderId, newName);
+      toast.success("Folder renamed successfully");
+      void loadFolders();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to rename folder");
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteFolderByActorApi(folderId);
+      toast.success("Folder deleted successfully");
+      void loadFolders();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete folder");
+    }
+  };
 
   const handleSubmitAddUser = async (input: { memberUserId: string; permission: number }) => {
     if (!projectId) {
@@ -182,6 +200,8 @@ export const Projects = () => {
       });
 
       setIsAddUserModalOpen(false);
+      const members = await getProjectMembers(projectId);
+      setProjectMembers(members);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to add user to project";
       toast.error("Failed to add user", {
@@ -189,6 +209,80 @@ export const Projects = () => {
       });
     } finally {
       setIsSubmittingAddUser(false);
+    }
+  };
+
+  const loadProjectMembers = useCallback(async () => {
+    if (!projectId) {
+      return;
+    }
+
+    try {
+      const members = await getProjectMembers(projectId);
+      setProjectMembers(members);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to load project members.");
+    }
+  }, [projectId]);
+
+  const handleUpdateProjectMemberPermission = async (
+    memberUserId: string,
+    permission: number
+  ) => {
+    if (!projectId) {
+      toast.error("Project ID is missing");
+      return;
+    }
+
+    setIsSubmittingMemberAction(true);
+
+    try {
+      const response = await updateProjectMemberPermission({
+        projectId,
+        memberUserId,
+        permission,
+      });
+
+      toast.success("Permission updated successfully", {
+        description: `${response.userName} updated with permission level ${response.permission}`,
+      });
+
+      await loadProjectMembers();
+    } catch (error) {
+      toast.error("Failed to update permission", {
+        description: error instanceof Error ? error.message : "Unable to update member permission.",
+      });
+    } finally {
+      setIsSubmittingMemberAction(false);
+    }
+  };
+
+  const handleRemoveProjectMember = async (memberUserId: string) => {
+    if (!projectId) {
+      toast.error("Project ID is missing");
+      return;
+    }
+
+    const member = projectMembers.find((item) => item.userId === memberUserId);
+    setIsSubmittingMemberAction(true);
+
+    try {
+      await removeProjectMember({
+        projectId,
+        memberUserId,
+      });
+
+      toast.success("User removed from project", {
+        description: member ? `${member.userName} removed successfully` : "Member removed successfully",
+      });
+
+      await loadProjectMembers();
+    } catch (error) {
+      toast.error("Failed to remove user", {
+        description: error instanceof Error ? error.message : "Unable to remove member from project.",
+      });
+    } finally {
+      setIsSubmittingMemberAction(false);
     }
   };
 
@@ -216,59 +310,36 @@ export const Projects = () => {
     return null;
   }
 
-  const handleCreateFolder = () => {
+  const handleCreateFolderWithAcl = async (input: {
+    nameFolder: string;
+    path?: string;
+    parentFolderId?: string | null;
+    aclEntries?: { userId: string; permission: "VIEW" | "EDIT" | "DENIED" }[];
+  }) => {
     if (!projectId) {
+      toast.error("Project ID is missing");
       return;
     }
 
-    const nextFolderCount = createdFolderItems.length + 1;
-    const folderId = `new-folder-${Date.now()}`;
-    const folderName = nextFolderCount === 1 ? "New Project" : `New Project ${nextFolderCount}`;
+    try {
+      const response = await createFolder({
+        nameFolder: input.nameFolder,
+        path: input.path,
+        parentFolderId: input.parentFolderId,
+        aclEntries: input.aclEntries,
+      });
 
-    setCreatedFoldersByProject((currentMap) => {
-      const projectFolders = currentMap[projectId] ?? [];
+      toast.success("Create folder successfully", {
+        description: `${response.folder.nameFolder} created with ${(response.aclEntries ?? []).length} ACL rule(s)`,
+      });
 
-      return {
-        ...currentMap,
-        [projectId]: [
-          ...projectFolders,
-          {
-            id: folderId,
-            name: folderName,
-            filesCount: 0,
-          },
-        ],
-      };
-    });
-
-    setActiveFolderId(folderId);
-    setEditingFolderId(folderId);
-  };
-
-  const handleRenameFolder = (folderId: string, nextName: string) => {
-    if (!projectId) {
-      return;
+      setIsCreateFolderModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to create folder", {
+        description: error instanceof Error ? error.message : "Unable to create folder with ACL.",
+      });
+      throw error;
     }
-
-    setCreatedFoldersByProject((currentMap) => {
-      const projectFolders = currentMap[projectId] ?? [];
-
-      return {
-        ...currentMap,
-        [projectId]: projectFolders.map((folderItem) => {
-          if (folderItem.id !== folderId) {
-            return folderItem;
-          }
-
-          return {
-            ...folderItem,
-            name: nextName,
-          };
-        }),
-      };
-    });
-
-    setEditingFolderId("");
   };
 
   const resolveFileTypeFromFileName = (fileName: string): TProjectFileType => {
@@ -321,8 +392,13 @@ export const Projects = () => {
     });
   };
 
-  const handleOpenFolderDetail = (folderItem: IProjectFolderListItem) => {
+  const handleOpenFolderDetail = (folderItem: IProjectFolderItem) => {
     if (!projectId) {
+      return;
+    }
+
+    if (folderItem.isVirtual) {
+      toast.info("This is a default sample folder. Create a real folder to open details.");
       return;
     }
 
@@ -342,8 +418,13 @@ export const Projects = () => {
           </div>
 
           <ProjectFolderActions
-            showAddUserButton={isCurrentUserProjectOwner}
+            showAddUserButton={projectDetail.currentUserCanManageMembers}
             onAddUser={() => setIsAddUserModalOpen(true)}
+            showViewUsersButton
+            onViewUsers={() => {
+              setIsProjectMembersModalOpen(true);
+              void loadProjectMembers();
+            }}
           />
         </div>
 
@@ -385,7 +466,7 @@ export const Projects = () => {
           <button
             type="button"
             className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700"
-            onClick={handleCreateFolder}
+            onClick={() => setIsCreateFolderModalOpen(true)}
           >
             <Plus className="h-4 w-4" />
             <span>New Folder</span>
@@ -393,19 +474,33 @@ export const Projects = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {folderItems.map((folderItem) => {
-            return (
-              <ProjectFolderCard
-                key={folderItem.id}
-                name={folderItem.name}
-                filesCount={folderItem.filesCount}
-                isActive={folderItem.id === selectedFolderId}
-                isEditing={folderItem.id === editingFolderId}
-                onClick={() => handleOpenFolderDetail(folderItem)}
-                onNameSubmit={(nextName) => handleRenameFolder(folderItem.id, nextName)}
-              />
-            );
-          })}
+          {folderItems.length === 0 ? (
+            <div className="col-span-full rounded-md border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-400">
+              Chưa có folder trong project này
+            </div>
+          ) : (
+            folderItems.map((folderItem) => {
+              const canWrite = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+              const canDelete = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+              return (
+                <ProjectFolderCard
+                  key={folderItem.id}
+                  folderId={folderItem.id}
+                  name={folderItem.name}
+                  filesCount={folderItem.filesCount}
+                  isActive={folderItem.id === selectedFolderId}
+                  onClick={() => handleOpenFolderDetail(folderItem)}
+                  menuActions={{
+                    folderId: folderItem.id,
+                    canWrite,
+                    canDelete,
+                    onRename: handleRenameFolder,
+                    onDelete: handleDeleteFolder,
+                  }}
+                />
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -508,6 +603,24 @@ export const Projects = () => {
         fetchUsers={fetchTenantUsers}
         onClose={() => setIsAddUserModalOpen(false)}
         onSubmit={handleSubmitAddUser}
+      />
+      <CreateProjectFolderModal
+        projectId={projectId ?? ""}
+        isOpen={isCreateFolderModalOpen}
+        isSubmitting={isCreatingFolder}
+        onClose={() => setIsCreateFolderModalOpen(false)}
+        onSubmit={handleCreateFolderWithAcl}
+      />
+      <ProjectMembersModal
+        isOpen={isProjectMembersModalOpen}
+        isSubmitting={isSubmittingMemberAction}
+        projectName={displayProjectName}
+        ownerUserId={projectDetail.ownerId}
+        currentUserCanManageMembers={projectDetail.currentUserCanManageMembers}
+        members={projectMembers}
+        onClose={() => setIsProjectMembersModalOpen(false)}
+        onUpdatePermission={handleUpdateProjectMemberPermission}
+        onDeleteMember={handleRemoveProjectMember}
       />
     </div>
   );

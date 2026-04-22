@@ -13,6 +13,8 @@ export interface IUserProjectDetailResponse {
   ownerName?: string
   status?: string
   department?: string
+  currentUserIsOwner?: boolean
+  currentUserCanManageMembers?: boolean
 }
 
 export interface IUserProjectDetail {
@@ -22,6 +24,8 @@ export interface IUserProjectDetail {
   ownerName: string
   status: string
   department: string
+  currentUserIsOwner: boolean
+  currentUserCanManageMembers: boolean
 }
 
 export interface IUserTenantListItemResponse {
@@ -47,7 +51,16 @@ export interface IUserTenantOption {
 }
 
 export interface IProjectMemberResponse {
-  id: string
+  id: string | null
+  projectId: string
+  userId: string
+  userName: string
+  permission: number
+  grantedByUserId: string | null
+}
+
+export interface IProjectMemberItem {
+  id: string | null
   projectId: string
   userId: string
   userName: string
@@ -143,6 +156,8 @@ const toUserProjectDetail = (
     ownerName: item.ownerName?.trim() ? item.ownerName : "Project Owner",
     status: item.status?.trim() ? item.status : "ACTIVE",
     department: item.department?.trim() ? item.department : "General",
+    currentUserIsOwner: Boolean(item.currentUserIsOwner),
+    currentUserCanManageMembers: Boolean(item.currentUserCanManageMembers),
   }
 }
 
@@ -209,4 +224,58 @@ export const assignProjectMember = async (
   )
 
   return response.data.data
+}
+
+const toProjectMemberItem = (item: IProjectMemberResponse): IProjectMemberItem => {
+  return {
+    id: item.id ?? null,
+    projectId: item.projectId,
+    userId: item.userId,
+    userName: item.userName,
+    permission: typeof item.permission === "number" ? item.permission : 1,
+    grantedByUserId: item.grantedByUserId ?? null,
+  }
+}
+
+export const getProjectMembers = async (
+  projectId: string
+): Promise<IProjectMemberItem[]> => {
+  const response = await api.get<IApiResponse<IProjectMemberResponse[]>>(
+    `/projects/${encodeURIComponent(projectId)}/members`,
+    {
+      skipGlobalErrorHandler: true,
+    }
+  )
+
+  return (response.data.data ?? []).map((member) => toProjectMemberItem(member))
+}
+
+export const updateProjectMemberPermission = async (input: {
+  projectId: string
+  memberUserId: string
+  permission: number
+}): Promise<IProjectMemberItem> => {
+  const response = await api.patch<IApiResponse<IProjectMemberResponse>>(
+    `/projects/${encodeURIComponent(input.projectId)}/members/${encodeURIComponent(input.memberUserId)}/permission`,
+    {
+      permission: input.permission,
+    },
+    {
+      skipGlobalErrorHandler: false,
+    }
+  )
+
+  return toProjectMemberItem(response.data.data)
+}
+
+export const removeProjectMember = async (input: {
+  projectId: string
+  memberUserId: string
+}): Promise<void> => {
+  await api.delete(
+    `/projects/${encodeURIComponent(input.projectId)}/members/${encodeURIComponent(input.memberUserId)}`,
+    {
+      skipGlobalErrorHandler: false,
+    }
+  )
 }
