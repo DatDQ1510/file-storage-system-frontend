@@ -3,33 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 const SECURITY_SUMMARY = [
-  { label: "Threat Events (24h)", value: "42", foot: "all mitigated", icon: Radar },
-  { label: "Policy Compliance", value: "98%", foot: "2 warnings", icon: Shield },
-  { label: "Failed Sign-ins", value: "17", foot: "-11 vs yesterday", icon: Lock },
-  { label: "Active Sessions", value: "211", foot: "stable session footprint", icon: Activity },
+  { label: "Sự kiện đe dọa (24h)", value: "42", foot: "đã giảm thiểu toàn bộ", icon: Radar },
+  { label: "Tuân thủ chính sách", value: "98%", foot: "2 cảnh báo", icon: Shield },
+  { label: "Đăng nhập thất bại", value: "17", foot: "-11 so với hôm qua", icon: Lock },
+  { label: "Phiên hoạt động", value: "211", foot: "ổn định", icon: Activity },
 ]
 
 const SECURITY_POLICIES = [
-  { title: "Enforce MFA", description: "Require MFA for all admin and manager roles", enabled: true },
-  { title: "External Link Expiry", description: "Expire public shared links after 7 days", enabled: true },
-  { title: "Geo-fencing", description: "Restrict sign-ins from unknown regions", enabled: false },
-  { title: "Risk-based Session Timeout", description: "Auto-logoff on suspicious behavior", enabled: true },
+  { title: "Bắt buộc MFA", description: "Yêu cầu MFA cho tất cả vai trò quản trị và quản lý", enabled: true },
+  { title: "Hết hạn liên kết ngoài", description: "Liên kết chia sẻ công khai hết hạn sau 7 ngày", enabled: true },
+  { title: "Giới hạn theo khu vực", description: "Giới hạn đăng nhập từ khu vực không xác định", enabled: false },
+  { title: "Hết phiên theo mức độ rủi ro", description: "Tự động đăng xuất khi có hành vi bất thường", enabled: true },
 ]
 
 const AUDIT_EVENTS = [
   {
-    title: "Role escalation attempt blocked",
-    detail: "user_analytics_bot requested admin scope outside policy templates",
+    title: "Đã chặn nỗ lực nâng quyền",
+    detail: "user_analytics_bot yêu cầu quyền admin ngoài mẫu chính sách",
     tone: "critical",
   },
   {
-    title: "MFA challenge passed",
-    detail: "workspace-admin completed second factor from trusted device",
+    title: "Xác thực MFA thành công",
+    detail: "workspace-admin hoàn tất lớp xác thực thứ hai từ thiết bị tin cậy",
     tone: "ok",
   },
   {
-    title: "Unusual API burst detected",
-    detail: "rate limiter throttled 418 requests from integration key #a2f9",
+    title: "Phát hiện đột biến gọi API",
+    detail: "rate limiter đã giới hạn 418 request từ integration key #a2f9",
     tone: "warn",
   },
 ]
@@ -61,7 +61,7 @@ export const SecuritySection = () => {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Security Policy Controls</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Thiết lập chính sách bảo mật</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {SECURITY_POLICIES.map((policy) => (
@@ -83,17 +83,17 @@ export const SecuritySection = () => {
 
         <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-900">Response Readiness</CardTitle>
+            <CardTitle className="text-xl font-semibold text-slate-900">Mức sẵn sàng ứng phó</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2.5 text-sm text-cyan-800">
-              Incident channel connected to SIEM and pager workflows.
+              Kênh sự cố đã kết nối với SIEM và luồng pager.
             </div>
             <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
-              Backup recovery drill passed in 14m 22s.
+              Diễn tập khôi phục sao lưu hoàn tất trong 14 phút 22 giây.
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-              Next compliance checkpoint: ISO-27001 evidence package in 5 days.
+              Mốc tuân thủ tiếp theo: hoàn thiện bộ bằng chứng ISO-27001 trong 5 ngày.
             </div>
           </CardContent>
         </Card>
@@ -101,7 +101,7 @@ export const SecuritySection = () => {
 
       <Card className="border-slate-200 bg-white">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-slate-900">Recent Audit Signals</CardTitle>
+          <CardTitle className="text-lg font-semibold text-slate-900">Tín hiệu kiểm toán gần đây</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {AUDIT_EVENTS.map((event) => (
@@ -116,7 +116,7 @@ export const SecuritySection = () => {
               </div>
 
               <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", toneClassMap[event.tone as keyof typeof toneClassMap])}>
-                {event.tone === "ok" ? "Stable" : event.tone === "warn" ? "Warning" : "Critical"}
+                {event.tone === "ok" ? "Ổn định" : event.tone === "warn" ? "Cảnh báo" : "Nghiêm trọng"}
               </span>
             </div>
           ))}

@@ -18,24 +18,24 @@ interface IAddProjectMemberModalProps {
 
 const PERMISSION_OPTIONS = [
   {
-    label: "Read",
+    label: "Đọc",
     value: 1,
-    description: "View files and folders in project",
+    description: "Xem tệp và thư mục trong dự án",
   },
   {
-    label: "Write",
+    label: "Ghi",
     value: 2,
-    description: "Upload, edit and move files",
+    description: "Tải lên, chỉnh sửa và di chuyển tệp",
   },
   {
-    label: "Delete",
+    label: "Xóa",
     value: 4,
-    description: "Delete project resources",
+    description: "Xóa tài nguyên dự án",
   },
   {
-    label: "Manage member",
+    label: "Quản lý thành viên",
     value: 8,
-    description: "Add or update project members",
+    description: "Thêm hoặc cập nhật thành viên dự án",
   },
 ] as const
 
@@ -146,7 +146,7 @@ export const AddProjectMemberModal = ({
         type="button"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
         onClick={handleClose}
-        aria-label="Close add project member modal"
+        aria-label="Đóng hộp thoại thêm thành viên dự án"
       />
 
       <div className="relative z-10 flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
@@ -161,7 +161,7 @@ export const AddProjectMemberModal = ({
 
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
-            <h3 className="text-3xl font-semibold text-slate-900">Add user in project</h3>
+            <h3 className="text-3xl font-semibold text-slate-900">Thêm thành viên vào dự án</h3>
             <p className="mt-1 text-sm text-slate-500">Dự án: {projectName || "-"}</p>
           </div>
 
@@ -276,7 +276,7 @@ export const AddProjectMemberModal = ({
                 )
               })}
             </div>
-            <p className="mt-1 text-xs text-slate-500">Permission bitmask hiện tại: {formState.permission}</p>
+            <p className="mt-1 text-xs text-slate-500">Bitmask quyền hiện tại: {formState.permission}</p>
           </div>
 
           {errorMessage && (

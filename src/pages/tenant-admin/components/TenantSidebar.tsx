@@ -41,8 +41,8 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
             <Building2 className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-base font-bold text-blue-800">Tenant Admin</p>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Workspace Portal</p>
+            <p className="text-base font-bold text-blue-800">Quản trị tenant</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Cổng quản trị workspace</p>
           </div>
         </div>
       </div>
@@ -84,11 +84,11 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
       <div className="space-y-2 border-t border-slate-200 px-4 py-5">
         <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-white hover:text-slate-900" type="button">
           <CircleAlert className="h-4 w-4" />
-          Support
+          Hỗ trợ
         </button>
         <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-white hover:text-slate-900" type="button">
           <Blocks className="h-4 w-4" />
-          Documentation
+          Tài liệu
         </button>
       </div>
     </aside>

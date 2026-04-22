@@ -69,7 +69,7 @@ const toJoinedDateLabel = (createdAt?: string): string => {
     return "-"
   }
 
-  return dateValue.toLocaleDateString("en-US", {
+  return dateValue.toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -88,9 +88,9 @@ const mapAllUserToUserDirectoryRecord = (
     id: `usr-${String(serial).padStart(3, "0")}`,
     fullName: user.userName,
     email: user.email,
-    phone: user.phoneNumber || "N/A",
+    phone: user.phoneNumber || "Không có",
     employeeCode: `EMP-${1000 + serial}`,
-    department: user.department || "General",
+    department: user.department || "Chung",
     status: toTenantUserStatus(user.status),
     joinedAt: toJoinedDateLabel(user.createdAt),
     mfaEnabled: Boolean(user.MFAEnabled),

@@ -99,6 +99,19 @@ const STATUS_OPTIONS: Array<TMemberStatus | "all"> = [
   "Suspended",
 ]
 
+const getMemberStatusLabel = (status: TMemberStatus | "all") => {
+  if (status === "all") {
+    return "Tất cả trạng thái"
+  }
+  if (status === "Active") {
+    return "Đang hoạt động"
+  }
+  if (status === "Pending") {
+    return "Chờ kích hoạt"
+  }
+  return "Tạm khóa"
+}
+
 const copyTextToClipboard = async (value: string) => {
   if (!value.trim()) {
     return false
@@ -156,9 +169,9 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
     const copied = await copyTextToClipboard(value)
 
     if (copied) {
-      toast.success(`${label} copied`)
+      toast.success(`Đã sao chép ${label}`)
     } else {
-      toast.error("Unable to copy to clipboard")
+      toast.error("Không thể sao chép vào bộ nhớ tạm")
     }
 
     setIsOpen(false)
@@ -166,7 +179,7 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
 
   const handleOpenEmail = () => {
     if (!member.email.trim()) {
-      toast.error("Member email is unavailable")
+      toast.error("Không có email của thành viên")
       return
     }
 
@@ -198,16 +211,16 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
             role="menuitem"
           >
             <Mail className="h-4 w-4" />
-            Send email
+            Gửi email
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(member.email, "Email")}
+            onClick={() => void handleCopyValue(member.email, "email")}
             role="menuitem"
           >
             <Copy className="h-4 w-4" />
-            Copy email
+            Sao chép email
           </button>
           <button
             type="button"
@@ -224,11 +237,11 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(member.id, "Member ID")}
+            onClick={() => void handleCopyValue(member.id, "mã thành viên")}
             role="menuitem"
           >
             <UserRound className="h-4 w-4" />
-            Copy member ID
+            Sao chép mã thành viên
           </button>
         </div>
       )}
@@ -287,7 +300,7 @@ export const OrganizationSection = () => {
       setIsUsingMockData(false)
     } catch {
       mapMockMembersPage(page, offset)
-      toast.error("Cannot load users from API. Showing mock data.")
+      toast.error("Không tải được danh sách người dùng từ API. Đang hiển thị dữ liệu mẫu.")
     } finally {
       setIsLoadingMembers(false)
     }
@@ -318,24 +331,24 @@ export const OrganizationSection = () => {
 
     return [
       {
-        label: "Total Members",
+        label: "Tổng thành viên",
         value: `${totalElements}`,
-        note: "Across tenant directory",
+        note: "Toàn bộ thư mục tenant",
       },
       {
-        label: "Active Accounts",
+        label: "Tài khoản đang hoạt động",
         value: `${activeAccounts}`,
-        note: "In current page",
+        note: "Trong trang hiện tại",
       },
       {
-        label: "MFA Enabled",
+        label: "Đã bật MFA",
         value: `${mfaEnabledAccounts}`,
-        note: "In current page",
+        note: "Trong trang hiện tại",
       },
       {
-        label: "Suspended",
+        label: "Tạm khóa",
         value: `${suspendedAccounts}`,
-        note: "In current page",
+        note: "Trong trang hiện tại",
       },
     ]
   }, [members, totalElements])
@@ -356,7 +369,7 @@ export const OrganizationSection = () => {
       )
     )
 
-    toast.success(nextStatus === "Active" ? "User đã được bật" : "User đã được tắt")
+    toast.success(nextStatus === "Active" ? "Người dùng đã được bật" : "Người dùng đã được tắt")
   }, [])
 
   const handleCloseCreateUserModal = () => {
@@ -381,10 +394,10 @@ export const OrganizationSection = () => {
           id: createdUser.id?.trim() ? createdUser.id : generatedId,
           fullName: createdUser.userName?.trim() ? createdUser.userName : input.userName,
           email: createdUser.email?.trim() ? createdUser.email : input.email,
-          phone: createdUser.phoneNumber?.trim() ? createdUser.phoneNumber : input.phoneNumber || "N/A",
+          phone: createdUser.phoneNumber?.trim() ? createdUser.phoneNumber : input.phoneNumber || "Không có",
           employeeCode: `EMP-${1000 + nextIndex}`,
           department:
-            createdUser.department?.trim() || input.department.trim() || "General",
+            createdUser.department?.trim() || input.department.trim() || "Chung",
           status: "Pending",
           joinedAt,
           mfaEnabled: false,
@@ -394,10 +407,10 @@ export const OrganizationSection = () => {
       ])
 
       setIsCreateUserModalOpen(false)
-      toast.success("User created successfully")
+      toast.success("Tạo người dùng thành công")
       setTotalElements((current) => current + 1)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create user")
+      toast.error(error instanceof Error ? error.message : "Không thể tạo người dùng")
     } finally {
       setIsSubmittingCreateUser(false)
     }
@@ -434,7 +447,7 @@ export const OrganizationSection = () => {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Member Management</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Centralized member directory with richer identity fields, access status, and security visibility.
+            Quản lý tập trung danh bạ thành viên với thông tin định danh, trạng thái truy cập và hiển thị bảo mật.
           </p>
         </div>
 
@@ -443,10 +456,10 @@ export const OrganizationSection = () => {
             size="sm"
             variant="outline"
             className="border-slate-300 bg-white"
-            onClick={() => toast.info("Batch import flow will be implemented next.")}
+            onClick={() => toast.info("Tính năng nhập hàng loạt sẽ được triển khai ở bước tiếp theo.")}
           >
             <Upload className="h-4 w-4" />
-            Add Users by Batch
+            Thêm người dùng hàng loạt
           </Button>
           <Button
             size="sm"
@@ -454,7 +467,7 @@ export const OrganizationSection = () => {
             onClick={handleOpenCreateUserModal}
           >
             <Plus className="h-4 w-4" />
-            Add User
+            Thêm người dùng
           </Button>
         </div>
       </div>
@@ -473,15 +486,15 @@ export const OrganizationSection = () => {
         ))}
       </section>
 
-      <Card className="border-slate-200 bg-white">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-slate-900">Member Directory</CardTitle>
-          {isUsingMockData && (
-            <p className="text-xs font-medium text-amber-600">
-              API unavailable - displaying mock data.
-            </p>
-          )}
-        </CardHeader>
+        <Card className="border-slate-200 bg-white">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-slate-900">Danh bạ thành viên</CardTitle>
+            {isUsingMockData && (
+              <p className="text-xs font-medium text-amber-600">
+                API không khả dụng - đang hiển thị dữ liệu mẫu.
+              </p>
+            )}
+          </CardHeader>
 
         <CardContent className="space-y-4">
           <div className="grid gap-2 md:grid-cols-[1.3fr_0.7fr_0.7fr_auto]">
@@ -489,7 +502,7 @@ export const OrganizationSection = () => {
               <Search className="h-4 w-4 text-slate-500" />
               <input
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                placeholder="Search by name, email, or employee code"
+                placeholder="Tìm theo tên, email hoặc mã nhân viên"
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -503,7 +516,7 @@ export const OrganizationSection = () => {
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status === "all" ? "All Statuses" : status}
+                  {getMemberStatusLabel(status)}
                 </option>
               ))}
             </select>
@@ -518,7 +531,7 @@ export const OrganizationSection = () => {
                 setPage(0)
               }}
             >
-              Reset Filters
+              Đặt lại bộ lọc
             </Button>
 
             <select
@@ -526,10 +539,10 @@ export const OrganizationSection = () => {
               onChange={(event) => handleOffsetChange(Number(event.target.value))}
               value={offset}
             >
-              <option value={5}>5 / page</option>
-              <option value={10}>10 / page</option>
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
+              <option value={5}>5 / trang</option>
+              <option value={10}>10 / trang</option>
+              <option value={20}>20 / trang</option>
+              <option value={50}>50 / trang</option>
             </select>
           </div>
 
@@ -538,14 +551,14 @@ export const OrganizationSection = () => {
               <table className="min-w-[1080px] w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                    <th className="px-3 py-2.5">Member</th>
-                    <th className="px-3 py-2.5">Contact</th>
-                    <th className="px-3 py-2.5">Department</th>
-                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5">Thành viên</th>
+                    <th className="px-3 py-2.5">Liên hệ</th>
+                    <th className="px-3 py-2.5">Phòng ban</th>
+                    <th className="px-3 py-2.5">Trạng thái</th>
                     <th className="px-3 py-2.5">MFA</th>
-                    <th className="px-3 py-2.5">Storage</th>
-                    <th className="px-3 py-2.5">Joined</th>
-                    <th className="px-3 py-2.5 text-right">Actions</th>
+                    <th className="px-3 py-2.5">Lưu trữ</th>
+                    <th className="px-3 py-2.5">Ngày tham gia</th>
+                    <th className="px-3 py-2.5 text-right">Thao tác</th>
                   </tr>
                 </thead>
 
@@ -553,13 +566,13 @@ export const OrganizationSection = () => {
                   {isLoadingMembers ? (
                     <tr>
                       <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
-                        Loading users...
+                        Đang tải người dùng...
                       </td>
                     </tr>
                   ) : filteredMembers.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
-                        No users found.
+                        Không tìm thấy người dùng.
                       </td>
                     </tr>
                   ) : (
@@ -585,7 +598,7 @@ export const OrganizationSection = () => {
                               member.status === "Suspended" && "bg-red-100 text-red-700"
                             )}
                           >
-                            {member.status}
+                            {getMemberStatusLabel(member.status)}
                           </span>
                         </td>
 
@@ -597,9 +610,9 @@ export const OrganizationSection = () => {
                                 ? "bg-cyan-100 text-cyan-700"
                                 : "bg-slate-100 text-slate-600"
                             )}
-                          >
+                            >
                             <UserCheck className="h-3.5 w-3.5" />
-                            {member.mfaEnabled ? "Enabled" : "Disabled"}
+                            {member.mfaEnabled ? "Đã bật" : "Đã tắt"}
                           </span>
                         </td>
 
@@ -618,7 +631,7 @@ export const OrganizationSection = () => {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Total records: {totalElements}</span>
+            <span>Tổng bản ghi: {totalElements}</span>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -627,10 +640,10 @@ export const OrganizationSection = () => {
                 disabled={!hasPrevious || isLoadingMembers}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Prev
+                Trước
               </Button>
               <span>
-                Page {page + 1}/{totalPages}
+                Trang {page + 1}/{totalPages}
               </span>
               <Button
                 size="sm"
@@ -638,7 +651,7 @@ export const OrganizationSection = () => {
                 onClick={handleNextPage}
                 disabled={!hasNext || isLoadingMembers}
               >
-                Next
+                Sau
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

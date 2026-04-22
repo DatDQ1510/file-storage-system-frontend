@@ -19,16 +19,16 @@ const INITIAL_CREATE_USER_FORM_STATE: ICreateTenantUserRequest = {
 }
 
 const DEFAULT_DEPARTMENTS = [
-  "Engineering",
-  "Product",
-  "Design",
+  "Kỹ thuật",
+  "Sản phẩm",
+  "Thiết kế",
   "Marketing",
-  "Sales",
-  "Operations",
-  "Finance",
-  "Human Resources",
-  "Customer Success",
-  "IT Support",
+  "Kinh doanh",
+  "Vận hành",
+  "Tài chính",
+  "Nhân sự",
+  "Chăm sóc khách hàng",
+  "Hỗ trợ CNTT",
 ]
 
 export const CreateUserModal = ({
@@ -87,37 +87,37 @@ export const CreateUserModal = ({
     }
 
     if (!normalizedInput.userName) {
-      setErrorMessage("User name is required.")
+      setErrorMessage("Tên người dùng là bắt buộc.")
       return
     }
 
     if (normalizedInput.userName.length > 100) {
-      setErrorMessage("User name must be at most 100 characters.")
+      setErrorMessage("Tên người dùng tối đa 100 ký tự.")
       return
     }
 
     if (!normalizedInput.email) {
-      setErrorMessage("Email is required.")
+      setErrorMessage("Email là bắt buộc.")
       return
     }
 
     if (normalizedInput.email.length > 255) {
-      setErrorMessage("Email must be at most 255 characters.")
+      setErrorMessage("Email tối đa 255 ký tự.")
       return
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedInput.email)) {
-      setErrorMessage("Email format is invalid.")
+      setErrorMessage("Định dạng email không hợp lệ.")
       return
     }
 
     if (!normalizedInput.password) {
-      setErrorMessage("Password is required.")
+      setErrorMessage("Mật khẩu là bắt buộc.")
       return
     }
 
     if (normalizedInput.password.length < 6 || normalizedInput.password.length > 100) {
-      setErrorMessage("Password must be between 6 and 100 characters.")
+      setErrorMessage("Mật khẩu phải có từ 6 đến 100 ký tự.")
       return
     }
 
@@ -132,12 +132,12 @@ export const CreateUserModal = ({
         type="button"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
         onClick={handleClose}
-        aria-label="Close create user modal"
+        aria-label="Đóng hộp thoại tạo người dùng"
       />
 
       <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-2xl font-semibold text-slate-900">Create New User</h3>
+          <h3 className="text-2xl font-semibold text-slate-900">Tạo người dùng mới</h3>
           <button
             type="button"
             className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -149,19 +149,19 @@ export const CreateUserModal = ({
 
         <div className="space-y-4 px-5 py-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">User Name *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">Tên người dùng *</label>
             <input
               value={formState.userName}
               onChange={(event) => handleChange("userName", event.target.value)}
-              placeholder="e.g. John Smith"
+              placeholder="Ví dụ: Nguyễn Văn A"
               maxLength={100}
               className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:border-cyan-500"
             />
-            <p className="mt-1 text-right text-xs text-slate-400">Max 100 characters</p>
+            <p className="mt-1 text-right text-xs text-slate-400">Tối đa 100 ký tự</p>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">Email Address *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">Địa chỉ email *</label>
             <input
               value={formState.email}
               onChange={(event) => handleChange("email", event.target.value)}
@@ -173,7 +173,7 @@ export const CreateUserModal = ({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-800">Password *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">Mật khẩu *</label>
               <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3">
                 <input
                   value={formState.password}
@@ -183,11 +183,11 @@ export const CreateUserModal = ({
                   className="w-full bg-transparent text-sm text-slate-800 outline-none"
                 />
                 <button
-                  type="button"
-                  className="text-slate-500"
-                  onClick={() => setIsPasswordVisible((current) => !current)}
-                  aria-label="Toggle password visibility"
-                >
+                    type="button"
+                    className="text-slate-500"
+                    onClick={() => setIsPasswordVisible((current) => !current)}
+                    aria-label="Bật/tắt hiển thị mật khẩu"
+                  >
                   {isPasswordVisible ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
@@ -198,7 +198,7 @@ export const CreateUserModal = ({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-800">Phone Number</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">Số điện thoại</label>
               <input
                 value={formState.phoneNumber}
                 onChange={(event) => handleChange("phoneNumber", event.target.value)}
@@ -209,14 +209,14 @@ export const CreateUserModal = ({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">Department</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800">Phòng ban</label>
             <select
               value={formState.department}
               onChange={(event) => handleChange("department", event.target.value)}
-              aria-label="Select department"
+              aria-label="Chọn phòng ban"
               className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:border-cyan-500"
             >
-              <option value="">Select a department...</option>
+              <option value="">Chọn phòng ban...</option>
               {DEFAULT_DEPARTMENTS.map((department) => (
                 <option key={department} value={department}>
                   {department}
@@ -226,7 +226,7 @@ export const CreateUserModal = ({
           </div>
 
           <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            The user will receive an invitation email to complete account activation.
+            Người dùng sẽ nhận email mời để hoàn tất kích hoạt tài khoản.
           </p>
 
           {errorMessage && (
@@ -238,7 +238,7 @@ export const CreateUserModal = ({
 
         <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
           <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
+            Hủy
           </Button>
           <Button
             type="button"
@@ -246,7 +246,7 @@ export const CreateUserModal = ({
             onClick={() => void handleSubmit()}
             disabled={!canSubmit || isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create User"}
+            {isSubmitting ? "Đang tạo..." : "Tạo người dùng"}
           </Button>
         </div>
       </div>

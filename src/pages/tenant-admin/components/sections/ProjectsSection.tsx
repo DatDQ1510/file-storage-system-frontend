@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getProjectPath } from "@/constants/routes"
 import { cn } from "@/lib/utils"
-import { getProjectStatusClassName } from "@/pages/tenant-admin/constants"
+import { getProjectStatusClassName, getProjectStatusLabel } from "@/pages/tenant-admin/constants"
 import type { IProjectRecord } from "@/pages/tenant-admin/types"
 
 const PROJECT_ICON_MAP = {
@@ -84,9 +84,9 @@ const ProjectRowActionsMenu = ({ project, onUpdateStatus }: IProjectRowActionsMe
     const copied = await copyTextToClipboard(value)
 
     if (copied) {
-      toast.success(`${label} copied`)
+      toast.success(`Đã sao chép ${label}`)
     } else {
-      toast.error("Unable to copy to clipboard")
+      toast.error("Không thể sao chép vào bộ nhớ tạm")
     }
 
     setIsOpen(false)
@@ -121,25 +121,25 @@ const ProjectRowActionsMenu = ({ project, onUpdateStatus }: IProjectRowActionsMe
             role="menuitem"
           >
             <ExternalLink className="h-4 w-4" />
-            Open project
+            Mở dự án
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(project.id, "Project ID")}
+            onClick={() => void handleCopyValue(project.id, "mã dự án")}
             role="menuitem"
           >
             <Copy className="h-4 w-4" />
-            Copy project ID
+            Sao chép mã dự án
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(project.name, "Project name")}
+            onClick={() => void handleCopyValue(project.name, "tên dự án")}
             role="menuitem"
           >
             <Copy className="h-4 w-4" />
-            Copy project name
+            Sao chép tên dự án
           </button>
           <div className="my-1 border-t border-slate-200" />
           {statusOptions.map((statusOption) => (
@@ -154,8 +154,8 @@ const ProjectRowActionsMenu = ({ project, onUpdateStatus }: IProjectRowActionsMe
               role="menuitem"
             >
               <Check className="h-4 w-4" />
-              Set {statusOption}
-              {project.status === statusOption && <span className="ml-auto text-xs text-cyan-700">Current</span>}
+              Đặt {getProjectStatusLabel(statusOption)}
+              {project.status === statusOption && <span className="ml-auto text-xs text-cyan-700">Hiện tại</span>}
             </button>
           ))}
         </div>
@@ -207,10 +207,10 @@ export const ProjectsSection = ({
     <div className="space-y-5">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Total Projects", value: `${totalElements}`, foot: "tenant portfolio" },
-          { label: "Active Delivery", value: `${activeProjects}`, foot: "in current page" },
-          { label: "Planning", value: `${planningProjects}`, foot: "in current page" },
-          { label: "Archived", value: `${archivedProjects}`, foot: "in current page" },
+          { label: "Tổng dự án", value: `${totalElements}`, foot: "trong danh mục tenant" },
+          { label: "Đang triển khai", value: `${activeProjects}`, foot: "trong trang hiện tại" },
+          { label: "Lên kế hoạch", value: `${planningProjects}`, foot: "trong trang hiện tại" },
+          { label: "Lưu trữ", value: `${archivedProjects}`, foot: "trong trang hiện tại" },
         ].map((summary) => (
           <Card key={summary.label} className="border-slate-200 bg-white">
             <CardHeader className="pb-1">
@@ -226,21 +226,21 @@ export const ProjectsSection = ({
 
       <Card className="border-slate-200 bg-white">
         <CardHeader className="flex-row items-center justify-between gap-3">
-          <CardTitle className="text-lg font-semibold text-slate-900">Project Workspace Registry</CardTitle>
+          <CardTitle className="text-lg font-semibold text-slate-900">Danh mục workspace dự án</CardTitle>
 
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 sm:w-64">
               <Search className="h-4 w-4 text-slate-500" />
               <input
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                placeholder="Search project or PM"
+                placeholder="Tìm dự án hoặc PM"
                 type="text"
               />
             </label>
 
             <Button size="sm" variant="outline" className="border-slate-300 text-slate-600">
               <Filter className="h-4 w-4" />
-              Filter
+              Lọc
               <ChevronDown className="h-4 w-4" />
             </Button>
           </div>
@@ -249,26 +249,26 @@ export const ProjectsSection = ({
         <CardContent className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                <th className="py-3">Project</th>
-                <th className="py-3">Members</th>
-                <th className="py-3">Storage</th>
-                <th className="py-3">Status</th>
-                <th className="py-3 text-right">Actions</th>
-              </tr>
-            </thead>
+                <tr className="border-b border-slate-200 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                  <th className="py-3">Dự án</th>
+                  <th className="py-3">Thành viên</th>
+                  <th className="py-3">Lưu trữ</th>
+                  <th className="py-3">Trạng thái</th>
+                  <th className="py-3 text-right">Thao tác</th>
+                </tr>
+              </thead>
 
             <tbody>
               {isLoadingProjects ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-sm text-slate-500">
-                    Loading projects...
+                    Đang tải dự án...
                   </td>
                 </tr>
               ) : projectRecords.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-sm text-slate-500">
-                    No projects found.
+                    Không tìm thấy dự án.
                   </td>
                 </tr>
               ) : (
@@ -288,14 +288,14 @@ export const ProjectsSection = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-900">{project.name}</p>
-                            <p className="text-xs text-slate-500">PM: {project.pm}</p>
+                            <p className="text-xs text-slate-500">QLDA: {project.pm}</p>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           <Users className="h-3.5 w-3.5" />
-                          {project.membersCount} members
+                          {project.membersCount} thành viên
                         </div>
                       </td>
 
@@ -310,7 +310,7 @@ export const ProjectsSection = ({
 
                       <td>
                         <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-semibold", getProjectStatusClassName(project.status))}>
-                          {project.status}
+                          {getProjectStatusLabel(project.status)}
                         </span>
                       </td>
 
@@ -324,7 +324,7 @@ export const ProjectsSection = ({
                               className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
                               onClick={() => onOpenAddMemberModal(project)}
                             >
-                              Add user in project
+                              Thêm thành viên
                             </Button>
                           )}
                           <ProjectRowActionsMenu project={project} onUpdateStatus={onUpdateProjectStatus} />
@@ -338,15 +338,15 @@ export const ProjectsSection = ({
           </table>
 
           <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
-            <p className="text-slate-500">Showing {visibleFrom} to {visibleTo} of {totalElements} projects</p>
+            <p className="text-slate-500">Hiển thị {visibleFrom} - {visibleTo} trên tổng {totalElements} dự án</p>
             <div className="flex items-center gap-1">
               <Button size="sm" variant="ghost" className="text-slate-500" onClick={onPreviousPage} disabled={!hasPrevious || isLoadingProjects}>
                 <ChevronRight className="h-4 w-4 rotate-180" />
-                Prev
+                Trước
               </Button>
-              <span className="px-2 text-xs text-slate-600">Page {page + 1}/{totalPages}</span>
+              <span className="px-2 text-xs text-slate-600">Trang {page + 1}/{totalPages}</span>
               <Button size="sm" variant="ghost" className="text-slate-500" onClick={onNextPage} disabled={!hasNext || isLoadingProjects}>
-                Next
+                Sau
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

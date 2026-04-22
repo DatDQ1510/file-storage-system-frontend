@@ -9,33 +9,33 @@ import type {
 export const TENANT_NAV_GROUPS: ITenantNavGroup[] = [
   {
     items: [
-      { label: "Dashboard", icon: "grid_view", section: "dashboard" },
+      { label: "Tổng quan", icon: "grid_view", section: "dashboard" },
     ],
   },
   {
-    title: "ORGANIZATION & PEOPLE",
+    title: "TỔ CHỨC & NHÂN SỰ",
     items: [
-      { label: "Member Management", icon: "group", section: "organization" },
+      { label: "Quản lý thành viên", icon: "group", section: "organization" },
     ],
   },
   {
-    title: "WORKSPACE",
+    title: "KHÔNG GIAN LÀM VIỆC",
     items: [
-      { label: "Project List", icon: "assignment", section: "projects" },
+      { label: "Danh sách dự án", icon: "assignment", section: "projects" },
     ],
   },
   {
-    title: "SECURITY & TRACKING",
+    title: "BẢO MẬT & THEO DÕI",
     items: [
-      { label: "Audit Logs", icon: "security", section: "security" },
-      { label: "Shared Links Manager", icon: "link", section: "security" },
+      { label: "Nhật ký kiểm toán", icon: "security", section: "security" },
+      { label: "Quản lý liên kết chia sẻ", icon: "link", section: "security" },
     ],
   },
   {
-    title: "BILLING & PLANS",
+    title: "THANH TOÁN & GÓI DỊCH VỤ",
     items: [
-      { label: "Subscription Info", icon: "credit_card" },
-      { label: "Invoices", icon: "receipt" },
+      { label: "Thông tin gói", icon: "credit_card" },
+      { label: "Hóa đơn", icon: "receipt" },
     ],
   },
 ]
@@ -121,23 +121,23 @@ export const PROJECT_RECORDS: IProjectRecord[] = [
 export const ACTIVITY_RECORDS: IActivityRecord[] = [
   {
     actor: "Sarah Jenkins",
-    action: "uploaded",
-    resource: "marketing_strategy_v2.pdf to Project Orion",
-    timestamp: "24 minutes ago",
+    action: "đã tải lên",
+    resource: "marketing_strategy_v2.pdf vào Project Orion",
+    timestamp: "24 phút trước",
     dotColor: "#0052CC",
   },
   {
     actor: "Admin David",
-    action: "approved",
-    resource: "budget request for Cloud Infrastructure",
-    timestamp: "1 hour ago",
+    action: "đã phê duyệt",
+    resource: "đề nghị ngân sách cho Cloud Infrastructure",
+    timestamp: "1 giờ trước",
     dotColor: "#36B37E",
   },
   {
     actor: "Marcus Thorne",
-    action: "added 3 new members",
-    resource: "to Compliance Review",
-    timestamp: "3 hours ago",
+    action: "đã thêm 3 thành viên mới",
+    resource: "vào Compliance Review",
+    timestamp: "3 giờ trước",
     dotColor: "#FF991F",
   },
 ]
@@ -145,21 +145,21 @@ export const ACTIVITY_RECORDS: IActivityRecord[] = [
 export const PENDING_APPROVALS: IPendingApproval[] = [
   {
     type: "annual_audit.xlsx",
-    description: "From: Janet Doe",
+    description: "Từ: Janet Doe",
     from: "pending",
     status: "pending",
     icon: "description",
   },
   {
     type: "brand_hero_final.png",
-    description: "From: Kevin Art",
+    description: "Từ: Kevin Art",
     from: "pending",
     status: "pending",
     icon: "image",
   },
   {
     type: "contract_draft_v1.zip",
-    description: "From: Legal Team",
+    description: "Từ: Legal Team",
     from: "pending",
     status: "pending",
     icon: "attach_file",
@@ -167,41 +167,51 @@ export const PENDING_APPROVALS: IPendingApproval[] = [
 ]
 
 export const RESOURCE_SNAPSHOTS: IResourceSnapshot[] = [
-  { department: "Board of Directors", used: 382.5, total: 500, status: "Active Growth", statusColor: "text-green-600" },
-  { department: "Marketing", used: 255.0, total: 500, status: "Near Quota", statusColor: "text-amber-500" },
-  { department: "Accounting", used: 127.5, total: 500, status: "Stable", statusColor: "text-gray-600" },
+  { department: "Ban điều hành", used: 382.5, total: 500, status: "Tăng trưởng tốt", statusColor: "text-green-600" },
+  { department: "Marketing", used: 255.0, total: 500, status: "Sắp chạm hạn mức", statusColor: "text-amber-500" },
+  { department: "Kế toán", used: 127.5, total: 500, status: "Ổn định", statusColor: "text-gray-600" },
 ]
 
 export const getSectionTitle = (section: string) => {
   if (section === "dashboard") {
-    return "Dashboard Overview"
+    return "Tổng quan hệ thống"
   }
   if (section === "projects") {
-    return "Project Portfolio"
+    return "Danh mục dự án"
   }
   if (section === "organization") {
-    return "Organization Control"
+    return "Quản trị tổ chức"
   }
   if (section === "security") {
-    return "Security & Audit"
+    return "Bảo mật & kiểm toán"
   }
-  return "Management"
+  return "Quản trị"
 }
 
 export const getSectionDescription = (section: string) => {
   if (section === "dashboard") {
-    return "Real-time operational insights for your workspace."
+    return "Thông tin vận hành theo thời gian thực cho không gian làm việc của bạn."
   }
   if (section === "projects") {
-    return "Manage project workspaces, access models, and resource growth across teams."
+    return "Quản lý dự án, quyền truy cập và mức sử dụng tài nguyên giữa các nhóm."
   }
   if (section === "organization") {
-    return "Control member roles, department structures, and access boundaries in one place."
+    return "Kiểm soát vai trò thành viên, phòng ban và phạm vi truy cập tại một nơi."
   }
   if (section === "security") {
-    return "Track audit logs, investigate anomalies, and enforce workspace security policies."
+    return "Theo dõi nhật ký, điều tra bất thường và thực thi chính sách bảo mật."
   }
   return ""
+}
+
+export const getProjectStatusLabel = (status: IProjectRecord["status"]) => {
+  if (status === "Active") {
+    return "Đang hoạt động"
+  }
+  if (status === "Planning") {
+    return "Lên kế hoạch"
+  }
+  return "Lưu trữ"
 }
 
 export const getProjectStatusClassName = (status: IProjectRecord["status"]) => {

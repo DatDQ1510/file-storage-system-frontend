@@ -119,10 +119,10 @@ const mapProjectItemToRecord = (
 
   return {
     id: item.id?.trim() ? item.id : `proj-${String(serial).padStart(3, "0")}`,
-    name: item.nameProject?.trim() ? item.nameProject : "Untitled Project",
+    name: item.nameProject?.trim() ? item.nameProject : "Dự án chưa đặt tên",
     ownerId: item.ownerId?.trim() ? item.ownerId : "",
-    department: item.department?.trim() ? item.department : "General",
-    pm: item.ownerName?.trim() ? item.ownerName : "Project Owner",
+    department: item.department?.trim() ? item.department : "Chung",
+    pm: item.ownerName?.trim() ? item.ownerName : "Chủ dự án",
     membersCount:
       typeof item.membersCount === "number" && Number.isFinite(item.membersCount)
         ? Math.max(0, Math.floor(item.membersCount))

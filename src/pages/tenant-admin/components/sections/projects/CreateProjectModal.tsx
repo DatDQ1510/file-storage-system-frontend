@@ -91,7 +91,7 @@ export const CreateProjectModal = ({
         type="button"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
         onClick={handleClose}
-        aria-label="Close create project modal"
+        aria-label="Đóng hộp thoại tạo dự án"
       />
 
       <div className="relative z-10 flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">

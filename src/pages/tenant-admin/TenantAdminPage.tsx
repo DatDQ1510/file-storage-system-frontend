@@ -5,7 +5,7 @@ import {
 import { toast } from "sonner"
 import { Header } from "@/components/common/Header"
 import { Button } from "@/components/ui/button"
-import { getStoredAuthData } from "@/lib/api/auth-service"
+import { getCurrentUser, getStoredAuthData } from "@/lib/api/auth-service"
 import { DashboardSection } from "@/pages/tenant-admin/components/sections/DashboardSection"
 import { OrganizationSection } from "@/pages/tenant-admin/components/sections/OrganizationSection"
 import { ProjectsSection } from "@/pages/tenant-admin/components/sections/ProjectsSection"
@@ -31,6 +31,13 @@ import type {
   IProjectResponse,
   TTenantAdminSection,
 } from "@/pages/tenant-admin/types"
+import type { TUserRole } from "@/types/auth"
+
+const TENANT_ADMIN_ROLE_LABELS: Record<TUserRole, string> = {
+  SYSTEM_ADMIN: "Quản trị viên hệ thống",
+  TENANT_ADMIN: "Quản trị viên tenant",
+  USER: "Người dùng",
+}
 
 const mapProjectStatus = (status?: string): IProjectRecord["status"] => {
   const normalizedStatus = status?.trim().toUpperCase() ?? ""
@@ -56,9 +63,9 @@ const mapCreatedProjectToRecord = (
 
   return {
     id: project.id?.trim() ? project.id : fallbackId,
-    name: project.nameProject?.trim() ? project.nameProject : "Untitled Project",
+    name: project.nameProject?.trim() ? project.nameProject : "Dự án chưa đặt tên",
     ownerId: project.ownerId?.trim() ? project.ownerId : ownerId,
-    department: "General",
+    department: "Chung",
     pm: project.ownerName?.trim() ? project.ownerName : ownerName,
     membersCount: 1,
     storageUsed: "0GB",
@@ -72,7 +79,14 @@ const mapCreatedProjectToRecord = (
 }
 
 export const TenantAdminPage = () => {
-  const currentUserId = getStoredAuthData()?.userId?.trim() ?? ""
+  const authData = getStoredAuthData()
+  const currentUserId = authData?.userId?.trim() ?? ""
+  const [headerAccountName, setHeaderAccountName] = useState(
+    authData?.userDisplayName?.trim() || authData?.username?.trim() || "Quản trị viên tenant"
+  )
+  const [headerAccountEmail, setHeaderAccountEmail] = useState(
+    authData?.email?.trim() || "tenant-admin@workspace.local"
+  )
   const [activeSection, setActiveSection] = useState<TTenantAdminSection>("dashboard")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [projectRecords, setProjectRecords] = useState<IProjectRecord[]>([])
@@ -89,6 +103,9 @@ export const TenantAdminPage = () => {
   const [isSubmittingProjectMember, setIsSubmittingProjectMember] = useState(false)
   const [selectedProjectForMember, setSelectedProjectForMember] = useState<IProjectRecord | null>(null)
   const projectLoadRequestSequenceRef = useRef(0)
+  const headerRoleLabel = authData?.role
+    ? TENANT_ADMIN_ROLE_LABELS[authData.role]
+    : "Quản trị viên tenant"
 
   const loadProjects = useCallback(async (page: number, size: number) => {
     const requestSequence = projectLoadRequestSequenceRef.current + 1
@@ -133,6 +150,43 @@ export const TenantAdminPage = () => {
     void loadProjects(projectPage, projectSize)
   }, [loadProjects, projectPage, projectSize])
 
+  useEffect(() => {
+    if (!currentUserId) {
+      return
+    }
+
+    let isMounted = true
+
+    const loadCurrentUser = async () => {
+      try {
+        const currentUser = await getCurrentUser(currentUserId)
+
+        if (!isMounted) {
+          return
+        }
+
+        const normalizedName =
+          currentUser.username?.trim() ||
+          authData?.userDisplayName?.trim() ||
+          authData?.username?.trim() ||
+          "Quản trị viên tenant"
+        const normalizedEmail =
+          currentUser.email?.trim() || authData?.email?.trim() || "tenant-admin@workspace.local"
+
+        setHeaderAccountName(normalizedName)
+        setHeaderAccountEmail(normalizedEmail)
+      } catch {
+        // Keep fallback values from authData when current user API is unavailable.
+      }
+    }
+
+    void loadCurrentUser()
+
+    return () => {
+      isMounted = false
+    }
+  }, [authData?.email, authData?.userDisplayName, authData?.username, currentUserId])
+
   const handleOpenCreateProjectModal = () => {
     setIsCreateProjectModalOpen(true)
   }
@@ -150,7 +204,7 @@ export const TenantAdminPage = () => {
 
     try {
       const createdProject = await createProject(input)
-      const ownerName = createdProject.ownerName?.trim() ?? "Project Owner"
+      const ownerName = createdProject.ownerName?.trim() ?? "Chủ dự án"
       const fallbackId = `proj-${String(projectRecords.length + 1).padStart(3, "0")}`
 
       setProjectRecords((current) => [
@@ -302,7 +356,7 @@ export const TenantAdminPage = () => {
         {isSidebarOpen && (
           <div className="fixed inset-0 z-40 xl:hidden">
             <button
-              aria-label="Close navigation"
+              aria-label="Đóng điều hướng"
               className="absolute inset-0 bg-slate-950/35"
               onClick={() => setIsSidebarOpen(false)}
               type="button"
@@ -322,9 +376,9 @@ export const TenantAdminPage = () => {
         <div className="flex min-w-0 flex-1 flex-col">
           <Header
             accountAccentClassName="bg-cyan-100 text-cyan-700"
-            accountEmail="owner@workspace.arch"
-            accountName="Tenant Owner"
-            accountRole="Workspace Administrator"
+            accountEmail={headerAccountEmail}
+            accountName={headerAccountName}
+            accountRole={headerRoleLabel}
             containerClassName="sticky top-0 z-30 border-b border-border/80 bg-card/85 backdrop-blur"
             innerClassName="px-4 py-3 md:px-6 xl:px-8"
             leadingContent={
@@ -332,7 +386,7 @@ export const TenantAdminPage = () => {
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <span>Sovereign Architect</span>
                   <ChevronRight className="h-3.5 w-3.5" />
-                  <span className="truncate font-semibold text-slate-700">Tenant Admin</span>
+                  <span className="truncate font-semibold text-slate-700">Quản trị tenant</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                   <span className="truncate font-semibold text-slate-700">{getSectionTitle(activeSection)}</span>
                 </div>
@@ -340,7 +394,7 @@ export const TenantAdminPage = () => {
               </div>
             }
             onMenuClick={() => setIsSidebarOpen(true)}
-            searchPlaceholder="Search workspace resources..."
+            searchPlaceholder="Tìm kiếm tài nguyên workspace..."
           />
 
           <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 xl:px-8">
@@ -351,16 +405,16 @@ export const TenantAdminPage = () => {
                 {activeSection === "projects" && (
                   <>
                     <Button variant="outline" className="border-slate-300 bg-white">
-                      Export Project Report
+                      Xuất báo cáo dự án
                     </Button>
                     <Button className="bg-cyan-700 text-white hover:bg-cyan-800" onClick={handleOpenCreateProjectModal}>
-                      Add Project
+                      Thêm dự án
                     </Button>
                   </>
                 )}
 
                 {activeSection === "security" && (
-                  <Button className="bg-cyan-700 text-white hover:bg-cyan-800">Generate Security Snapshot</Button>
+                  <Button className="bg-cyan-700 text-white hover:bg-cyan-800">Tạo ảnh chụp bảo mật</Button>
                 )}
               </div>
             </div>
