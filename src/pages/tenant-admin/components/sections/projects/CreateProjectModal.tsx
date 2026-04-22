@@ -28,6 +28,7 @@ export const CreateProjectModal = ({
   onSubmit,
 }: ICreateProjectModalProps) => {
   const [formState, setFormState] = useState<IProjectRequest>(INITIAL_PROJECT_FORM_STATE)
+  const [ownerKeyword, setOwnerKeyword] = useState("")
   const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
@@ -53,6 +54,7 @@ export const CreateProjectModal = ({
 
     setErrorMessage("")
     setIsOwnerDropdownOpen(false)
+    setOwnerKeyword("")
     searchOwners("") // Reset search
     onClose()
   }
@@ -81,6 +83,7 @@ export const CreateProjectModal = ({
     setErrorMessage("")
     await onSubmit(normalizedInput)
     setFormState(INITIAL_PROJECT_FORM_STATE)
+    setOwnerKeyword("")
     setIsOwnerDropdownOpen(false)
     searchOwners("") // Reset search
   }
@@ -136,8 +139,10 @@ export const CreateProjectModal = ({
             <label className="mb-1.5 block text-sm font-medium text-slate-800">Chủ sở hữu *</label>
             <div className="relative">
               <input
+                value={ownerKeyword}
                 onChange={(event) => {
                   const nextKeyword = event.target.value
+                  setOwnerKeyword(nextKeyword)
                   searchOwners(nextKeyword)
                   setFormState((current) => ({
                     ...current,
@@ -165,8 +170,8 @@ export const CreateProjectModal = ({
                 </p>
               )}
 
-              {isOwnerDropdownOpen && (isSearchingOwners || owners.length > 0) && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
+               {isOwnerDropdownOpen && (ownerKeyword.trim() || isSearchingOwners || owners.length > 0) && (
+                 <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {isSearchingOwners ? (
                     <p className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -180,14 +185,15 @@ export const CreateProjectModal = ({
                         key={owner.id}
                         type="button"
                         className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
-                        onClick={() => {
-                          setFormState((current) => ({
-                            ...current,
-                            ownerId: owner.id,
-                          }))
-                          setIsOwnerDropdownOpen(false)
-                          searchOwners("") // Clear search
-                        }}
+                         onClick={() => {
+                           setFormState((current) => ({
+                             ...current,
+                             ownerId: owner.id,
+                           }))
+                           setOwnerKeyword(owner.email ? `${owner.name} (${owner.email})` : owner.name)
+                           setIsOwnerDropdownOpen(false)
+                           searchOwners("") // Clear search
+                         }}
                       >
                         <span className="text-sm font-medium text-slate-800">{owner.name}</span>
                         {owner.email && (

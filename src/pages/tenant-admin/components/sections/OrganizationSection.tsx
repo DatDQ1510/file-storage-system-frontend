@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,6 +11,7 @@ import {
   UserCheck,
   UserRound,
 } from "lucide-react"
+import { createPortal } from "react-dom"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -132,10 +133,34 @@ interface IMemberRowActionsMenuProps {
 
 const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) {
       return
     }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect()
+    const menuWidth = 208
+    const viewportPadding = 8
+    const computedLeft = Math.max(
+      viewportPadding,
+      Math.min(
+        triggerRect.right - menuWidth,
+        window.innerWidth - menuWidth - viewportPadding
+      )
+    )
+    const computedTop = Math.min(
+      triggerRect.bottom + 8,
+      window.innerHeight - viewportPadding
+    )
+
+    setMenuPosition({
+      top: computedTop,
+      left: computedLeft,
+    })
   }, [])
 
   useEffect(() => {
@@ -143,9 +168,16 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
       return
     }
 
+    updateMenuPosition()
+
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (!target.closest(`[data-member-actions="${member.id}"]`)) {
+      const target = event.target as Node
+      const isClickOnTrigger = Boolean(
+        triggerRef.current && triggerRef.current.contains(target)
+      )
+      const isClickOnMenu = Boolean(menuRef.current && menuRef.current.contains(target))
+
+      if (!isClickOnTrigger && !isClickOnMenu) {
         setIsOpen(false)
       }
     }
@@ -156,14 +188,22 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
       }
     }
 
+    const handleViewportChange = () => {
+      updateMenuPosition()
+    }
+
     document.addEventListener("mousedown", handleClickOutside)
     document.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("resize", handleViewportChange)
+    window.addEventListener("scroll", handleViewportChange, true)
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("resize", handleViewportChange)
+      window.removeEventListener("scroll", handleViewportChange, true)
     }
-  }, [isOpen, member.id])
+  }, [isOpen, member.id, updateMenuPosition])
 
   const handleCopyValue = async (value: string, label: string) => {
     const copied = await copyTextToClipboard(value)
@@ -190,8 +230,9 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
   const nextStatus: TMemberStatus = member.status === "Active" ? "Suspended" : "Active"
 
   return (
-    <div className="relative inline-flex" data-member-actions={member.id} ref={menuRef}>
+    <div className="inline-flex" data-member-actions={member.id}>
       <Button
+        ref={triggerRef}
         size="icon-sm"
         variant="ghost"
         className="text-slate-500"
@@ -202,49 +243,56 @@ const MemberRowActionsMenu = ({ member, onToggleStatus }: IMemberRowActionsMenuP
         <Ellipsis className="h-4 w-4" />
       </Button>
 
-      {isOpen && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="menu">
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={handleOpenEmail}
-            role="menuitem"
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[70] w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
+            role="menu"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
           >
-            <Mail className="h-4 w-4" />
-            Gửi email
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(member.email, "email")}
-            role="menuitem"
-          >
-            <Copy className="h-4 w-4" />
-            Sao chép email
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => {
-              onToggleStatus(member.id, nextStatus)
-              setIsOpen(false)
-            }}
-            role="menuitem"
-          >
-            <UserCheck className="h-4 w-4" />
-            {nextStatus === "Active" ? "Bật user" : "Tắt user"}
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={() => void handleCopyValue(member.id, "mã thành viên")}
-            role="menuitem"
-          >
-            <UserRound className="h-4 w-4" />
-            Sao chép mã thành viên
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={handleOpenEmail}
+              role="menuitem"
+            >
+              <Mail className="h-4 w-4" />
+              Gửi email
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={() => void handleCopyValue(member.email, "email")}
+              role="menuitem"
+            >
+              <Copy className="h-4 w-4" />
+              Sao chép email
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={() => {
+                onToggleStatus(member.id, nextStatus)
+                setIsOpen(false)
+              }}
+              role="menuitem"
+            >
+              <UserCheck className="h-4 w-4" />
+              {nextStatus === "Active" ? "Bật user" : "Tắt user"}
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={() => void handleCopyValue(member.id, "mã thành viên")}
+              role="menuitem"
+            >
+              <UserRound className="h-4 w-4" />
+              Sao chép mã thành viên
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
