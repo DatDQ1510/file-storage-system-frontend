@@ -17,6 +17,7 @@ import {
   INITIAL_TENANT_PROVISION_FORM_STATE,
 } from "@/pages/system-admin/components/sections/tenant/tenant-admin"
 import {
+  changeTenantStatus,
   checkAdminAvailability,
   checkSubdomainAvailability,
   loadTenantRecordPage,
@@ -393,7 +394,7 @@ export const TenantsSection = ({
           id: provisionResult.tenantId,
           businessName: pendingProvisionInput.companyName,
           nodeCode: provisionResult.tenantDomain,
-          status: "Trial",
+          status: "Active",
           plan: pendingProvisionInput.plan.name,
           quotaUsed: pendingProvisionInput.plan.storageQuota,
           quotaPercent: 0,
@@ -405,6 +406,8 @@ export const TenantsSection = ({
           region: "Vietnam",
           adminName: provisionResult.tenantAdminUserName,
           adminEmail: pendingProvisionInput.admin.email,
+          usedStorageSize: 0,
+          exTraStorageSize: 0,
         },
         ...current,
       ])
@@ -439,6 +442,10 @@ export const TenantsSection = ({
     setUpdatingTenantId(tenant.id ?? tenant.businessName)
 
     try {
+      if (tenant.id && !isUsingMockData) {
+        await changeTenantStatus(tenant, nextStatus)
+      }
+
       setTenants((current) =>
         current.map((item) => {
           const isTargetTenant = (item.id && item.id === tenant.id) || item.businessName === tenant.businessName
@@ -450,6 +457,22 @@ export const TenantsSection = ({
             : item
         })
       )
+      setSelectedTenantDetail((current) => {
+        if (!current) {
+          return null
+        }
+
+        const isTargetTenant = (current.id && current.id === tenant.id) || current.businessName === tenant.businessName
+
+        if (!isTargetTenant) {
+          return current
+        }
+
+        return {
+          ...current,
+          status: nextStatus,
+        }
+      })
 
       toast.success(
         nextStatus === "Suspended"

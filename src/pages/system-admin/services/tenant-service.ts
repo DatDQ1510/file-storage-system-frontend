@@ -15,6 +15,7 @@ import {
   fetchTenantRecordPage,
   fetchTenantRecords,
   provisionTenant,
+  updateTenantRecordStatus,
   validateTenantActivationToken,
 } from "@/pages/system-admin/api/tenant-api"
 
@@ -59,4 +60,11 @@ export const completeTenantActivation = async (
   input: ITenantActivationPayload
 ): Promise<{ accessToken?: string; message?: string }> => {
   return activateTenantAccount(input)
+}
+
+export const changeTenantStatus = async (
+  tenant: ITenantRecord,
+  status: ITenantRecord["status"]
+): Promise<void> => {
+  return updateTenantRecordStatus(tenant, status)
 }

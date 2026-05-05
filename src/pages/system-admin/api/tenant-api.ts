@@ -47,6 +47,14 @@ interface IGetTenantRecordsInput {
   offset: number
 }
 
+interface IUpdateTenantRequest {
+  nameTenant: string
+  domainTenant: string
+  exTraStorageSize: number
+  usedStorageSize: number
+  statusTenant: "ACTIVE" | "INACTIVE" | "SUSPENDED"
+}
+
 const unwrapApiData = <TData>(payload: unknown): TData | null => {
   if (!payload || typeof payload !== "object") {
     return null
@@ -135,7 +143,53 @@ const mapApiTenantToTenantRecord = (tenant: IAllTenantPageResponse["items"][numb
     planBillingCycle: tenant.planBillingCycle,
     planStartDate: tenant.planStartDate,
     planEndDate: tenant.planEndDate,
+    usedStorageSize,
+    exTraStorageSize,
   }
+}
+
+const parseStorageInGb = (value: string): number => {
+  const matched = value.trim().match(/^([0-9]+(?:\.[0-9]+)?)\s*(GB|TB)$/i)
+
+  if (!matched) {
+    return 0
+  }
+
+  const numericValue = Number(matched[1])
+
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return 0
+  }
+
+  const unit = matched[2].toUpperCase()
+  const valueInGb = unit === "TB" ? numericValue * 1024 : numericValue
+
+  return Math.round(valueInGb)
+}
+
+const normalizeStorageValue = (
+  numericValue: number | undefined,
+  quotaLabel?: string
+): number => {
+  if (typeof numericValue === "number" && Number.isFinite(numericValue) && numericValue >= 0) {
+    return Math.round(numericValue)
+  }
+
+  if (quotaLabel) {
+    return parseStorageInGb(quotaLabel)
+  }
+
+  return 0
+}
+
+const toApiTenantStatus = (
+  status: TTenantStatus
+): IUpdateTenantRequest["statusTenant"] => {
+  if (status === "Suspended") {
+    return "SUSPENDED"
+  }
+
+  return "ACTIVE"
 }
 
 const buildMockTenantRecordPage = ({ page, offset }: IGetTenantRecordsInput): ITenantRecordPage => {
@@ -357,4 +411,25 @@ export const activateTenantAccount = async (input: ITenantActivationPayload) => 
   )
 
   return response.data
+}
+
+export const updateTenantRecordStatus = async (
+  tenant: ITenantRecord,
+  status: TTenantStatus
+): Promise<void> => {
+  if (!tenant.id) {
+    throw new Error("Không tìm thấy tenantId để cập nhật trạng thái.")
+  }
+
+  const request: IUpdateTenantRequest = {
+    nameTenant: tenant.businessName.trim(),
+    domainTenant: tenant.nodeCode.trim(),
+    exTraStorageSize: normalizeStorageValue(tenant.exTraStorageSize),
+    usedStorageSize: normalizeStorageValue(tenant.usedStorageSize, tenant.quotaUsed),
+    statusTenant: toApiTenantStatus(status),
+  }
+
+  await api.put<IApiResponse<unknown>>(`/tenants/${tenant.id}`, request, {
+    skipGlobalErrorHandler: true,
+  })
 }
