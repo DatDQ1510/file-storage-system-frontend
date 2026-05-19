@@ -124,7 +124,7 @@ export const AccountDropdownMenu = ({
               type="button"
             >
               <User className="h-4 w-4" />
-              Quản lý tài khoản
+              Cập nhật tài khoản
             </button>
           )}
 

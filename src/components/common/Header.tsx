@@ -45,7 +45,7 @@ export const Header = ({
   accountAccentClassName = "bg-orange-100 text-orange-700",
   onOpenAccount,
   onOpenSettings,
-  showAccountAction = false,
+  showAccountAction = true,
 }: IHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
@@ -160,7 +160,7 @@ export const Header = ({
               accountName={accountName}
               accountRole={accountRole}
               accentClassName={accountAccentClassName}
-              onOpenAccount={onOpenAccount}
+              onOpenAccount={onOpenAccount ?? (() => navigate(ROUTES.ACCOUNT_SETTINGS))}
               onOpenSettings={onOpenSettings ?? handleSettingsClick}
               showAccountAction={showAccountAction}
               onLogout={handleLogout}
