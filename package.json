@@ -14,11 +14,21 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
     "@tailwindcss/vite": "^4.2.1",
+    "@tiptap/react": "^3.23.1",
+    "@tiptap/starter-kit": "^3.23.1",
+    "@turbodocx/html-to-docx": "^1.20.1",
     "axios": "^1.13.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "docx": "^9.6.1",
+    "docx-preview": "^0.3.7",
+    "html-docx-js-typescript": "^0.1.5",
+    "html-to-docx": "^1.8.0",
+    "htmlparser2": "^12.0.0",
     "lucide-react": "^0.577.0",
+    "mammoth": "^1.12.0",
     "next-themes": "^0.4.6",
+    "p-limit": "^7.3.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -44,6 +54,7 @@
     "prettier-plugin-tailwindcss": "^0.7.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-node-polyfills": "^0.26.0"
   }
 }
