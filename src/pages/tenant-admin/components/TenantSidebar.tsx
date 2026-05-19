@@ -41,11 +41,11 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
   return (
     <aside
       className={cn(
-        "flex h-full shrink-0 flex-col border-r border-slate-200 bg-slate-50/95 transition-all duration-200",
+        "flex h-full shrink-0 flex-col border-r border-slate-200 dark:border-slate-700 bg-slate-50/95 dark:bg-slate-900/95 transition-all duration-200",
         isCollapsed ? "w-20" : "w-72"
       )}
     >
-      <div className={cn("border-b border-slate-200 py-4", isCollapsed ? "px-3" : "px-5")}>
+      <div className={cn("border-b border-slate-200 dark:border-slate-700 py-4", isCollapsed ? "px-3" : "px-5")}>
         <div className={cn("flex items-center", isCollapsed ? "justify-center" : "justify-between gap-3")}>
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-blue-700 text-sm font-semibold text-white shadow-sm shadow-blue-900/25">
             <Building2 className="h-4 w-4" />
@@ -53,12 +53,12 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
           {!isCollapsed && (
             <div className="flex-1">
               <p className="text-base font-bold text-blue-800">Quản trị tenant</p>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Cổng quản trị workspace</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Cổng quản trị workspace</p>
             </div>
           )}
           <button
             type="button"
-            className="rounded-md p-1.5 text-slate-500 transition hover:bg-white hover:text-slate-700"
+            className="rounded-md p-1.5 text-slate-500 dark:text-slate-400 transition hover:bg-white dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
             onClick={() => setIsCollapsed((current) => !current)}
             aria-label={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
             title={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
@@ -76,7 +76,7 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
         {TENANT_NAV_GROUPS.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-1">
               {group.title && !isCollapsed && (
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{group.title}</p>
               )}
             {group.items.map((item) => {
               const isActive = item.section === activeSection
@@ -91,7 +91,7 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
                     isCollapsed ? "justify-center px-2" : "gap-3 px-3",
                     isActive
                       ? "bg-blue-100 text-blue-800"
-                      : "text-slate-600 hover:bg-white hover:text-slate-900",
+                      : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200",
                     !isClickable && "cursor-not-allowed opacity-50"
                   )}
                   disabled={!isClickable}
@@ -108,7 +108,7 @@ export const TenantSidebar = ({ activeSection, onSelectSection }: ITenantSidebar
         ))}
       </div>
 
-      <div className={cn("space-y-2 border-t border-slate-200 py-5", isCollapsed ? "px-2" : "px-4")}>
+      <div className={cn("space-y-2 border-t border-slate-200 dark:border-slate-700 py-5", isCollapsed ? "px-2" : "px-4")}>
         <button
           className={cn(
             "flex w-full items-center rounded-lg py-2 text-left text-sm text-slate-600 transition hover:bg-white hover:text-slate-900",
