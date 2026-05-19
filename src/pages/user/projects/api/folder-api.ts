@@ -23,7 +23,7 @@ export const getProjectFoldersApi = async (
     `/projects/${encodeURIComponent(projectId)}/folders`,
     { skipGlobalErrorHandler: true }
   )
-  return response.data.data ?? []
+  return (response.data.data ?? []).filter((folder) => !folder.deletedAt)
 }
 
 /**
@@ -123,7 +123,7 @@ export const getChildFoldersByParentIdApi = async (
       skipGlobalErrorHandler: true,
     }
   )
-  return response.data.data ?? []
+  return (response.data.data ?? []).filter((folder) => !folder.deletedAt)
 }
 
 /**
