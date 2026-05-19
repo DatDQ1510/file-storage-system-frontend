@@ -35,14 +35,16 @@ export const getProjectFolders = async (
   projectId: string
 ): Promise<IProjectFolderItem[]> => {
   const folders = await getProjectFoldersApi(projectId)
-  return folders.map((folder, index) =>
+  return folders
+    .filter((folder) => !folder.deletedAt)
+    .map((folder, index) =>
     toProjectFolderItem({
       id: folder.id,
       nameFolder: folder.nameFolder,
       parentFolderId: folder.parentFolderId,
       fallbackIndex: index + 1,
     })
-  )
+    )
 }
 
 export const createProjectFolderWithAcl = async (input: {
@@ -56,7 +58,8 @@ export const getChildFolderPaths = async (
   projectId: string,
   parentPath: string = "/"
 ): Promise<IFolderPathNode[]> => {
-  return getChildFolderPathsApi(projectId, parentPath)
+  const nodes = await getChildFolderPathsApi(projectId, parentPath)
+  return nodes.filter((node) => !node.deletedAt)
 }
 
 export const searchFolderPaths = async (
@@ -64,7 +67,8 @@ export const searchFolderPaths = async (
   keyword: string
 ): Promise<IFolderPathNode[]> => {
   if (!keyword.trim()) return []
-  return searchFolderPathsApi(projectId, keyword)
+  const nodes = await searchFolderPathsApi(projectId, keyword)
+  return nodes.filter((node) => !node.deletedAt)
 }
 
 export const getProjectMembersForAcl = async (

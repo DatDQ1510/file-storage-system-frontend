@@ -35,7 +35,7 @@ export const useProjectFolders = (projectId?: string) => {
     setIsLoadingFolders(true)
     try {
       const items = await getProjectFolders(projectId)
-      setFolders(items)
+      setFolders(items.filter((folder) => !folder.isVirtual))
     } catch {
       setFolders([])
       throw new Error("Unable to load project folders")
@@ -76,7 +76,7 @@ export const useProjectFolders = (projectId?: string) => {
     [projectId]
   )
 
-  const visibleFolders = useMemo(() => folders, [folders])
+  const visibleFolders = useMemo(() => folders.filter((folder) => !folder.isVirtual), [folders])
 
   return {
     folders: visibleFolders,
