@@ -32,6 +32,7 @@ export interface IFolderResponse {
   parentFolderId: string | null
   createdAt: string
   updatedAt: string
+  deletedAt?: string | null
 }
 
 export interface IFolderAclItemResponse {
@@ -61,6 +62,7 @@ export interface IFolderPathNode {
   nameFolder: string
   path: string
   hasChildren: boolean
+  deletedAt?: string | null
 }
 
 /** A project member available for folder ACL selection */
