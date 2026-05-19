@@ -1,26 +1,25 @@
-export interface IStarredFolder {
+export interface IStarredFolderItem {
   id: string;
   name: string;
-  filesCount: number;
-  size: string;
+  path: string;
+  projectId: string;
+  starredAt: string;
+  updatedAt: string;
 }
 
-export interface IStarredFile {
+export interface IStarredFileItem {
   id: string;
   name: string;
-  dateLabel: string;
+  folderId: string;
+  folderPath: string;
+  projectId: string;
   size: string;
   type: "pdf" | "excel" | "image" | "presentation";
-}
-
-export interface IAuditStreamItem {
-  id: string;
-  message: string;
-  timeLabel: string;
+  starredAt: string;
+  updatedAt: string;
 }
 
 export interface IStarredPageData {
-  folders: IStarredFolder[];
-  files: IStarredFile[];
-  auditItems: IAuditStreamItem[];
+  folders: IStarredFolderItem[];
+  files: IStarredFileItem[];
 }
