@@ -22,6 +22,7 @@ export const ROUTES = {
   PROJECT_FILE_DETAIL: "/projects/:projectId/files/:fileId",
   RECYCLE_BIN: "/recycle-bin",
   SUPPORT: "/support",
+  ACCOUNT_SETTINGS: "/account-settings"
 } as const
 
 export type RouteKey = keyof typeof ROUTES;

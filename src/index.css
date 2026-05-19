@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -180,6 +180,21 @@
     font-family: "Inter", sans-serif;
     letter-spacing: var(--tracking-normal);
   }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
 }
 
 /* Admin shell scoped theme harmonization for tenant/system pages */
@@ -244,6 +259,117 @@
 }
 
 .dark .admin-shell input::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+/* Project and file shells scoped theme harmonization */
+.dark .project-shell .bg-white,
+.dark .project-shell .bg-white\/90,
+.dark .project-shell .bg-white\/80,
+.dark .project-shell .bg-white\/70,
+.dark .project-shell .hover\:bg-white:hover,
+.dark .project-shell .bg-slate-50,
+.dark .project-shell .bg-slate-50\/80,
+.dark .project-shell .bg-slate-50\/95,
+.dark .project-shell .bg-slate-100,
+.dark .project-shell .bg-slate-100\/80,
+.dark .project-shell .bg-slate-200,
+.dark .project-shell .bg-slate-200\/50,
+.dark .project-shell .bg-blue-50,
+.dark .project-shell .bg-cyan-50,
+.dark .project-shell .bg-emerald-50,
+.dark .project-shell .bg-amber-50,
+.dark .project-shell .bg-red-50,
+.dark .file-shell .bg-white,
+.dark .file-shell .bg-white\/90,
+.dark .file-shell .bg-white\/80,
+.dark .file-shell .bg-white\/70,
+.dark .file-shell .hover\:bg-white:hover,
+.dark .file-shell .bg-slate-50,
+.dark .file-shell .bg-slate-50\/80,
+.dark .file-shell .bg-slate-50\/95,
+.dark .file-shell .bg-slate-100,
+.dark .file-shell .bg-slate-100\/80,
+.dark .file-shell .bg-slate-200,
+.dark .file-shell .bg-slate-200\/50,
+.dark .file-shell .bg-blue-50,
+.dark .file-shell .bg-cyan-50,
+.dark .file-shell .bg-emerald-50,
+.dark .file-shell .bg-amber-50,
+.dark .file-shell .bg-red-50 {
+  background-color: var(--card) !important;
+}
+
+.dark .project-shell .bg-muted,
+.dark .project-shell .bg-muted\/30,
+.dark .project-shell .bg-muted\/40,
+.dark .project-shell .bg-muted\/60,
+.dark .project-shell .bg-muted\/70,
+.dark .project-shell .bg-slate-900,
+.dark .project-shell .bg-slate-900\/20,
+.dark .project-shell .bg-slate-900\/30,
+.dark .project-shell .bg-slate-900\/40,
+.dark .project-shell .bg-slate-800,
+.dark .project-shell .bg-slate-800\/90,
+.dark .project-shell .bg-slate-700,
+.dark .file-shell .bg-muted,
+.dark .file-shell .bg-muted\/30,
+.dark .file-shell .bg-muted\/40,
+.dark .file-shell .bg-muted\/60,
+.dark .file-shell .bg-muted\/70,
+.dark .file-shell .bg-slate-900,
+.dark .file-shell .bg-slate-900\/20,
+.dark .file-shell .bg-slate-900\/30,
+.dark .file-shell .bg-slate-900\/40,
+.dark .file-shell .bg-slate-800,
+.dark .file-shell .bg-slate-800\/90,
+.dark .file-shell .bg-slate-700 {
+  background-color: var(--muted) !important;
+}
+
+.dark .project-shell .border-slate-100,
+.dark .project-shell .border-slate-200,
+.dark .project-shell .border-slate-200\/90,
+.dark .project-shell .border-slate-300,
+.dark .project-shell .border-white,
+.dark .project-shell .border-white\/10,
+.dark .file-shell .border-slate-100,
+.dark .file-shell .border-slate-200,
+.dark .file-shell .border-slate-200\/90,
+.dark .file-shell .border-slate-300,
+.dark .file-shell .border-white,
+.dark .file-shell .border-white\/10 {
+  border-color: var(--border) !important;
+}
+
+.dark .project-shell .text-slate-950,
+.dark .project-shell .text-slate-900,
+.dark .project-shell .text-slate-800,
+.dark .project-shell .text-slate-700,
+.dark .project-shell .text-slate-600,
+.dark .project-shell .text-slate-500,
+.dark .project-shell .text-slate-400,
+.dark .file-shell .text-slate-950,
+.dark .file-shell .text-slate-900,
+.dark .file-shell .text-slate-800,
+.dark .file-shell .text-slate-700,
+.dark .file-shell .text-slate-600,
+.dark .file-shell .text-slate-500,
+.dark .file-shell .text-slate-400 {
+  color: var(--foreground) !important;
+}
+
+.dark .project-shell .text-slate-300,
+.dark .file-shell .text-slate-300 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .project-shell input::placeholder,
+.dark .project-shell textarea::placeholder,
+.dark .project-shell select::placeholder,
+.dark .file-shell input::placeholder,
+.dark .file-shell textarea::placeholder,
+.dark .file-shell select::placeholder {
   color: var(--muted-foreground) !important;
 }
 

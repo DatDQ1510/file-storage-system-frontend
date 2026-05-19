@@ -16,7 +16,10 @@ const SignIn = lazy(() => import("@/pages/user/SignIn").then((module) => ({ defa
 const SignUp = lazy(() => import("@/pages/user/SignUp").then((module) => ({ default: module.SignUp })))
 const SetupPassword = lazy(() => import("@/pages/user/SetupPassword").then((module) => ({ default: module.SetupPassword })))
 const Starred = lazy(() => import("@/pages/user/starred").then((module) => ({ default: module.Starred })))
+const Support = lazy(() => import("@/pages/user/support").then((module) => ({ default: module.Support })))
 const TotpSignIn = lazy(() => import("@/pages/user/TotpSignIn").then((module) => ({ default: module.TotpSignIn })))
+const AccountManagement = lazy(() => import("@/pages/user/account-management/AccountManagement").then((module) => ({ default: module.AccountManagement })))
+const AccountSettings = lazy(() => import("@/pages/user/account-settings/AccountSettings").then((module) => ({ default: module.AccountSettings })))
 const SystemAdminPage = lazy(() => import("@/pages/system-admin/SystemAdminPage").then((module) => ({ default: module.SystemAdminPage })))
 const CreatePlanPage = lazy(() => import("@/pages/system-admin/pages/CreatePlanPage").then((module) => ({ default: module.CreatePlanPage })))
 const PlanDetailPage = lazy(() => import("@/pages/system-admin/pages/PlanDetailPage").then((module) => ({ default: module.PlanDetailPage })))
@@ -170,7 +173,11 @@ const APP_ROUTES: IRouteConfig[] = [
   },
   {
     path: ROUTES.SUPPORT,
-    element: <ProtectedRoute><Layout>{withSuspense(<Dashboard />)}</Layout></ProtectedRoute>,
+    element: <ProtectedRoute><Layout>{withSuspense(<Support />)}</Layout></ProtectedRoute>,
+  },
+  {
+    path: ROUTES.ACCOUNT_SETTINGS,
+    element: <ProtectedRoute><Layout>{withSuspense(<AccountSettings />)}</Layout></ProtectedRoute>,
   },
 ]
 
