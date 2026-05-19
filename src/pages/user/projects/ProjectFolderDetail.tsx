@@ -12,18 +12,25 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getProjectFilePath } from "@/constants/routes";
+import { StarToggleButton } from "@/components/common/StarToggleButton";
 import { ProjectFileTypeIcon, type TProjectFileType } from "@/components/projects/ProjectFileTypeIcon";
 import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
 import { CreateProjectFolderModal } from "@/pages/user/projects/components/CreateProjectFolderModal";
 import { useProjectFolders } from "@/pages/user/projects/hooks/use-project-folders";
+import { useChunkedUpload } from "@/hooks/use-chunked-upload";
+import { useStarredResources } from "@/hooks/use-starred-resources";
 import {
   getFolderByIdApi,
   renameFolderApi,
   deleteFolderByActorApi,
   getChildFoldersByParentIdApi,
 } from "@/pages/user/projects/api/folder-api";
-import type { IProjectFolderItem, IFolderResponse } from "@/pages/user/projects/types/folder";
+import { getFilesByFolderApi } from "@/lib/api/file-service-updated";
+import { renameFileApi, deleteFileApi } from "@/lib/api/file-operations-service";
+import type { IFolderResponse } from "@/pages/user/projects/types/folder";
+import { getStoredAuthData } from "@/lib/api/auth-service";
 import { getUserProjectDetail, type IUserProjectDetail } from "@/lib/api/user-project-service";
+import { ProjectFileRow } from "@/components/projects/ProjectFileRow";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +41,7 @@ interface IProjectFileListItem {
   lastModified: string;
   size: string;
   type: TProjectFileType;
+  extraInfo?: unknown;
 }
 
 // ─── Sub-folder section ───────────────────────────────────────────────────────
@@ -44,6 +52,9 @@ const SubFolderSection = ({
   projectDetail,
   refreshKey,
   onRefresh,
+  isFolderStarred,
+  isStarLoading,
+  onToggleFolderStar,
 }: {
   projectId: string;
   folderId: string;
@@ -51,6 +62,9 @@ const SubFolderSection = ({
   /** Tăng giá trị này để trigger reload danh sách subfolder */
   refreshKey: number;
   onRefresh: () => void;
+  isFolderStarred: (folderId: string) => boolean;
+  isStarLoading: boolean;
+  onToggleFolderStar: (folderId: string) => void;
 }) => {
   const [subFolders, setSubFolders] = useState<IFolderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,12 +109,9 @@ const SubFolderSection = ({
     }
   };
 
-  const isTenantAdmin = projectDetail?.currentUserRole === "TENANT_ADMIN";
-  const isOwner = projectDetail?.ownerId === projectDetail?.currentUserId;
-
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-slate-400">
+      <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading sub-folders…
       </div>
     );
@@ -118,23 +129,20 @@ const SubFolderSection = ({
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {subFolders.map((folder) => {
-          const folderItem: IProjectFolderItem = {
-            id: folder.id,
-            name: folder.nameFolder,
-            filesCount: 0,
-            parentFolderId: folderId,
-          };
           return (
             <ProjectFolderCard
               key={folder.id}
               folderId={folder.id}
               name={folder.nameFolder}
               filesCount={0}
+              isStarred={isFolderStarred(folder.id)}
+              isStarLoading={isStarLoading}
               onClick={() => navigate(`/projects/${projectId}/folders/${folder.id}`)}
+              onToggleStar={() => onToggleFolderStar(folder.id)}
               menuActions={{
                 folderId: folder.id,
-                canWrite: isTenantAdmin || isOwner,
-                canDelete: isTenantAdmin || isOwner,
+                canWrite: Boolean(projectDetail?.currentUserIsOwner || projectDetail?.currentUserCanManageMembers),
+                canDelete: Boolean(projectDetail?.currentUserIsOwner || projectDetail?.currentUserCanManageMembers),
                 onRename: handleRenameSubFolder,
                 onDelete: handleDeleteSubFolder,
               }}
@@ -155,24 +163,47 @@ export const ProjectFolderDetail = () => {
   const [projectDetail, setProjectDetail] = useState<IUserProjectDetail | null>(null);
   const [isLoadingProjectDetail, setIsLoadingProjectDetail] = useState(false);
   const [folderName, setFolderName] = useState<string>("");
+  const [isFolderDeleted, setIsFolderDeleted] = useState(false);
   const [isCreateSubFolderModalOpen, setIsCreateSubFolderModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<IProjectFileListItem[]>([]);
   /** Tăng giá trị để trigger SubFolderSection tự reload */
   const [subFolderRefreshKey, setSubFolderRefreshKey] = useState(0);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
+  const authData = getStoredAuthData();
+  const tenantId = authData?.tenantId?.trim() ?? "";
+  const ownerId = authData?.userId?.trim() ?? "";
 
   const { createFolder, isCreatingFolder, loadFolders } = useProjectFolders(projectId);
+  const { uploadFile, isUploading, overallProgress, statusText } = useChunkedUpload();
+  const {
+    isFileStarred,
+    isFolderStarred,
+    isLoadingStars,
+    toggleFileStar,
+    toggleFolderStar,
+  } = useStarredResources();
 
   // ─── Load project detail ────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!projectId) { setProjectDetail(null); return; }
+    if (!projectId) {
+      return;
+    }
     let mounted = true;
-    setIsLoadingProjectDetail(true);
-    getUserProjectDetail(projectId)
-      .then((res) => { if (mounted) setProjectDetail(res); })
-      .catch(() => { if (mounted) setProjectDetail(null); })
-      .finally(() => { if (mounted) setIsLoadingProjectDetail(false); });
+    const loadProjectDetail = async () => {
+      setIsLoadingProjectDetail(true);
+
+      try {
+        const res = await getUserProjectDetail(projectId);
+        if (mounted) setProjectDetail(res);
+      } catch {
+        if (mounted) setProjectDetail(null);
+      } finally {
+        if (mounted) setIsLoadingProjectDetail(false);
+      }
+    };
+
+    void loadProjectDetail();
     return () => { mounted = false; };
   }, [projectId]);
 
@@ -183,15 +214,46 @@ export const ProjectFolderDetail = () => {
     const fetchFolderInfo = async () => {
       try {
         const folder = await getFolderByIdApi(folderId);
+        if (folder.deletedAt) {
+          setIsFolderDeleted(true);
+          setFolderName(folderId);
+          return;
+        }
+
+        setIsFolderDeleted(false);
         setFolderName(folder.nameFolder ?? folderId);
       } catch {
+        setIsFolderDeleted(true);
         setFolderName(folderId);
       }
     };
     void fetchFolderInfo();
   }, [projectId, folderId]);
 
-  // ─── File upload (local mock) ───────────────────────────────────────────────
+  // ─── File upload & listing ───────────────────────────────────────────────────
+
+  const loadFiles = useCallback(async () => {
+    if (!folderId) return;
+    try {
+      const files = await getFilesByFolderApi(folderId);
+      const mappedFiles: IProjectFileListItem[] = files.map((file) => ({
+        id: file.id,
+        name: file.nameFile,
+        owner: file.ownerId === ownerId ? "Me" : file.ownerId, // Just a fallback, would normally look up user name
+        lastModified: new Date(file.updatedAt).toLocaleString(),
+        size: formatFileSize(file.sizeFile * 1024 * 1024), // The backend returns size in MB
+        type: resolveFileType(file.nameFile),
+        extraInfo: file.extraInfo
+      }));
+      setUploadedFiles(mappedFiles);
+    } catch {
+      toast.error("Failed to load files in folder");
+    }
+  }, [folderId, ownerId]);
+
+  useEffect(() => {
+    void loadFiles();
+  }, [loadFiles]);
 
   const resolveFileType = (fileName: string): TProjectFileType => {
     const lower = fileName.toLowerCase();
@@ -206,17 +268,62 @@ export const ProjectFolderDetail = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleUploadFiles = (files: FileList | null) => {
-    if (!files) return;
-    const items: IProjectFileListItem[] = Array.from(files).map((f) => ({
-      id: `file-${f.name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: f.name,
-      owner: "Me",
-      lastModified: "Just now",
-      size: formatFileSize(f.size),
-      type: resolveFileType(f.name),
-    }));
-    setUploadedFiles((prev) => [...items, ...prev]);
+  const handleUploadFiles = useCallback(async (files: FileList | null) => {
+    if (!projectId || !files || files.length === 0) {
+      return;
+    }
+
+    if (!tenantId) {
+      toast.error("Missing tenant ID. Please sign in again.");
+      return;
+    }
+
+    if (!folderId || !ownerId) {
+      toast.error("Missing folder or owner information. Please reload the page and try again.");
+      return;
+    }
+
+    const fileList = Array.from(files);
+
+    try {
+      for (const fileItem of fileList) {
+        const finalizedUpload = await uploadFile(fileItem, {
+          tenantId,
+          folderId,
+          ownerId,
+        });
+
+        if (!finalizedUpload) {
+          continue;
+        }
+      }
+
+      toast.success("File uploaded successfully");
+      // Trigger a reload of files to show the newly uploaded file. It might be delayed slightly due to async assembly.
+      setTimeout(() => void loadFiles(), 1500); 
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload file");
+    }
+  }, [folderId, ownerId, projectId, tenantId, uploadFile, loadFiles]);
+
+  const handleRenameFile = async (fileId: string, newName: string) => {
+    try {
+      await renameFileApi(fileId, newName);
+      toast.success("File renamed successfully");
+      void loadFiles();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to rename file");
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await deleteFileApi(fileId);
+      toast.success("File deleted successfully");
+      void loadFiles();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete file");
+    }
   };
 
   // ─── Create sub-folder ──────────────────────────────────────────────────────
@@ -247,15 +354,21 @@ export const ProjectFolderDetail = () => {
     );
   }
 
+  if (isFolderDeleted) {
+    return (
+      <div className="rounded-md border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+        Folder not found or has been deleted.
+      </div>
+    );
+  }
+
   const displayProjectName = projectDetail?.name ?? "Project";
   const displayFolderName = folderName || folderId;
-  const isTenantAdmin = projectDetail?.currentUserRole === "TENANT_ADMIN";
-  const isOwner = projectDetail?.ownerId === projectDetail?.currentUserId;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-8">
+    <div className="project-shell space-y-8">
 
       {/* Header */}
       <section className="space-y-1">
@@ -283,11 +396,12 @@ export const ProjectFolderDetail = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 dark:border-slate-700 px-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => fileUploadRef.current?.click()}
+              disabled={isUploading}
             >
               <Upload className="h-4 w-4" />
-              Upload File
+              {isUploading ? "Uploading..." : "Upload File"}
             </button>
             <button
               type="button"
@@ -307,8 +421,18 @@ export const ProjectFolderDetail = () => {
         type="file"
         multiple
         className="hidden"
-        onChange={(e) => { handleUploadFiles(e.target.files); e.currentTarget.value = ""; }}
+        onChange={(e) => {
+          void handleUploadFiles(e.target.files);
+          e.currentTarget.value = "";
+        }}
       />
+
+      {isUploading ? (
+        <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <span className="font-medium">{statusText || "Uploading file"}</span>
+          <span className="ml-2 text-blue-600">{overallProgress}%</span>
+        </div>
+      ) : null}
 
       {/* Sub-folders – reload tự động khi subFolderRefreshKey thay đổi */}
       <SubFolderSection
@@ -317,6 +441,11 @@ export const ProjectFolderDetail = () => {
         projectDetail={projectDetail}
         refreshKey={subFolderRefreshKey}
         onRefresh={() => void loadFolders()}
+        isFolderStarred={isFolderStarred}
+        isStarLoading={isLoadingStars}
+        onToggleFolderStar={(subFolderId) => {
+          void toggleFolderStar(subFolderId);
+        }}
       />
 
       {/* Files */}
@@ -341,37 +470,42 @@ export const ProjectFolderDetail = () => {
                 <th className="px-4 py-3">Owner</th>
                 <th className="px-4 py-3">Last Modified</th>
                 <th className="px-4 py-3">Size</th>
+                <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {uploadedFiles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
                     No files in this folder yet. Upload a file to get started.
                   </td>
                 </tr>
               ) : (
                 uploadedFiles.map((fileItem) => {
-                  const isPreviewFile = fileItem.type === "pdf";
                   return (
-                    <tr key={fileItem.id} className="border-b border-border last:border-b-0">
-                      <td className="px-4 py-4">
-                        <button
-                          type="button"
-                          className="flex items-center gap-3 text-left"
-                          onClick={() => {
-                            if (!isPreviewFile || !projectId) return;
-                            navigate(getProjectFilePath(projectId, fileItem.id));
-                          }}
-                        >
-                          <ProjectFileTypeIcon fileType={fileItem.type} />
-                          <span className="font-medium text-foreground">{fileItem.name}</span>
-                        </button>
-                      </td>
-                      <td className="px-4 py-4 text-foreground/90">{fileItem.owner}</td>
-                      <td className="px-4 py-4 text-foreground/90">{fileItem.lastModified}</td>
-                      <td className="px-4 py-4 text-foreground/90">{fileItem.size}</td>
-                    </tr>
+                    <ProjectFileRow
+                      key={fileItem.id}
+                      fileId={fileItem.id}
+                      name={fileItem.name}
+                      owner={fileItem.owner}
+                      lastModified={fileItem.lastModified}
+                      size={fileItem.size}
+                      fileType={fileItem.type}
+                      isStarred={isFileStarred(fileItem.id)}
+                      isStarLoading={isLoadingStars}
+                      onToggleStar={() => void toggleFileStar(fileItem.id)}
+                      onClick={() => {
+                        if (!projectId) return;
+                        navigate(getProjectFilePath(projectId, fileItem.id));
+                      }}
+                      menuActions={{
+                        fileId: fileItem.id,
+                        canWrite: Boolean(projectDetail?.currentUserIsOwner || projectDetail?.currentUserCanManageMembers),
+                        canDelete: Boolean(projectDetail?.currentUserIsOwner || projectDetail?.currentUserCanManageMembers),
+                        onRename: handleRenameFile,
+                        onDelete: handleDeleteFile,
+                      }}
+                    />
                   );
                 })
               )}

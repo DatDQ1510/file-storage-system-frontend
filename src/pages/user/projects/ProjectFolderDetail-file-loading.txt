@@ -1,0 +1,30 @@
+// Add this import at the top with other imports
+import { getFilesByFolderApi, type IFileResponse } from "@/lib/api/file-service"
+
+// ─── Add this useEffect in the ProjectFolderDetail component after the folder loading useEffect ────
+
+  // ─── Load files for current folder ────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!folderId) return;
+    
+    const loadFilesForFolder = async () => {
+      try {
+        const filesFromBackend = await getFilesByFolderApi(folderId);
+        const formattedFiles: IProjectFileListItem[] = filesFromBackend.map((file: IFileResponse) => ({
+          id: file.id,
+          name: file.nameFile,
+          owner: file.ownerId === ownerId ? "Me" : file.ownerId,
+          lastModified: new Date(file.updatedAt).toLocaleDateString(),
+          size: formatFileSize(file.sizeFile),
+          type: resolveFileType(file.nameFile),
+        }));
+        setUploadedFiles(formattedFiles);
+      } catch (error) {
+        console.error("Failed to load files:", error);
+        setUploadedFiles([]);
+      }
+    };
+
+    void loadFilesForFolder();
+  }, [folderId, ownerId]);

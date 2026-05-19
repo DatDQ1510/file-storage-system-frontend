@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { LayoutGrid, List, Plus, Upload } from "lucide-react";
+import { LayoutGrid, List, Plus, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { getProjectFilePath, getProjectFolderPath } from "@/constants/routes";
 import { AddProjectMemberModal } from "@/components/projects/AddProjectMemberModal";
 import { ProjectMembersModal } from "@/components/projects/ProjectMembersModal";
 import { ProjectFolderActions } from "@/components/projects/ProjectFolderActions";
 import { ProjectFolderCard } from "@/components/projects/ProjectFolderCard";
-import {
-  ProjectFileTypeIcon,
-  type TProjectFileType,
-} from "@/components/projects/ProjectFileTypeIcon";
+import { ProjectFileCard } from "@/components/projects/ProjectFileCard";
+import { ProjectFileRow } from "@/components/projects/ProjectFileRow";
+import { type TProjectFileType } from "@/components/projects/ProjectFileTypeIcon";
 import { CreateProjectFolderModal } from "@/pages/user/projects/components/CreateProjectFolderModal";
 import { useProjectFolders } from "@/pages/user/projects/hooks/use-project-folders";
-import type { IProjectFolderItem } from "@/pages/user/projects/types/folder";
+import type { ICreateFolderWithAclRequest, IProjectFolderItem } from "@/pages/user/projects/types/folder";
 import { renameFolderApi, deleteFolderByActorApi } from "@/pages/user/projects/api/folder-api";
+import { getStoredAuthData } from "@/lib/api/auth-service";
+import { createFileApi, getAllFilesApi, type IFileResponse, type TFileStatus } from "@/lib/api/file-service";
+import { renameFileApi, deleteFileApi } from "@/lib/api/file-operations-service";
+import { useStarredResources } from "@/hooks/use-starred-resources";
 import {
   assignProjectMember,
   getProjectMembers,
@@ -36,9 +40,27 @@ interface IProjectFileListItem {
   type: TProjectFileType;
 }
 
+const toFileItem = (file: IFileResponse): IProjectFileListItem => {
+  return {
+    id: file.id,
+    name: file.nameFile,
+    owner: file.ownerId,
+    lastModified: file.updatedAt || file.createdAt,
+    size: `${Math.max(1, Math.round((file.sizeFile ?? 0) * 1024))} KB`,
+    type: file.nameFile.toLowerCase().endsWith(".pdf")
+      ? "pdf"
+      : file.nameFile.toLowerCase().endsWith(".doc") || file.nameFile.toLowerCase().endsWith(".docx")
+        ? "docx"
+        : file.nameFile.toLowerCase().endsWith(".xls") || file.nameFile.toLowerCase().endsWith(".xlsx")
+          ? "xlsx"
+          : "png",
+  }
+}
+
 export const Projects = () => {
   const navigate = useNavigate();
-  const { projectId } = useParams();
+  const [projectId] = useState(useParams().projectId);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [activeFolderId, setActiveFolderId] = useState<string>("");
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [uploadedFilesByProject, setUploadedFilesByProject] = useState<Record<string, IProjectFileListItem[]>>({});
@@ -50,6 +72,7 @@ export const Projects = () => {
   const [isProjectMembersModalOpen, setIsProjectMembersModalOpen] = useState(false);
   const [isSubmittingMemberAction, setIsSubmittingMemberAction] = useState(false);
   const [projectMembers, setProjectMembers] = useState<IProjectMemberItem[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const {
     folders: folderItems,
     isCreatingFolder,
@@ -58,12 +81,17 @@ export const Projects = () => {
   } = useProjectFolders(projectId);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
   const folderUploadRef = useRef<HTMLInputElement | null>(null);
+  const authData = getStoredAuthData();
+  const {
+    isFileStarred,
+    isFolderStarred,
+    isLoadingStars,
+    toggleFileStar,
+    toggleFolderStar,
+  } = useStarredResources();
 
   const displayProjectName = projectDetail?.name || "Project Workspace";
-  const displayProjectCategory = projectDetail?.department || "General";
-  const displayProjectLead = projectDetail?.ownerName || "Project Owner";
-  const displayProjectStatus =
-    (projectDetail?.status || "active").toString().toUpperCase();
+
 
   const selectedFolderId = useMemo(() => {
     const hasActiveFolder = folderItems.some((folderItem) => {
@@ -84,6 +112,7 @@ export const Projects = () => {
 
     return uploadedFilesByProject[projectId] ?? [];
   }, [projectId, uploadedFilesByProject]);
+
 
   useEffect(() => {
     if (!projectId) {
@@ -125,6 +154,52 @@ export const Projects = () => {
       isMounted = false;
     };
   }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId || !selectedFolderId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadFiles = async () => {
+      setIsLoadingFiles(true);
+
+      try {
+        const allFiles = await getAllFilesApi();
+        const currentTenantId = authData?.tenantId?.trim() ?? "";
+        const visibleFiles = allFiles
+          .filter((file) => !file.deletedAt)
+          .filter((file) => file.folderId === selectedFolderId)
+          .filter((file) => !currentTenantId || file.tenantId === currentTenantId)
+          .map(toFileItem);
+
+        if (isMounted) {
+          setUploadedFilesByProject((currentMap) => ({
+            ...currentMap,
+            [projectId]: visibleFiles,
+          }));
+        }
+      } catch {
+        if (isMounted) {
+          setUploadedFilesByProject((currentMap) => ({
+            ...currentMap,
+            [projectId]: [],
+          }));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingFiles(false);
+        }
+      }
+    };
+
+    void loadFiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authData?.tenantId, projectId, selectedFolderId]);
 
   useEffect(() => {
     if (!projectId) {
@@ -177,6 +252,44 @@ export const Projects = () => {
       void loadFolders();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete folder");
+    }
+  };
+
+  const handleRenameFile = async (fileId: string, newName: string) => {
+    try {
+      await renameFileApi(fileId, newName);
+      toast.success("File renamed successfully");
+      if (projectId && selectedFolderId) {
+        const refreshedFiles = await getAllFilesApi();
+        const currentTenantId = authData?.tenantId?.trim() ?? "";
+        const visibleFiles = refreshedFiles
+          .filter((file) => !file.deletedAt)
+          .filter((file) => file.folderId === selectedFolderId)
+          .filter((file) => !currentTenantId || file.tenantId === currentTenantId)
+          .map(toFileItem);
+
+        setUploadedFilesByProject((currentMap) => ({
+          ...currentMap,
+          [projectId]: visibleFiles,
+        }));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to rename file");
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await deleteFileApi(fileId);
+      toast.success("File deleted successfully");
+      if (projectId) {
+        setUploadedFilesByProject((currentMap) => ({
+          ...currentMap,
+          [projectId]: (currentMap[projectId] ?? []).filter((file) => file.id !== fileId),
+        }));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete file");
     }
   };
 
@@ -314,7 +427,7 @@ export const Projects = () => {
     nameFolder: string;
     path?: string;
     parentFolderId?: string | null;
-    aclEntries?: { userId: string; permission: "VIEW" | "EDIT" | "DENIED" }[];
+    aclEntries?: ICreateFolderWithAclRequest["aclEntries"];
   }) => {
     if (!projectId) {
       toast.error("Project ID is missing");
@@ -342,54 +455,54 @@ export const Projects = () => {
     }
   };
 
-  const resolveFileTypeFromFileName = (fileName: string): TProjectFileType => {
-    if (fileName.endsWith(".pdf")) {
-      return "pdf";
-    }
-
-    if (fileName.endsWith(".doc") || fileName.endsWith(".docx")) {
-      return "docx";
-    }
-
-    if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
-      return "xlsx";
-    }
-
-    return "png";
-  };
-
-  const formatFileSize = (rawFileSize: number) => {
-    if (rawFileSize < 1024 * 1024) {
-      return `${Math.max(1, Math.round(rawFileSize / 1024))} KB`;
-    }
-
-    return `${(rawFileSize / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const handleUploadFiles = (uploadedFileList: FileList | null) => {
-    if (!projectId || !uploadedFileList) {
+  const handleUploadFiles = async (uploadedFileList: FileList | null) => {
+    if (!projectId || !uploadedFileList || uploadedFileList.length === 0) {
       return;
     }
 
-    const uploadedItems = Array.from(uploadedFileList).map((fileItem) => {
-      return {
-        id: `uploaded-${fileItem.name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        name: fileItem.name,
-        owner: "Me",
-        lastModified: "Just now",
-        size: formatFileSize(fileItem.size),
-        type: resolveFileTypeFromFileName(fileItem.name.toLowerCase()),
-      } as IProjectFileListItem;
-    });
+    const tenantId = authData?.tenantId?.trim() ?? "";
+    const ownerId = authData?.userId?.trim() ?? "";
 
-    setUploadedFilesByProject((currentMap) => {
-      const existingFiles = currentMap[projectId] ?? [];
+    if (!tenantId || !ownerId) {
+      toast.error("Missing tenant or owner information. Please sign in again.");
+      return;
+    }
 
-      return {
+    if (!selectedFolderId) {
+      toast.error("Please select a folder before uploading files.");
+      return;
+    }
+
+    try {
+      for (const fileItem of Array.from(uploadedFileList)) {
+        await createFileApi({
+          nameFile: fileItem.name,
+          statusFile: "DRAFT" as TFileStatus,
+          sizeFile: fileItem.size / (1024 * 1024),
+          extraInfo: null,
+          tenantId,
+          folderId: selectedFolderId,
+          ownerId,
+          lockedByUserId: null,
+        });
+      }
+
+      toast.success("File uploaded successfully");
+
+      const refreshedFiles = await getAllFilesApi();
+      const visibleFiles = refreshedFiles
+        .filter((file) => !file.deletedAt)
+        .filter((file) => file.folderId === selectedFolderId)
+        .filter((file) => file.tenantId === tenantId)
+        .map(toFileItem);
+
+      setUploadedFilesByProject((currentMap) => ({
         ...currentMap,
-        [projectId]: [...uploadedItems, ...existingFiles],
-      };
-    });
+        [projectId]: visibleFiles,
+      }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload file");
+    }
   };
 
   const handleOpenFolderDetail = (folderItem: IProjectFolderItem) => {
@@ -408,220 +521,265 @@ export const Projects = () => {
 
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="max-w-[320px] text-4xl font-semibold leading-tight text-blue-700">
-              {displayProjectName}
-            </h1>
+    <div className="project-shell relative overflow-hidden rounded-[32px] border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 via-white to-cyan-50/60 dark:from-slate-900 dark:via-slate-800 dark:to-cyan-900/20 px-4 py-5 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute -right-16 top-6 h-44 w-44 rounded-full bg-cyan-200/20 blur-3xl" />
+      <div className="pointer-events-none absolute -left-20 top-40 h-52 w-52 rounded-full bg-blue-200/20 blur-3xl" />
+
+      <div className="relative space-y-8">
+        <section className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+          <div className="border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 via-white to-cyan-50/70 dark:from-slate-900 dark:via-slate-800/50 dark:to-cyan-900/20 px-6 py-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700">
+                  <Sparkles className="max-w-2xl text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl" />
+                  {displayProjectName}
+                </div>
+              </div>
+
+              <ProjectFolderActions
+                showAddUserButton={projectDetail.currentUserCanManageMembers}
+                onAddUser={() => setIsAddUserModalOpen(true)}
+                showViewUsersButton
+                onViewUsers={() => {
+                  setIsProjectMembersModalOpen(true);
+                  void loadProjectMembers();
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Folders</h2>
+              <p className="mt-1 text-sm text-slate-500">Pick a folder to browse, star, rename, or delete.</p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-slate-900 px-4 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+              onClick={() => setIsCreateFolderModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span>New Folder</span>
+            </button>
           </div>
 
-          <ProjectFolderActions
-            showAddUserButton={projectDetail.currentUserCanManageMembers}
-            onAddUser={() => setIsAddUserModalOpen(true)}
-            showViewUsersButton
-            onViewUsers={() => {
-              setIsProjectMembersModalOpen(true);
-              void loadProjectMembers();
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {folderItems.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                No folders yet. Create the first workspace folder to start organizing files.
+              </div>
+            ) : (
+              folderItems.map((folderItem) => {
+                const canWrite = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                const canDelete = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                return (
+                  <ProjectFolderCard
+                    key={folderItem.id}
+                    folderId={folderItem.id}
+                    name={folderItem.name}
+                    filesCount={folderItem.filesCount}
+                    isActive={folderItem.id === selectedFolderId}
+                    isStarred={isFolderStarred(folderItem.id)}
+                    isStarLoading={isLoadingStars}
+                    onClick={() => handleOpenFolderDetail(folderItem)}
+                    onToggleStar={() => void toggleFolderStar(folderItem.id)}
+                    menuActions={{
+                      folderId: folderItem.id,
+                      canWrite,
+                      canDelete,
+                      onRename: handleRenameFolder,
+                      onDelete: handleDeleteFolder,
+                    }}
+                  />
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Files</h2>
+              <p className="mt-1 text-sm text-slate-500">Files open in a clean table with direct file navigation.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center rounded-full border border-slate-200 bg-slate-50 p-1 text-slate-500 sm:flex">
+                <button
+                  type="button"
+                  className={cn(
+                    "rounded-full px-3 py-1 text-sm font-medium transition",
+                    viewMode === "list" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-50 shadow-sm" : "hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50"
+                  )}
+                  onClick={() => setViewMode("list")}
+                  aria-label="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "rounded-full px-3 py-1 text-sm font-medium transition",
+                    viewMode === "grid" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-50 shadow-sm" : "hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50"
+                  )}
+                  onClick={() => setViewMode("grid")}
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 dark:hover:border-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 hover:text-cyan-800 dark:hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => fileUploadRef.current?.click()}
+                disabled={isLoadingFiles}
+              >
+                <Upload className="h-4 w-4" />
+                <span>{isLoadingFiles ? "Refreshing..." : "Upload File"}</span>
+              </button>
+            </div>
+          </div>
+
+          <input
+            ref={fileUploadRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              handleUploadFiles(event.target.files);
+              event.currentTarget.value = "";
             }}
           />
-        </div>
+          <input
+            ref={folderUploadRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              handleUploadFiles(event.target.files);
+              event.currentTarget.value = "";
+            }}
+            {...({ webkitdirectory: "" } as unknown as Record<string, string>)}
+          />
 
-        <div className="rounded-md border border-border bg-card px-5 py-4">
-          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Project</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{displayProjectName}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Category</p>
-              <p className="mt-1 font-medium text-foreground">{displayProjectCategory}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Project Lead</p>
-              <div className="mt-1 flex items-center gap-2 text-foreground">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
-                  {displayProjectLead
-                    .split(" ")
-                    .map((namePart) => namePart[0])
-                    .join("")
-                    .slice(0, 2)}
-                </span>
-                <span className="font-medium">{displayProjectLead}</span>
+          <div className="mt-5">
+            {fileItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                No files in this folder yet. Upload a file to get started.
               </div>
-            </div>
-            <div className="flex sm:justify-start lg:justify-end">
-              <span className="inline-flex h-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                {displayProjectStatus}
-              </span>
-            </div>
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 px-4 pb-6">
+                {fileItems.map((fileItem) => {
+                  const canWrite = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                  const canDelete = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                  return (
+                    <ProjectFileCard
+                      key={fileItem.id}
+                      fileId={fileItem.id}
+                      name={fileItem.name}
+                      size={fileItem.size}
+                      lastModified={fileItem.lastModified}
+                      fileType={fileItem.type}
+                      isStarred={isFileStarred(fileItem.id)}
+                      isStarLoading={isLoadingStars}
+                      onClick={() => {
+                        if (!projectId || !fileItem.id) {
+                          return;
+                        }
+                        navigate(getProjectFilePath(projectId, fileItem.id));
+                      }}
+                      onToggleStar={() => void toggleFileStar(fileItem.id)}
+                      menuActions={{
+                        fileId: fileItem.id,
+                        canWrite,
+                        canDelete,
+                        onRename: handleRenameFile,
+                        onDelete: handleDeleteFile,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-md border border-border bg-card">
+                <table className="w-full min-w-170 text-sm">
+                  <thead className="border-b border-border bg-muted/40">
+                    <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      <th className="px-4 py-3">Name</th>
+                      <th className="px-4 py-3">Owner</th>
+                      <th className="px-4 py-3">Last Modified</th>
+                      <th className="px-4 py-3">Size</th>
+                      <th className="px-4 py-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fileItems.map((fileItem) => {
+                      const canWrite = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                      const canDelete = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
+                      return (
+                        <ProjectFileRow
+                          key={fileItem.id}
+                          fileId={fileItem.id}
+                          name={fileItem.name}
+                          owner={fileItem.owner === authData?.userId ? "Me" : fileItem.owner}
+                          lastModified={new Date(fileItem.lastModified).toLocaleString()}
+                          size={fileItem.size}
+                          fileType={fileItem.type}
+                          isStarred={isFileStarred(fileItem.id)}
+                          isStarLoading={isLoadingStars}
+                          onToggleStar={() => void toggleFileStar(fileItem.id)}
+                          onClick={() => {
+                            if (!projectId || !fileItem.id) {
+                              return;
+                            }
+                            navigate(getProjectFilePath(projectId, fileItem.id));
+                          }}
+                          menuActions={{
+                            fileId: fileItem.id,
+                            canWrite,
+                            canDelete,
+                            onRename: handleRenameFile,
+                            onDelete: handleDeleteFile,
+                          }}
+                        />
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-foreground">Folders</h2>
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700"
-            onClick={() => setIsCreateFolderModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Folder</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {folderItems.length === 0 ? (
-            <div className="col-span-full rounded-md border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-400">
-              Chưa có folder trong project này
-            </div>
-          ) : (
-            folderItems.map((folderItem) => {
-              const canWrite = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
-              const canDelete = projectDetail.currentUserIsOwner || projectDetail.currentUserCanManageMembers;
-              return (
-                <ProjectFolderCard
-                  key={folderItem.id}
-                  folderId={folderItem.id}
-                  name={folderItem.name}
-                  filesCount={folderItem.filesCount}
-                  isActive={folderItem.id === selectedFolderId}
-                  onClick={() => handleOpenFolderDetail(folderItem)}
-                  menuActions={{
-                    folderId: folderItem.id,
-                    canWrite,
-                    canDelete,
-                    onRename: handleRenameFolder,
-                    onDelete: handleDeleteFolder,
-                  }}
-                />
-              );
-            })
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-foreground">Files</h2>
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
-            onClick={() => fileUploadRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" />
-            <span>Upload File</span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-end">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <button type="button" className="transition-colors hover:text-blue-700" aria-label="List view">
-              <List className="h-4 w-4" />
-            </button>
-            <button type="button" className="text-blue-700" aria-label="Grid view">
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <input
-          ref={fileUploadRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={(event) => {
-            handleUploadFiles(event.target.files);
-            event.currentTarget.value = "";
-          }}
+        <AddProjectMemberModal
+          isOpen={isAddUserModalOpen}
+          isSubmitting={isSubmittingAddUser}
+          projectName={displayProjectName}
+          fetchUsers={fetchTenantUsers}
+          onClose={() => setIsAddUserModalOpen(false)}
+          onSubmit={handleSubmitAddUser}
         />
-        <input
-          ref={folderUploadRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={(event) => {
-            handleUploadFiles(event.target.files);
-            event.currentTarget.value = "";
-          }}
-          {...({ webkitdirectory: "" } as unknown as Record<string, string>)}
+        <CreateProjectFolderModal
+          projectId={projectId ?? ""}
+          isOpen={isCreateFolderModalOpen}
+          isSubmitting={isCreatingFolder}
+          onClose={() => setIsCreateFolderModalOpen(false)}
+          onSubmit={handleCreateFolderWithAcl}
         />
-
-        <div className="overflow-hidden rounded-md border border-border bg-card">
-          <table className="w-full min-w-170 text-sm">
-            <thead className="border-b border-border bg-muted/40">
-              <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Owner</th>
-                <th className="px-4 py-3">Last Modified</th>
-                <th className="px-4 py-3">Size</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fileItems.map((fileItem) => {
-                const isPreviewFile = fileItem.type === "pdf";
-
-                return (
-                  <tr
-                    key={fileItem.id}
-                    className="border-b border-border last:border-b-0"
-                  >
-                    <td className="px-4 py-4">
-                      <button
-                        type="button"
-                        className="flex items-center gap-3 text-left"
-                        onClick={() => {
-                          if (!isPreviewFile || !projectId || !fileItem.id) {
-                            return;
-                          }
-
-                          navigate(getProjectFilePath(projectId, fileItem.id));
-                        }}
-                      >
-                        <ProjectFileTypeIcon fileType={fileItem.type} />
-                        <span className="font-medium text-foreground">{fileItem.name}</span>
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-foreground/90">{fileItem.owner}</td>
-                    <td className="px-4 py-4 text-foreground/90">{fileItem.lastModified}</td>
-                    <td className="px-4 py-4 text-foreground/90">{fileItem.size}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <AddProjectMemberModal
-        isOpen={isAddUserModalOpen}
-        isSubmitting={isSubmittingAddUser}
-        projectName={displayProjectName}
-        fetchUsers={fetchTenantUsers}
-        onClose={() => setIsAddUserModalOpen(false)}
-        onSubmit={handleSubmitAddUser}
-      />
-      <CreateProjectFolderModal
-        projectId={projectId ?? ""}
-        isOpen={isCreateFolderModalOpen}
-        isSubmitting={isCreatingFolder}
-        onClose={() => setIsCreateFolderModalOpen(false)}
-        onSubmit={handleCreateFolderWithAcl}
-      />
-      <ProjectMembersModal
-        isOpen={isProjectMembersModalOpen}
-        isSubmitting={isSubmittingMemberAction}
-        projectName={displayProjectName}
-        ownerUserId={projectDetail.ownerId}
-        currentUserCanManageMembers={projectDetail.currentUserCanManageMembers}
-        members={projectMembers}
-        onClose={() => setIsProjectMembersModalOpen(false)}
-        onUpdatePermission={handleUpdateProjectMemberPermission}
-        onDeleteMember={handleRemoveProjectMember}
-      />
+        <ProjectMembersModal
+          isOpen={isProjectMembersModalOpen}
+          isSubmitting={isSubmittingMemberAction}
+          projectName={displayProjectName}
+          ownerUserId={projectDetail.ownerId}
+          currentUserCanManageMembers={projectDetail.currentUserCanManageMembers}
+          members={projectMembers}
+          onClose={() => setIsProjectMembersModalOpen(false)}
+          onUpdatePermission={handleUpdateProjectMemberPermission}
+          onDeleteMember={handleRemoveProjectMember}
+        />
+      </div>
     </div>
   );
 };

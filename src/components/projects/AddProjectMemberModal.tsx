@@ -12,6 +12,7 @@ export interface IProjectPermissionOption {
   description: string
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const PROJECT_PERMISSION_OPTIONS: IProjectPermissionOption[] = [
   {
     code: 1,
@@ -135,29 +136,29 @@ export const AddProjectMemberModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] dark:bg-slate-950/70"
         onClick={handleClose}
         aria-label="Close add project user modal"
       />
 
-      <div className="relative z-10 flex h-[76vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative z-10 flex h-[76vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
         {isSubmitting && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70 backdrop-blur-[1px] dark:bg-slate-950/70">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Loader2 className="h-4 w-4 animate-spin text-cyan-700" />
               Adding user to project...
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <h3 className="text-3xl font-semibold text-slate-900">Add user to project</h3>
-            <p className="mt-1 text-sm text-slate-500">Project: {projectName || "-"}</p>
+            <h3 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Add user to project</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Project: {projectName || "-"}</p>
           </div>
           <button
             type="button"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             onClick={handleClose}
           >
             <X className="h-5 w-5" />
@@ -166,7 +167,7 @@ export const AddProjectMemberModal = ({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">User to add *</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-800 dark:text-slate-200">User to add *</label>
             <div className="relative">
               <input
                 value={userKeyword}
@@ -183,28 +184,28 @@ export const AddProjectMemberModal = ({
                   void searchUsers("")
                 }}
                 placeholder="Type user name or email"
-                className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 pr-9 text-sm text-slate-800 outline-none focus:border-cyan-500"
+                className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 pr-9 text-sm text-slate-800 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-cyan-500"
               />
 
               {isSearchingUsers && (
-                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400 dark:text-slate-500" />
               )}
 
               {isUserDropdownOpen && (userKeyword.trim() || isSearchingUsers || userOptions.length > 0) && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   {isSearchingUsers ? (
-                    <p className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
+                    <p className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Searching users...
                     </p>
                   ) : userOptions.length === 0 ? (
-                    <p className="px-3 py-2 text-sm text-slate-500">No matching users.</p>
+                    <p className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">No matching users.</p>
                   ) : (
                     userOptions.map((userOption) => (
                       <button
                         key={userOption.id}
                         type="button"
-                        className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
+                        className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
                         onClick={() => {
                           setSelectedUserId(userOption.id)
                           setIsUserDropdownOpen(false)
@@ -212,9 +213,9 @@ export const AddProjectMemberModal = ({
                           void searchUsers("") // Clear search
                         }}
                       >
-                        <span className="text-sm font-medium text-slate-800">{userOption.name}</span>
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{userOption.name}</span>
                         {userOption.email && (
-                          <span className="text-xs text-slate-500">{userOption.email}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">{userOption.email}</span>
                         )}
                       </button>
                     ))
@@ -225,11 +226,11 @@ export const AddProjectMemberModal = ({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-800">Permissions *</label>
-            <div className="overflow-hidden rounded-md border border-slate-200">
+            <label className="mb-1.5 block text-sm font-medium text-slate-800 dark:text-slate-200">Permissions *</label>
+            <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50">
-                  <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
                     <th className="px-3 py-2">Permission</th>
                     <th className="px-3 py-2">Description</th>
                     <th className="w-24 px-3 py-2 text-center">Allow</th>
@@ -240,9 +241,9 @@ export const AddProjectMemberModal = ({
                     const isChecked = selectedPermissionCodes.includes(permissionOption.code)
 
                     return (
-                      <tr key={permissionOption.code} className="border-b border-slate-100 last:border-b-0">
-                        <td className="px-3 py-3 font-semibold text-slate-800">{permissionOption.name}</td>
-                        <td className="px-3 py-3 text-slate-600">{permissionOption.description}</td>
+                      <tr key={permissionOption.code} className="border-b border-slate-100 last:border-b-0 dark:border-slate-800">
+                        <td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{permissionOption.name}</td>
+                        <td className="px-3 py-3 text-slate-600 dark:text-slate-400">{permissionOption.description}</td>
                         <td className="px-3 py-3 text-center">
                           <input
                             type="checkbox"
@@ -260,13 +261,13 @@ export const AddProjectMemberModal = ({
           </div>
 
           {errorMessage && (
-            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {errorMessage}
             </p>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+        <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-800">
           <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>

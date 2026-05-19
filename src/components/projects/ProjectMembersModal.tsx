@@ -119,29 +119,29 @@ export const ProjectMembersModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] dark:bg-slate-950/70"
         onClick={resetModalState}
         aria-label="Close project members modal"
       />
 
-      <div className="relative z-10 flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative z-10 flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
         {isSubmitting && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow">
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/70 backdrop-blur-[1px] dark:bg-slate-950/70">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Loader2 className="h-4 w-4 animate-spin text-cyan-700" />
               Applying changes...
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <h3 className="text-3xl font-semibold text-slate-900">Project members</h3>
-            <p className="mt-1 text-sm text-slate-500">Project: {projectName || "-"}</p>
+            <h3 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Project members</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Project: {projectName || "-"}</p>
           </div>
           <button
             type="button"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             onClick={resetModalState}
             disabled={isSubmitting}
           >
@@ -150,10 +150,10 @@ export const ProjectMembersModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="overflow-hidden rounded-md border border-slate-200">
+          <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+              <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
                   <th className="px-3 py-2">User</th>
                   <th className="px-3 py-2">Permission</th>
                   <th className="w-48 px-3 py-2">Actions</th>
@@ -167,23 +167,23 @@ export const ProjectMembersModal = ({
                   return (
                     <tr
                       key={member.userId}
-                      className={`border-b border-slate-100 last:border-b-0 ${isOwner ? "bg-amber-50/70" : ""}`}
+                      className={`border-b border-slate-100 last:border-b-0 dark:border-slate-800 ${isOwner ? "bg-amber-50/70 dark:bg-amber-950/30" : ""}`}
                     >
                       <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-800">{member.userName}</p>
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">{member.userName}</p>
                         {isOwner && (
-                          <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-700">
+                          <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
                             OWNER
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-slate-700">{toPermissionLabel(member.permission)}</td>
+                      <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{toPermissionLabel(member.permission)}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-8 border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                            className="h-8 border-cyan-200 text-cyan-700 hover:bg-cyan-50 dark:border-cyan-800 dark:text-cyan-300 dark:hover:bg-cyan-950/40"
                             disabled={!canManageThisMember || isSubmitting}
                             onClick={() => handleOpenUpdatePermissionModal(member)}
                           >
@@ -213,7 +213,7 @@ export const ProjectMembersModal = ({
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3">
+        <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-800">
           <Button type="button" variant="outline" onClick={resetModalState} disabled={isSubmitting}>
             Close
           </Button>
@@ -224,7 +224,7 @@ export const ProjectMembersModal = ({
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] dark:bg-slate-950/70"
             onClick={() => {
               if (isSubmitting) {
                 return;
@@ -234,15 +234,15 @@ export const ProjectMembersModal = ({
             aria-label="Close permission modal"
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <div>
-                <h4 className="text-xl font-semibold text-slate-900">Update permissions</h4>
-                <p className="mt-1 text-sm text-slate-500">{editingMember.userName}</p>
+                <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Update permissions</h4>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{editingMember.userName}</p>
               </div>
               <button
                 type="button"
-                className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 onClick={() => {
                   if (isSubmitting) {
                     return;
@@ -255,11 +255,11 @@ export const ProjectMembersModal = ({
             </div>
 
             <div className="space-y-4 px-5 py-4">
-              <p className="text-sm text-slate-600">Select permissions (4 common permissions)</p>
-              <div className="overflow-hidden rounded-md border border-slate-200">
+              <p className="text-sm text-slate-600 dark:text-slate-400">Select permissions (4 common permissions)</p>
+              <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50">
-                    <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                    <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
                       <th className="px-3 py-2">Permission</th>
                       <th className="px-3 py-2">Description</th>
                       <th className="w-24 px-3 py-2 text-center">Allow</th>
@@ -270,9 +270,9 @@ export const ProjectMembersModal = ({
                       const isChecked = selectedPermissionCodes.includes(permission.code);
 
                       return (
-                        <tr key={permission.code} className="border-b border-slate-100 last:border-b-0">
-                          <td className="px-3 py-3 font-semibold text-slate-800">{permission.name}</td>
-                          <td className="px-3 py-3 text-slate-600">{permission.description}</td>
+                        <tr key={permission.code} className="border-b border-slate-100 last:border-b-0 dark:border-slate-800">
+                          <td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{permission.name}</td>
+                          <td className="px-3 py-3 text-slate-600 dark:text-slate-400">{permission.description}</td>
                           <td className="px-3 py-3 text-center">
                             <input
                               type="checkbox"
@@ -289,7 +289,7 @@ export const ProjectMembersModal = ({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-800">
               <Button
                 type="button"
                 variant="outline"
@@ -321,7 +321,7 @@ export const ProjectMembersModal = ({
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/45"
+            className="absolute inset-0 bg-slate-950/45 dark:bg-slate-950/80"
             onClick={() => {
               if (isSubmitting) {
                 return;
@@ -330,9 +330,9 @@ export const ProjectMembersModal = ({
             }}
             aria-label="Close confirm modal"
           />
-          <div className="relative z-10 w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-2xl">
-            <h5 className="text-lg font-semibold text-slate-900">Confirm action</h5>
-            <p className="mt-2 text-sm text-slate-600">
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirm action</h5>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               {confirmState.type === "delete-member"
                 ? `Do you want to remove ${confirmState.member.userName} from this project?`
                 : `Do you want to update permissions for ${confirmState.member.userName}?`}
