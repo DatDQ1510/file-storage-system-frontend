@@ -245,12 +245,12 @@ export const SetupPassword = () => {
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div className="h-full rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-500 transition-all duration-300" style={{ width: `${strength.percent}%` }} />
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {requirementsMetCount}/5 requirements satisfied
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {strength.requirements.map((requirement) => (
-                    <div key={requirement.key} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${requirement.isMet ? "bg-emerald-50 text-emerald-800" : "bg-white text-slate-500"}`}>
+                    <div key={requirement.key} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${requirement.isMet ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300" : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
                       <CheckCircle2 className={`h-3.5 w-3.5 ${requirement.isMet ? "text-emerald-600" : "text-slate-300"}`} />
                       {requirement.label}
                     </div>
