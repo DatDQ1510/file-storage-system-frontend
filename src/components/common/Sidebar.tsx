@@ -8,7 +8,6 @@ import {
   FolderOpen,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
@@ -138,21 +137,6 @@ export const Sidebar = () => {
               </Button>
             );
           })}
-        </div>
-
-        <div className={cn("mt-4 flex items-center rounded-lg border border-border p-3", isSidebarCollapsed ? "justify-center" : "gap-2")}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
-            <span className="text-xs font-semibold text-orange-600">AW</span>
-          </div>
-          {!isSidebarCollapsed && (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-foreground">Alexander Wright</p>
-                <p className="truncate text-xs text-muted-foreground">PRO ACCOUNT</p>
-              </div>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </>
-          )}
         </div>
       </div>
     </aside>
