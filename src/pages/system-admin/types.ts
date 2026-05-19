@@ -47,6 +47,8 @@ export interface ITenantRecord {
   planBillingCycle?: string
   planStartDate?: string
   planEndDate?: string
+  usedStorageSize?: number
+  exTraStorageSize?: number
 }
 
 export interface IAllTenantResponse {
